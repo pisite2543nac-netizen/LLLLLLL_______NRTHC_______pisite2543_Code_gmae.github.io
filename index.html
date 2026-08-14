@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <title>ระบบเกมพิมพ์ Code | วิทยาลัยเทคนิคนางรอง</title>
+  <link rel="stylesheet" href="./style.css?v=6.0.0">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <div>
+      <div class="kicker">NANGRONG TECHNICAL COLLEGE</div>
+      <h1>ระบบเกมพิมพ์ Code</h1>
+      <p>วิทยาลัยเทคนิคนางรอง</p>
+    </div>
+    <a class="admin-link" href="admin.html">Admin</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="authScreen" class="card account-card">
+    <div class="creator-banner">ผู้จัดทำ: นายพิสิษฐ์ หุนตระนี ครูพิเศษสอน</div>
+
+    <div class="auth-tabs">
+      <button id="loginTab" class="auth-tab active" type="button">เข้าสู่ระบบ</button>
+      <button id="registerTab" class="auth-tab" type="button">ลงทะเบียนผู้ใช้ใหม่</button>
+    </div>
+
+    <section id="loginPanel" class="auth-panel">
+      <span class="section-kicker">STUDENT LOGIN</span>
+      <h2>เข้าสู่ระบบผู้เล่น</h2>
+      <p class="muted-line">ใช้รหัสผู้ใช้หรือเลขประจำตัวนักศึกษา และรหัสผ่านที่สร้างไว้ตอนลงทะเบียน</p>
+
+      <div id="userAccessStatus" class="user-access-status">
+        รองรับรหัส User ทั้งแบบตัวเลข และตัวอักษร+ตัวเลข เช่น <strong>nkseza2000</strong>
+      </div>
+
+      <form id="loginForm" class="form-grid">
+        <label>
+          <span>รหัสผู้ใช้ / เลขประจำตัวนักศึกษา</span>
+          <input id="loginStudentId" inputmode="numeric" autocomplete="username" pattern="[0-9]{8}" minlength="8" maxlength="8" required placeholder="เช่น 11111111">
+        </label>
+        <label>
+          <span>รหัสผ่าน</span>
+          <div class="password-row">
+            <input id="loginPassword" type="password" required placeholder="กรอกรหัสผ่าน">
+            <button class="show-password" type="button" data-toggle-password="loginPassword">แสดง</button>
+          </div>
+        </label>
+        <div class="full form-footer">
+          <span id="loginMessage"></span>
+          <button class="btn primary" type="submit">เข้าสู่ระบบ</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="registerPanel" class="auth-panel hidden">
+      <span class="section-kicker">NEW STUDENT ACCOUNT</span>
+      <h2>ลงทะเบียนผู้เล่น</h2>
+      <p class="muted-line">ลงทะเบียนครั้งแรกเพียงครั้งเดียว จากนั้นใช้รหัสผู้ใช้/เลขนักศึกษาและรหัสผ่าน Login ได้</p>
+
+      <form id="registerForm" class="form-grid">
+        <label>
+          <span>รหัสผู้ใช้ / เลขประจำตัวนักศึกษา</span>
+          <input id="studentId" inputmode="numeric" autocomplete="username" pattern="[0-9]{8}" minlength="8" maxlength="8" required placeholder="รหัสนักศึกษา 8 หลัก เช่น 11111111">
+        </label>
+
+        <label>
+          <span>ชื่อ-นามสกุล</span>
+          <input id="fullName" required placeholder="ชื่อ มิงกาลาบา เมียงปร่ะ">
+        </label>
+
+        <label>
+          <span>ระดับชั้น</span>
+          <select id="educationLevel" required>
+            <option value="">-- เลือกระดับชั้น --</option>
+            <option>ปวช.1</option>
+            <option>ปวช.2</option>
+            <option>ปวช.3</option>
+            <option>ปวส.1</option>
+            <option>ปวส.2</option>
+          </select>
+        </label>
+
+        <label>
+          <span>ห้อง / กลุ่ม</span>
+          <select id="classroom" required>
+            <option value="">-- เลือกห้อง --</option>
+            <option>/1</option><option>/2</option><option>/3</option>
+            <option>/4</option><option>/5</option><option>/6</option>
+          </select>
+        </label>
+
+        <label>
+          <span>แผนก</span>
+          <select id="department" required>
+            <option value="">-- เลือกแผนก --</option>
+            <option value="คอมพิวเตอร์">คอมพิวเตอร์</option>
+            <option value="อิเล็กทรอนิกส์">อิเล็กทรอนิกส์</option>
+          </select>
+        </label>
+
+        <label>
+          <span>สาขาวิชา</span>
+          <select id="major" required>
+            <option value="">-- เลือกสาขาวิชา --</option>
+            <option value="เทคโนโลยีสารสนเทศ">เทคโนโลยีสารสนเทศ</option>
+            <option value="ธุรกิจดิจิทัล">ธุรกิจดิจิทัล</option>
+          </select>
+        </label>
+
+        <label>
+          <span>สร้างรหัสผ่าน</span>
+          <div class="password-row">
+            <input id="password" type="password" minlength="6" required placeholder="อย่างน้อย 6 ตัวอักษร">
+            <button class="show-password" type="button" data-toggle-password="password">แสดง</button>
+          </div>
+        </label>
+
+        <label>
+          <span>ยืนยันรหัสผ่าน</span>
+          <div class="password-row">
+            <input id="confirmPassword" type="password" minlength="6" required placeholder="กรอกรหัสผ่านอีกครั้ง">
+            <button class="show-password" type="button" data-toggle-password="confirmPassword">แสดง</button>
+          </div>
+        </label>
+
+        <label class="full consent">
+          <input id="acceptRules" type="checkbox">
+          <span>ข้าพเจ้ายืนยันว่าข้อมูลถูกต้อง และยอมรับคำชี้แจงการใช้งานระบบ</span>
+        </label>
+
+        <div class="full form-footer">
+          <span id="registerMessage">เมื่อลงทะเบียนสำเร็จ ชื่อจะปรากฏในหน้า Admin แบบเรียลไทม์</span>
+          <button id="registerButton" class="btn primary" type="submit" disabled>ลงทะเบียนและสร้างบัญชี</button>
+        </div>
+      </form>
+    </section>
+  </section>
+
+  <section id="userPortal" class="hidden">
+    <div class="user-portal-head card">
+      <div>
+        <span class="section-kicker">CODE LEARNING HUB</span>
+        <h2>เลือกภาษาและโหมดการเรียนรู้</h2>
+        <p id="portalWelcome">-</p>
+      </div>
+      <div class="portal-head-actions">
+          <button id="openEditProfileButton" class="btn ghost" type="button">✏️ แก้ไขข้อมูลส่วนตัว</button>
+        <button id="openCharacterProfileButton" class="btn character-profile-entry" type="button">🧍 ดูตัวละคร</button>
+        <a href="zone.html" class="btn zone-entry-main">🌙 2D Zone</a>
+        <button id="logoutUserButton" class="btn ghost">ออกจากระบบ</button>
+      </div>
+    </div>
+
+    <div class="portal-stat-grid">
+      <div class="card portal-stat"><span>เล่นทั้งหมด</span><strong id="userTotalAttempts">0</strong></div>
+      <div class="card portal-stat"><span>เล่นสำเร็จ</span><strong id="userCompleted">0</strong></div>
+      <div class="card portal-stat"><span>คะแนนสูงสุด</span><strong id="userBestScore">0</strong></div>
+      <div class="card portal-stat"><span>WPM สูงสุด</span><strong id="userBestWpm">0</strong></div>
+      <div class="card portal-stat points-stat"><span>Token สะสม</span><strong id="userTokens">0</strong><small>TOKENS</small></div>
+      <div class="card portal-stat rank-stat"><span>Rank รอบปัจจุบัน</span><strong id="userRank">-</strong><small id="rankSeasonLabel">ADMIN RESET</small></div>
+    </div>
+
+    
+    <section id="dailyCheckinCard" class="card daily-checkin-card">
+      <div class="daily-checkin-icon">🎁</div>
+      <div class="daily-checkin-copy">
+        <span class="section-kicker">DAILY FULLSCREEN CHECK-IN</span>
+        <h3>ใช้งานครบ 1 ชั่วโมง รับ 10 Token</h3>
+        <p>นับเฉพาะเวลาที่หน้าเว็บเปิดใช้งานอยู่และอยู่ในโหมดเต็มหน้าจอ · รับได้วันละ 1 ครั้ง</p>
+        <div class="daily-checkin-track"><div id="dailyCheckinProgress"></div></div>
+        <small id="dailyCheckinStatus">กำลังเตรียมระบบเช็กอิน...</small>
+      </div>
+      <strong id="dailyCheckinReward">+10 🪙</strong>
+    </section>
+
+    <section id="rankResetNotice" class="card rank-reset-user-notice hidden">
+      <div class="rank-reset-user-icon">🏆</div>
+      <div>
+        <span class="section-kicker">RANK RESET NOTICE</span>
+        <h3 id="rankResetNoticeTitle">กำหนดการรีแรงค์</h3>
+        <p id="rankResetNoticeText">-</p>
+        <small id="rankResetNoticeCountdown">-</small>
+      </div>
+    </section>
+
+    <section id="mobileZoneOnlyNotice" class="card hidden mobile-zone-only-card">
+      <div class="mobile-zone-only-badge">📱 MOBILE / TABLET MODE</div>
+      <h3>มือถือและแท็บเล็ตเข้าใช้งานเฉพาะ 2D Zone</h3>
+      <p>มือถือและแท็บเล็ตจะเข้าสู่ 2D Zone หลัง Login โดยอัตโนมัติ เพื่อให้ใช้งานได้ง่ายและเสถียร ส่วนคอมพิวเตอร์ยังใช้ระบบเรียน พิมพ์โค้ด PVP โหมดทางการ Ranking และ Admin ได้ครบ</p>
+      <div class="mobile-zone-only-actions">
+        <a id="mobileZoneOnlyEnter" href="zone.html" class="btn primary">🌙 เข้า 2D Zone</a>
+      </div>
+      <small>บน 2D Zone: Admin แสดงชื่อเหนือหัวเป็น GM และผู้เล่นทั่วไปแสดงเป็นรหัสนักศึกษา</small>
+    </section>
+
+    <section id="languageSection" class="card">
+      <div class="section-title">
+        <div>
+          <span class="section-kicker">STEP 1 · LANGUAGE</span>
+          <h2>เลือกภาษาเขียนโปรแกรม</h2>
+          <p class="muted-line">แต่ละภาษามีบทเรียน คำอธิบาย ตัวอย่าง Preview และผลลัพธ์แยกจากกัน</p>
+        </div>
+      </div>
+      <div id="languageCards" class="language-grid"></div>
+    </section>
+
+    <section id="learningSection" class="card hidden">
+      <div class="section-title">
+        <div>
+          <span class="section-kicker">LEARN BEFORE PLAY</span>
+          <h2 id="learningTitle">บทเรียน</h2>
+          <p id="learningTagline" class="muted-line"></p>
+        </div>
+      </div>
+
+      <div id="lessonTabs" class="lesson-tabs"></div>
+      <div id="stageSelector" class="stage-selector"></div>
+      <div id="lessonDetail"></div>
+    </section>
+
+    <section id="modeSection" class="card hidden">
+      <div class="section-title">
+        <div>
+          <span class="section-kicker">STEP 2 · GAME MODE</span>
+          <h2>เลือกโหมดเกม</h2>
+        </div>
+      </div>
+      <div class="mode-card-grid two-col">
+        <button class="mode-choice selected" data-game-mode="classic">
+          <span class="mode-choice-icon">⌨️</span>
+          <strong>Classic Solo</strong>
+          <small>เล่นคนเดียว จับเวลา วัด WPM / Accuracy / Mistakes และคะแนน</small>
+          <div><span>Solo</span><span>Timer</span><span>3 Difficulties</span></div>
+        </button>
+        <button class="mode-choice official-mode" data-game-mode="official">
+          <span class="mode-choice-icon">📋</span>
+          <strong>ทางการ</strong>
+          <small>30 ด่านสำหรับงานครู คะแนนรวมเต็ม 40 คะแนน ต้องกดส่งงานเมื่อทำเสร็จ</small>
+          <div><span>30 Stages</span><span>40 Scores</span><span>Teacher</span></div>
+        </button>
+        <button class="mode-choice" data-game-mode="pvp">
+          <span class="mode-choice-icon">⚔️</span>
+          <strong>PVP Realtime</strong>
+          <small>สร้างหรือเข้าห้อง แข่งพิมพ์ Code เดียวกัน 2 คน และดู Progress แบบเรียลไทม์</small>
+          <div><span>2 Players</span><span>Firebase</span><span>Realtime</span></div>
+        </button>
+      </div>
+    </section>
+
+    <section id="classicConfig" class="card hidden">
+      <div class="section-title">
+        <div>
+          <span class="section-kicker">CLASSIC SOLO</span>
+          <h2>เลือกระดับความยาก</h2>
+          <p class="muted-line">ระบบจะเลือกโจทย์ของภาษาที่เลือกตามระดับ และเริ่มจับเวลาเมื่อเริ่มพิมพ์</p>
+        </div>
+      </div>
+      <div id="difficultyCards" class="difficulty-grid"></div>
+      <div class="stage-panel">
+        <h3>เลือกด่าน</h3>
+        <div id="classicStageGrid" class="classic-stage-grid"></div>
+      </div>
+      <div class="config-footer">
+        <div id="classicLessonSummary" class="selected-summary">ยังไม่ได้เลือกภาษา/ระดับ</div>
+        <button id="startClassicButton" class="btn primary" disabled>เริ่ม Classic</button>
+      </div>
+    </section>
+
+
+    <section id="officialConfig" class="card hidden">
+      <div class="section-title">
+        <div>
+          <span class="section-kicker">OFFICIAL · TEACHER ASSIGNMENT</span>
+          <h2>โหมดทางการ 30 ด่าน</h2>
+          <p class="muted-line">คะแนนเต็มรวม 40 คะแนน คะแนนจะไม่แสดงในหน้า User และจะถูกส่งไปหน้า Admin เมื่อกด “ส่งงานทางการ” เท่านั้น</p>
+        </div>
+      </div>
+
+      <div class="official-summary-grid">
+        <div><span>จำนวนด่าน</span><strong>30</strong></div>
+        <div><span>คะแนนเต็ม</span><strong>40</strong></div>
+        <div><span>ทำแล้ว</span><strong id="officialCompletedCount">0</strong></div>
+        <div><span>สถานะ</span><strong id="officialSubmitStatus">ยังไม่ส่ง</strong></div>
+      </div>
+
+      <div id="officialStageGrid" class="official-stage-grid"></div>
+
+      <div class="official-actions">
+        <button id="submitOfficialButton" class="btn primary" disabled>ส่งงานทางการให้ครู</button>
+        <small>ปุ่มจะเปิดเมื่อทำครบ 30 ด่าน และใช้ส่งคะแนนเข้าระบบ Admin</small>
+      </div>
+    </section>
+
+    <section id="pvpConfig" class="card hidden pvp-v44-config">
+      <div class="section-title">
+        <div>
+          <span class="section-kicker">PVP MULTI ROOM · 1 / 3 / 5 SHOT · 1V1 / 2V2</span>
+          <h2>PVP Realtime หลายห้องพร้อมกัน</h2>
+          <p class="muted-line">สร้างได้หลาย Room พร้อมกัน Room Code สุ่มจากระบบเท่านั้น เลือกห้องจากรายการหรือกรอก Code ที่ได้รับจากเพื่อน</p>
+        </div>
+      </div>
+
+      <div class="pvp-rule-grid">
+        <label><span>รูปแบบทีม</span><select id="pvpTeamMode"><option value="1v1">1 VS 1</option><option value="2v2">2 VS 2 · Relay สลับผู้พิมพ์</option></select></label>
+        <label><span>จำนวน Shot</span><select id="pvpShotCount"><option value="1">1 Shot</option><option value="3" selected>3 Shot</option><option value="5">5 Shot</option></select></label>
+        <label><span>วาง Token</span><select id="pvpWager"><option value="0">ไม่วาง Token</option><option value="5">5 Token</option><option value="10">10 Token</option><option value="20">20 Token</option><option value="30">30 Token</option><option value="40">40 Token</option><option value="50">50 Token</option></select></label>
+      </div>
+      <div class="pvp-wager-note">ค่าสร้างห้อง 6 Token (ไม่คืน) · Token เดิมพันจะล็อกเมื่อสมาชิกครบ · ทีมชนะรับ Pot แบ่งเท่ากัน</div>
+
+      <div class="pvp-match-actions three-actions">
+        <button id="createRoomButton" class="pvp-match-card create" type="button"><span class="pvp-match-icon">➕</span><strong>สร้างห้อง</strong><small>สุ่ม Room Code ใหม่จากระบบ · ค่าสร้าง 6 Token</small><em>6 TOKEN · GENERATE CODE</em></button>
+        <button id="refreshRoomsButton" class="pvp-match-card find" type="button"><span class="pvp-match-icon">📋</span><strong>เลือกห้อง</strong><small>ดูห้องที่กำลังรอทั้งหมด</small><em>MULTI ROOM</em></button>
+        <div class="pvp-code-join-card"><span>เข้าด้วย Room Code</span><div><input id="joinRoomCodeInput" maxlength="6" autocomplete="off" placeholder="ABC234"><button id="joinRoomCodeButton" class="btn secondary" type="button">เข้าห้อง</button></div><small>Code ต้องเป็น Code ที่ระบบสร้างเท่านั้น</small></div>
+      </div>
+
+      <div id="matchmakingStatus" class="matchmaking-status"><span class="matchmaking-dot"></span><strong id="matchmakingStatusText">พร้อมใช้งาน</strong><small id="matchmakingStatusDetail">ตั้งค่ากติกา แล้วสร้างหรือเลือกห้อง</small></div>
+
+      <div class="pvp-room-browser">
+        <div class="pvp-room-browser-head"><div><strong>ห้อง PVP ที่กำลังรอ</strong><small>หลายห้องสามารถเล่นพร้อมกันได้</small></div><span id="availableRoomCount">0 ห้อง</span></div>
+        <div id="availablePvpRooms" class="available-pvp-rooms"><div class="empty-card">กำลังโหลดห้อง...</div></div>
+      </div>
+
+      <div id="pvpLobby" class="pvp-lobby pvp-lobby-v44 hidden">
+        <div class="room-code-card"><span>ROOM CODE · GENERATED</span><strong id="roomCodeLabel">------</strong><small id="pvpLobbyRule">-</small></div>
+        <div id="pvpPlayersGrid" class="pvp-players-grid"></div>
+        <div class="pvp-lobby-score"><span>สถานะ</span><strong id="pvpStatus">WAITING</strong><small id="pvpLobbyHint">กำลังรอผู้เล่น...</small></div>
+      </div>
+      <div class="pvp-lobby-actions"><button id="startPvpButton" class="btn primary hidden" type="button">เริ่มการแข่งขัน</button><button id="leaveLobbyButton" class="btn ghost hidden" type="button">ออกจากห้อง</button></div>
+    </section>
+
+    <section class="social-hub-grid">
+      <article class="card community-card">
+        <div class="section-title compact">
+          <div>
+            <span class="section-kicker">PLAYER COMMUNITY</span>
+            <h2>ผู้เล่นในระบบ</h2>
+            <p class="muted-line">ดูผู้เล่นคนอื่น พร้อมสถานะ Online และ Rank ปัจจุบัน</p>
+          </div>
+          <div class="online-count-pill"><span class="online-dot"></span><strong id="onlinePlayerCount">0</strong> ONLINE</div>
+        </div>
+        <div id="communityPlayersList" class="community-players-list">
+          <div class="empty-card">กำลังโหลดรายชื่อผู้เล่น...</div>
+        </div>
+      </article>
+
+      <article class="card leaderboard-card ranking-dual-card">
+        <div class="section-title compact">
+          <div>
+            <span class="section-kicker">4-SCOPE RANKING · 60 DAY SEASON</span>
+            <h2>Ranking รวม / แผนก / สาขาวิชา / ห้อง</h2>
+            <p class="muted-line">คะแนน Rank คำนวณจาก WPM 40% + Accuracy 40% + เวลาจบเร็ว 20% แล้วจัดอันดับแยกตามแต่ละกลุ่ม</p>
+          </div>
+          <div id="leaderboardSeason" class="season-chip">SEASON</div>
+        </div>
+        <div class="ranking-mode-switch ranking-mode-switch-four">
+          <button id="rankingModeOverall" class="ranking-mode-btn active" type="button">🌐 รวมทั้งหมด</button>
+          <button id="rankingModeDepartment" class="ranking-mode-btn" type="button">🏢 แผนก <span id="departmentRankingLabel">-</span></button>
+          <button id="rankingModeMajor" class="ranking-mode-btn" type="button">🎓 สาขาวิชา <span id="majorRankingLabel">-</span></button>
+          <button id="rankingModeClass" class="ranking-mode-btn" type="button">🏫 ห้อง <span id="classRankingLabel">-</span></button>
+        </div>
+        <div id="topRankingList" class="top-ranking-list"></div>
+        <div id="departmentRankingList" class="top-ranking-list hidden"></div>
+        <div id="majorRankingList" class="top-ranking-list hidden"></div>
+        <div id="classRankingList" class="top-ranking-list hidden"></div>
+        <div class="rank-shield-legend" aria-label="ระดับแรงค์">
+          <div><span class="rank-shield rank-bronze small"><span class="rank-shield-letter">B</span></span><b>Bronze</b></div>
+          <div><span class="rank-shield rank-silver small"><span class="rank-shield-letter">S</span></span><b>Silver</b></div>
+          <div><span class="rank-shield rank-gold small"><span class="rank-shield-letter">G</span></span><b>Gold</b></div>
+          <div><span class="rank-shield rank-platinum small"><span class="rank-shield-letter">P</span></span><b>Platinum</b></div>
+          <div><span class="rank-shield rank-diamond small"><span class="rank-shield-letter">D</span></span><b>Diamond</b></div>
+          <div><span class="rank-shield rank-master small"><span class="rank-shield-letter">M</span></span><b>Master</b></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="card zone-entry-card">
+      <div class="zone-entry-copy">
+        <span class="section-kicker">2D SOCIAL ZONE</span>
+        <h2>พบปะผู้เล่นใน 2D Zone</h2>
+        <p>เดินด้วย WASD หรือปุ่มลูกศร พบตัวละคร User คนอื่นแบบ Realtime และเห็นชื่อกับโล่ Rank เหนือตัวละคร</p>
+        <div class="zone-feature-pills">
+          <span>Realtime Players</span><span>Rank Shield</span><span>WASD</span><span>Character Profile</span>
+        </div>
+      </div>
+      <div class="zone-entry-actions">
+        <div class="zone-preview-mini"><span class="mini-avatar a">A</span><span class="mini-avatar b">B</span><span class="mini-avatar c">C</span></div>
+        <a href="zone.html" class="btn primary zone-enter-btn">เข้า 2D Zone →</a>
+      </div>
+    </section>
+
+    <section class="card character-placeholder">
+      <div>
+        <span class="section-kicker">CHARACTER & 2D ZONE · READY FOR NEXT PHASE</span>
+        <h2>ระบบตัวละครของ User เตรียมโครงสร้างไว้แล้ว</h2>
+        <p>บัญชีแต่ละ User มีข้อมูล avatar, outfit, inventory และตำแหน่ง Zone รองรับการสร้างพื้นที่ 2D ที่ผู้เล่นพบกันและโชว์ตัวละครแบบ Realtime ในรอบถัดไป</p>
+      </div>
+      <div class="character-silhouette">🧍</div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <div><span class="section-kicker">YOUR HISTORY</span><h2>ประวัติการเล่นล่าสุด</h2></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>วันเวลา</th><th>ภาษา</th><th>โหมด</th><th>ระดับ</th><th>สถานะ</th><th>คะแนน</th><th>WPM</th><th>Accuracy</th></tr></thead>
+          <tbody id="userHistoryBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+
+  <section id="pvpGameScreen" class="card hidden pvp-game-v44">
+    <div id="pvpCountdownOverlay" class="pvp-countdown-overlay hidden" aria-live="assertive">
+      <span>เตรียมพร้อม</span>
+      <strong id="pvpCountdownNumber">3</strong>
+      <small>ทุกคนจะเริ่มพิมพ์พร้อมกัน</small>
+    </div>
+    <div class="game-head"><div><span class="badge">⚔️ PVP</span><h2 id="pvpChallengeTitle">PVP Challenge</h2><p id="pvpChallengeDescription"></p></div><div class="player-box"><strong id="pvpRoomGame">Room ------</strong><span id="pvpMatchMeta">-</span></div></div>
+    <div class="pvp-shot-header"><strong id="pvpShotLabel">SHOT 1/3</strong><span id="pvpShotScore">TEAM A 0 : 0 TEAM B</span><small id="pvpTurnInfo">กำลังเตรียมผู้พิมพ์</small></div>
+    <div class="pvp-team-board">
+      <div class="pvp-team-card team-a"><div class="pvp-team-head"><strong>TEAM A</strong><span id="teamAPlayers">-</span></div><div class="pvp-track"><div id="teamABar"></div></div><strong id="teamAPct">0%</strong></div>
+      <div class="pvp-team-card team-b"><div class="pvp-team-head"><strong>TEAM B</strong><span id="teamBPlayers">-</span></div><div class="pvp-track"><div id="teamBBar"></div></div><strong id="teamBPct">0%</strong></div>
+    </div>
+    <div class="game-stats"><div><span>เวลา Shot</span><strong id="pvpTime">00:00</strong></div><div><span>WPM</span><strong id="pvpWpm">0</strong></div><div><span>Accuracy</span><strong id="pvpAccuracy">100%</strong></div><div><span>Mistakes</span><strong id="pvpMistakes">0</strong></div><div><span>Progress</span><strong id="pvpProgress">0%</strong></div><div><span>Status</span><strong id="pvpGameStatus">READY</strong></div></div>
+    <div id="pvpTypingStage" class="typing-stage" tabindex="0"><div class="editor-bar"><div class="editor-dots"><i></i><i></i><i></i></div><span>PVP CHALLENGE</span><span id="pvpActiveRole">Realtime</span></div><pre id="pvpTypingDisplay" class="typing-display"></pre><textarea id="pvpTypingInput" class="hidden-input" spellcheck="false"></textarea></div>
+    <div class="game-bottom"><button id="leavePvpButton" class="btn danger">ออกจาก PVP</button><span id="pvpSaveState">กำลังเชื่อม...</span></div>
+  </section>
+
+  <section id="gameScreen" class="game-fullscreen hidden">
+    <div id="gameShell" class="game-shell">
+      <div id="mobileGameTools" class="mobile-game-tools" aria-label="เครื่องมือเกมบนมือถือ">
+        <button id="mobileFocusButton" type="button" class="mobile-tool-btn">⌨️ พิมพ์ต่อ</button>
+        <button id="mobileStatsButton" type="button" class="mobile-tool-btn">📊 สถิติ</button>
+        <button id="mobileExitButton" type="button" class="mobile-tool-btn danger-lite">✕ ออก</button>
+      </div>
+
+      <div id="mobileStatsSheet" class="mobile-stats-sheet hidden" role="dialog" aria-modal="true" aria-label="สถิติการเล่น">
+        <div class="mobile-sheet-card">
+          <div class="mobile-sheet-head">
+            <strong>สถิติการเล่น</strong>
+            <button id="closeMobileStats" type="button" aria-label="ปิด">✕</button>
+          </div>
+          <div class="mobile-stats-grid">
+            <div><span>ด่าน</span><strong id="mobileStatLevel">01</strong></div>
+            <div><span>เวลา</span><strong id="mobileStatTime">00:00</strong></div>
+            <div><span>WPM</span><strong id="mobileStatWpm">0</strong></div>
+            <div><span>Accuracy</span><strong id="mobileStatAccuracy">100%</strong></div>
+            <div><span>Mistakes</span><strong id="mobileStatMistakes">0</strong></div>
+            <div><span>Token</span><strong id="mobileStatToken">0</strong></div>
+          </div>
+        </div>
+      </div>
+      <div class="fullscreen-topbar">
+        <div class="game-identity">
+          <span id="modeBadge" class="badge">⌨️ CLASSIC</span>
+          <div>
+            <strong id="challengeTitle">Level</strong>
+            <small id="challengeDescription"></small>
+          </div>
+        </div>
+
+        <div class="game-top-actions"><span id="deviceHint" class="device-hint" aria-live="polite"></span>
+          <span id="playerName">-</span>
+          <button id="fullscreenButton" class="btn ghost small-btn" type="button">⛶ เต็มหน้าจอ</button>
+          <button id="quitButton" class="btn danger small-btn" type="button">ออก</button>
+        </div>
+      </div>
+
+      <div class="game-stats fullscreen-stats">
+        <div><span>ด่าน</span><strong id="statLevel">01</strong></div>
+        <div><span>เวลา</span><strong id="statTime">00:00</strong></div>
+        <div><span>WPM</span><strong id="statWpm">0</strong></div>
+        <div><span>Accuracy</span><strong id="statAccuracy">100%</strong></div>
+        <div><span>Mistakes</span><strong id="statMistakes">0</strong></div>
+        <div><span>Token ด่าน</span><strong id="statScore">0</strong></div>
+      </div>
+
+      <div class="game-main-area">
+        <div class="code-side">
+          <div class="code-info fullscreen-tags">
+            <span id="languageLabel">HTML</span>
+            <span id="difficultyLabel">ง่าย</span>
+            <span id="timeRuleLabel">จับเวลา</span>
+            <span id="saveState">พร้อมเล่น</span>
+          </div>
+
+          <div id="typingStage" class="typing-stage strict-stage" tabindex="0" role="application" aria-label="พื้นที่พิมพ์โค้ด">
+            <div class="editor-bar">
+              <div class="editor-dots"><i></i><i></i><i></i></div>
+              <span id="fileName">challenge_01</span>
+              <span id="typingStatus">พิมพ์ตัวแรกเพื่อเริ่ม</span>
+            </div>
+            <pre id="typingDisplay" class="typing-display fullscreen-code"></pre>
+            <textarea id="typingInput" class="hidden-input" spellcheck="false" autocomplete="off"></textarea>
+          </div>
+
+          <div class="progress-line compact-progress">
+            <div class="progress-track"><div id="progressBar"></div></div>
+            <span id="progressText">0 / 0</span>
+          </div>
+        </div>
+
+        <aside class="game-help-side">
+          <div class="strict-guide">
+            <h3>STRICT TYPING</h3>
+            <p><b>สีเขียว</b> = พิมพ์ถูก</p>
+            <p><b>พิมพ์ผิด</b> = จอสั่นและตำแหน่งจะไม่เดินต่อ</p>
+            <p>ไม่ต้อง Backspace — พิมพ์ตัวเดิมใหม่ให้ถูกแล้วไปต่อได้ทันที</p>
+          </div>
+          <div class="keyboard-area compact-keyboard">
+            <p>คีย์บอร์ดจำลอง</p>
+            <div id="keyboard" class="keyboard"></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section id="resultScreen" class="card hidden result-screen">
+    <span class="section-kicker">RESULT</span>
+    <h2 id="resultTitle">บันทึกผลเรียบร้อยแล้ว</h2>
+    <p id="resultText"></p>
+    <div class="result-grid">
+      <div><span>Score</span><strong id="resultScore">0</strong></div>
+      <div><span>WPM</span><strong id="resultWpm">0</strong></div>
+      <div><span>Accuracy</span><strong id="resultAccuracy">0%</strong></div>
+      <div><span>Time</span><strong id="resultTime">0s</strong></div>
+    </div>
+    <section id="resultExplanation" class="result-explanation hidden">
+      <div class="section-title compact"><div><span class="section-kicker">CODE EXPLANATION</span><h3>โค้ดที่พิมพ์ไปใช้ทำอะไร?</h3></div></div>
+      <div class="result-explain-grid"><div><span>หน้าที่</span><p id="resultCodeUsage">-</p></div><div><span>ประโยชน์</span><p id="resultCodeBenefit">-</p></div><div><span>ผลลัพธ์ / สิ่งที่ทำได้</span><p id="resultCodeOutput">-</p></div></div>
+      <pre id="resultCodeSample" class="result-code-sample"></pre>
+    </section>
+    <div class="result-actions">
+      <button id="playAgainButton" class="btn secondary">เล่น Level เดิมอีกครั้ง</button>
+      <button id="nextLevelButton" class="btn primary">Level ถัดไป</button>
+      <button id="questZoneButton" class="btn primary hidden">กลับ 2D Zone</button>
+      <button id="portalButton" class="btn ghost">กลับหน้าเลือกโหมด</button>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">ระบบเกมพิมพ์ Code · วิทยาลัยเทคนิคนางรอง</div></footer>
+<script type="module" src="./app.js?v=6.0.0"></script>
+
+  <div id="characterSetupModal" class="character-modal hidden">
+    <div class="character-modal-card character-setup-card">
+      <span class="section-kicker">CHARACTER SETUP</span>
+      <h2>เลือกตัวละครของคุณ</h2>
+      <p>หลังลงทะเบียนต้องเลือกตัวละครชายหรือหญิงก่อนใช้งาน จากนั้นใช้ Token แลกไอเท็มมาแต่งตัวได้</p>
+
+      <div class="character-gender-grid">
+        <button id="selectMaleCharacter" class="character-gender-option" type="button">
+          <div class="character-stage preview-stage">
+            <div class="game-character male">
+              <div class="char-hair"></div><div class="char-head"></div>
+              <div class="char-body"></div><div class="char-arm left"></div><div class="char-arm right"></div>
+              <div class="char-shorts"></div><div class="char-leg left"></div><div class="char-leg right"></div>
+              <div class="char-shoe left"></div><div class="char-shoe right"></div>
+            </div>
+          </div>
+          <strong>ชาย</strong><small>ตัวละครพื้นฐาน</small>
+        </button>
+
+        <button id="selectFemaleCharacter" class="character-gender-option" type="button">
+          <div class="character-stage preview-stage">
+            <div class="game-character female">
+              <div class="char-hair"></div><div class="char-head"></div>
+              <div class="char-body"></div><div class="char-arm left"></div><div class="char-arm right"></div>
+              <div class="char-shorts"></div><div class="char-leg left"></div><div class="char-leg right"></div>
+              <div class="char-shoe left"></div><div class="char-shoe right"></div>
+            </div>
+          </div>
+          <strong>หญิง</strong><small>ตัวละครพื้นฐาน</small>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="characterProfileModal" class="character-modal hidden">
+    <div class="character-modal-card profile-character-card">
+      <button id="closeCharacterProfileButton" class="character-modal-close" type="button">✕</button>
+
+      <div class="character-profile-layout">
+        <section class="character-display-panel">
+          <span class="section-kicker">MY CHARACTER</span>
+          <h2 id="characterProfileStudentId">-</h2>
+
+          <div class="character-stage large-stage">
+            <div id="profileCharacter" class="game-character male">
+              <div class="char-aura"></div>
+              <div class="char-back-item"></div>
+              <div class="char-hair"></div><div class="char-head"></div>
+              <div class="char-face-item"></div>
+              <div class="char-body"></div><div class="char-top-item"></div>
+              <div class="char-arm left"></div><div class="char-arm right"></div>
+              <div class="char-hand-item"></div>
+              <div class="char-shorts"></div><div class="char-bottom-item"></div>
+              <div class="char-leg left"></div><div class="char-leg right"></div>
+              <div class="char-shoe left"></div><div class="char-shoe right"></div>
+              <div class="char-head-item"></div>
+              <div class="char-pet-item"></div>
+            </div>
+          </div>
+
+          <div class="character-profile-stats">
+            <div><span>Token</span><strong id="characterTokenBalance">0</strong></div>
+            <div><span>Rank</span><strong id="characterRankName">Bronze</strong></div>
+            <div><span>ไอเท็ม</span><strong id="characterOwnedCount">0</strong></div>
+          </div>
+
+          <div class="character-profile-actions">
+            <a href="zone.html" class="btn zone-entry-main">🛒 ไป Token Shop ใน 2D Zone</a>
+            <button id="unequipAllButton" class="btn ghost" type="button">ถอดไอเท็มทั้งหมด</button>
+          </div>
+        </section>
+
+        <section class="character-inventory-panel">
+          <div class="character-inventory-head">
+            <div>
+              <span class="section-kicker">WARDROBE</span>
+              <h3>ไอเท็มที่เป็นเจ้าของ</h3>
+            </div>
+            <small>ไอเท็มแพงขึ้นจะยิ่งมีเอฟเฟกต์อลังการ</small>
+          </div>
+          <div id="characterInventoryList" class="character-inventory-list"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="editProfileModal" class="modal hidden">
+    <div class="modal-card user-profile-edit-card">
+      <button id="closeEditProfileButton" class="modal-close" type="button">✕</button>
+      <span class="section-kicker">USER PROFILE</span>
+      <h2>แก้ไขข้อมูลส่วนตัว</h2>
+      <p class="muted-line">ปรับแผนกและสาขาวิชาให้ถูกต้อง ระบบจะใช้ข้อมูลนี้กับ Ranking และหน้า Admin ทั้งหมด</p>
+
+      <div class="user-profile-edit-grid">
+        <label>
+          <span>รหัสนักศึกษา</span>
+          <input id="editProfileStudentId" disabled>
+        </label>
+        <label>
+          <span>ชื่อ-นามสกุล</span>
+          <input id="editProfileFullName" required>
+        </label>
+        <label>
+          <span>ระดับชั้น</span>
+          <select id="editProfileEducationLevel" required>
+            <option value="ปวช.1">ปวช.1</option><option value="ปวช.2">ปวช.2</option><option value="ปวช.3">ปวช.3</option>
+            <option value="ปวส.1">ปวส.1</option><option value="ปวส.2">ปวส.2</option>
+          </select>
+        </label>
+        <label>
+          <span>ห้อง</span>
+          <select id="editProfileClassroom" required>
+            <option value="/1">/1</option><option value="/2">/2</option><option value="/3">/3</option>
+            <option value="/4">/4</option><option value="/5">/5</option><option value="/6">/6</option>
+          </select>
+        </label>
+        <label>
+          <span>แผนก</span>
+          <select id="editProfileDepartment" required>
+            <option value="คอมพิวเตอร์">คอมพิวเตอร์</option>
+            <option value="อิเล็กทรอนิกส์">อิเล็กทรอนิกส์</option>
+          </select>
+        </label>
+        <label>
+          <span>สาขาวิชา</span>
+          <select id="editProfileMajor" required>
+            <option value="เทคโนโลยีสารสนเทศ">เทคโนโลยีสารสนเทศ</option>
+            <option value="ธุรกิจดิจิทัล">ธุรกิจดิจิทัล</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="user-profile-edit-note">
+        ถ้าเลือกสาขาเทคโนโลยีสารสนเทศหรือธุรกิจดิจิทัล ระบบจะกำหนดแผนกเป็น <strong>คอมพิวเตอร์</strong> อัตโนมัติ
+      </div>
+
+      <div class="modal-actions">
+        <button id="saveEditProfileButton" class="btn primary" type="button">บันทึกข้อมูล</button>
+        <button id="cancelEditProfileButton" class="btn ghost" type="button">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

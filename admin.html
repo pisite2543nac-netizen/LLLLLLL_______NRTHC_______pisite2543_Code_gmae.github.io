@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Admin | ระบบเกมพิมพ์ Code</title>
+  <link rel="stylesheet" href="./style.css?v=6.0.0">
+</head>
+<body class="admin-page">
+  <main class="wrap admin-wrap">
+    <section id="adminLogin" class="card admin-login">
+      <div class="kicker">ADMINISTRATOR</div>
+      <h1>ผู้ดูแลระบบเกมพิมพ์ Code</h1>
+      <p>วิทยาลัยเทคนิคนางรอง</p>
+
+      <form id="adminLoginForm" class="stack-form">
+        <label>
+          <span>Username</span>
+          <input id="adminUsername" type="text" required autocomplete="username">
+        </label>
+        <label>
+          <span>Password</span>
+          <input id="adminPassword" type="password" required>
+        </label>
+        <div class="login-actions">
+          <a href="index.html">← กลับหน้าผู้เล่น</a>
+          <button class="btn primary" type="submit">เข้าสู่ระบบ</button>
+        </div>
+        <p id="adminLoginError" class="error-text"></p>
+      </form>
+    </section>
+
+    <section id="adminDashboard" class="hidden">
+      <div class="admin-titlebar">
+        <div>
+          <div class="kicker">NANGRONG TECHNICAL COLLEGE</div>
+          <h1>แผงควบคุมเกมพิมพ์ Code <span class="realtime-badge">● REALTIME</span></h1>
+          <p>ผู้จัดทำ: นายพิสิษฐ์ หุนตระนี ครูพิเศษสอน</p>
+        </div>
+        <div>
+          <a class="btn gm-zone-entry" href="./zone.html?v=6.0.0">🌙 เข้า 2D Zone · GM</a>
+          <a class="btn ghost" href="index.html">หน้าผู้เล่น</a>
+          <button id="logoutAdmin" class="btn secondary">ออกจากระบบ</button>
+        </div>
+      </div>
+
+      <div class="admin-metrics">
+        <div><span>โจทย์ในคลัง</span><strong id="metricLevels">0</strong></div>
+        <div><span>ลงทะเบียน</span><strong id="metricUsers">0</strong></div>
+        <div><span>ห้องเรียน</span><strong id="metricClasses">0</strong></div>
+        <div><span>เล่นสำเร็จ</span><strong id="metricCompleted">0</strong></div>
+        <div><span>คะแนนเฉลี่ย</span><strong id="metricAverage">0</strong></div>
+      </div>
+
+      <div class="admin-tabs">
+        <button class="tab active" data-tab="resultsTab">ผลการเล่น</button>
+        <button class="tab" data-tab="usersTab">สมาชิก User</button>
+        <button class="tab" data-tab="classroomsTab">🏫 แยกตามห้อง</button>
+        <button class="tab" data-tab="departmentsTab">🏢 แยกตามแผนก</button>
+        <button class="tab" data-tab="majorsTab">🎓 แยกตามสาขาวิชา</button>
+        <button class="tab" data-tab="levelsTab">จัดการโจทย์ Code</button>
+        <button class="tab" data-tab="officialTab">คะแนนทางการ</button>
+        <button class="tab" data-tab="rankingTab">Ranking</button>
+        <button class="tab" data-tab="teacherQuestsTab">🧙 ภารกิจครู</button>
+        <button class="tab zone-admin-tab" data-tab="zoneControlTab">🌙 ควบคุม 2D Zone</button>
+        <button class="tab zone-chat-admin-tab" data-tab="zoneChatLogTab">💬 ประวัติแชต Zone</button>
+        <button class="tab" data-tab="backupTab">สำรองข้อมูล</button>
+      </div>
+
+      <section id="resultsTab" class="admin-tab-panel">
+        <div class="panel-title">
+          <div>
+            <h2>ผลการเล่น</h2>
+            <p>คะแนน WPM Accuracy Mistakes เวลา และโหมดของผู้เล่น</p>
+          </div>
+          <div class="button-row">
+            <button id="exportCsv" class="btn secondary">ดาวน์โหลด CSV</button>
+            <button id="deleteResults" class="btn danger">ลบผลทั้งหมด</button>
+          </div>
+        </div>
+        <div id="userDataMigrationStatus" class="admin-data-migration-note">
+          <strong>โครงสร้างข้อมูลที่ถูกต้อง:</strong>
+          <span>แผนก = คอมพิวเตอร์</span>
+          <span>สาขาวิชา = เทคโนโลยีสารสนเทศ / สารสนเทศและธุรกิจดิจิทัล</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>วันเวลา</th><th>เลขนักศึกษา</th><th>ชื่อ</th><th>ชั้น</th>
+                <th>แผนก</th><th>สาขาวิชา</th><th>โหมด</th><th>Level</th><th>สถานะ</th>
+                <th>Score</th><th>WPM</th><th>Accuracy</th><th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="usersTab" class="admin-tab-panel hidden">
+        <div class="panel-title">
+          <div>
+            <h2>ข้อมูลสมาชิก User</h2>
+            <p>สมาชิกที่ลงทะเบียนบัญชีเข้าสู่ระบบเกม · Firebase ไม่สามารถแสดงรหัสผ่านเดิมได้ จึงใช้การตั้งรหัสผ่านใหม่แบบปลอดภัยแทน</p>
+          </div>
+          <div class="admin-user-tools">
+            <button id="initializeFreshDatabase" class="btn primary" type="button">🚀 เตรียมฐานข้อมูล V6.0</button>
+            <button id="auditStudentAccounts" class="btn ghost" type="button">🔎 ตรวจ Auth / Database</button>
+            <button id="repairStudentDatabase" class="btn secondary" type="button">🛠️ ซ่อมฐานข้อมูล User</button>
+            <button id="migrateInformationUsers" class="btn secondary" type="button">🔄 จัดกลุ่มสาขาวิชาเดิม</button>
+            <button id="deleteUsers" class="btn danger">ลบ User ทั้งหมด (Auth + DB)</button>
+          </div>
+        </div>
+        <div id="studentAccountAuditCard" class="admin-audit-card">
+          <div>
+            <span class="admin-audit-kicker">USER DATABASE HEALTH</span>
+            <strong id="studentAccountAuditTitle">ยังไม่ได้ตรวจระบบบัญชี</strong>
+            <small id="studentAccountAuditText">กด “ตรวจ Auth / Database” เพื่อเทียบ Firebase Authentication กับ Firestore โดยไม่แก้หรือลบข้อมูล</small>
+          </div>
+          <div id="studentAccountAuditStats" class="admin-audit-stats"></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>วันเวลา</th><th>เลขนักศึกษา</th><th>ชื่อ-นามสกุล</th><th>ชั้น/ห้อง</th><th>แผนก</th><th>สาขาวิชา</th><th>แต้ม</th><th>สถานะ</th><th>รหัสผ่าน</th><th>จัดการ</th></tr>
+            </thead>
+            <tbody id="usersBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="classroomsTab" class="admin-tab-panel hidden">
+        <div class="panel-title admin-room-panel-title">
+          <div>
+            <h2>🏫 นักศึกษาแยกตามห้อง</h2>
+            <p>ค้นหาห้องได้ทันที เช่น <strong>ปวช2/1</strong> หรือ <strong>ปวช.2/1</strong> แล้วกดเลือกห้อง ระบบจะแสดงเฉพาะนักศึกษาในห้องนั้นและเรียงตามรหัสนักศึกษา</p>
+          </div>
+        </div>
+
+        <div class="admin-room-search-card">
+          <div class="admin-room-search-box">
+            <span>🔎</span>
+            <input id="adminClassSearchInput" type="search" autocomplete="off"
+                   placeholder="ค้นหาห้อง เช่น ปวช2/1, ปวช3/2, ปวส1/1">
+            <button id="clearAdminClassSearch" class="btn ghost" type="button">ล้าง</button>
+          </div>
+          <div class="admin-room-search-meta">
+            <strong id="adminRoomSearchResult">ทุกห้อง</strong>
+            <span id="adminRoomTotal">0 ห้อง</span>
+          </div>
+        </div>
+
+        <div id="adminClassroomCards" class="admin-room-directory"></div>
+
+        <div class="admin-selected-room">
+          <div>
+            <span>ห้องที่เลือก</span>
+            <strong id="adminClassroomTitle">เลือกห้องด้านบน</strong>
+          </div>
+          <span id="adminClassroomSummary">-</span>
+        </div>
+
+        <div class="table-wrap admin-room-table-wrap">
+          <table class="admin-classroom-table">
+            <thead><tr>
+              <th>#</th><th>รหัสนักศึกษา</th><th>ชื่อ-นามสกุล</th><th>โล่ Rank</th><th>ด่านที่เล่น</th>
+              <th>Score ธรรมดา</th><th>Score ทางการ</th><th>Rank ห้อง</th><th>Rank แผนก</th><th>Rank สาขาวิชา</th><th>Rank รวม</th><th>Token</th>
+            </tr></thead>
+            <tbody id="adminClassroomBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="departmentsTab" class="admin-tab-panel hidden">
+        <div class="panel-title">
+          <div>
+            <h2>🏢 นักศึกษาแยกตามแผนก</h2>
+            <p>เช่น คอมพิวเตอร์ หรือ อิเล็กทรอนิกส์ · เลือกแผนกแล้วดูสมาชิกและ Rank ภายในแผนก</p>
+          </div>
+        </div>
+        <div class="admin-major-search-card">
+          <div class="admin-major-search-box"><span>🔎</span><input id="adminDepartmentSearchInput" type="search" placeholder="ค้นหาแผนก เช่น คอมพิวเตอร์"><button id="clearAdminDepartmentSearch" class="btn ghost" type="button">ล้าง</button></div>
+          <div class="admin-major-search-meta"><strong id="adminDepartmentSearchResult">ทุกแผนก</strong><span id="adminDepartmentTotal">0 แผนก</span></div>
+        </div>
+        <div id="adminDepartmentCards" class="admin-major-directory"></div>
+        <div class="admin-selected-major"><div><span>แผนกที่เลือก</span><strong id="adminDepartmentTitle">เลือกแผนกด้านบน</strong></div><span id="adminDepartmentSummary">-</span></div>
+        <div class="table-wrap admin-department-table-wrap">
+          <table><thead><tr><th>#</th><th>รหัสนักศึกษา</th><th>ชื่อ</th><th>สาขาวิชา</th><th>ระดับ/ห้อง</th><th>โล่ Rank</th><th>ด่าน</th><th>Score ปกติ</th><th>Score ทางการ</th><th>Rank แผนก</th><th>Rank สาขา</th><th>Rank ห้อง</th><th>Rank รวม</th><th>Token</th></tr></thead>
+          <tbody id="adminDepartmentBody"></tbody></table>
+        </div>
+      </section>
+
+      <section id="majorsTab" class="admin-tab-panel hidden">
+        <div class="panel-title">
+          <div>
+            <h2>🎓 นักศึกษาแยกตามสาขาวิชา</h2>
+            <p>เช่น สารสนเทศและธุรกิจดิจิทัล · เลือกสาขาวิชาแล้วดูสมาชิกและ Rank ภายในสาขาวิชา</p>
+          </div>
+        </div>
+        <div class="admin-major-search-card">
+          <div class="admin-major-search-box"><span>🔎</span><input id="adminMajorSearchInput" type="search" placeholder="ค้นหาสาขาวิชา เช่น สารสนเทศและธุรกิจดิจิทัล"><button id="clearAdminMajorSearch" class="btn ghost" type="button">ล้าง</button></div>
+          <div class="admin-major-search-meta"><strong id="adminMajorSearchResult">ทุกสาขาวิชา</strong><span id="adminMajorTotal">0 สาขาวิชา</span></div>
+        </div>
+        <div id="adminMajorCards" class="admin-major-directory"></div>
+        <div class="admin-selected-major"><div><span>สาขาวิชาที่เลือก</span><strong id="adminMajorTitle">เลือกสาขาวิชาด้านบน</strong></div><span id="adminMajorSummary">-</span></div>
+        <div class="table-wrap admin-major-table-wrap">
+          <table><thead><tr><th>#</th><th>รหัสนักศึกษา</th><th>ชื่อ</th><th>แผนก</th><th>ระดับ/ห้อง</th><th>โล่ Rank</th><th>ด่าน</th><th>Score ปกติ</th><th>Score ทางการ</th><th>Rank สาขา</th><th>Rank แผนก</th><th>Rank ห้อง</th><th>Rank รวม</th><th>Token</th></tr></thead>
+          <tbody id="adminMajorBody"></tbody></table>
+        </div>
+      </section>
+
+      <section id="levelsTab" class="admin-tab-panel hidden">
+        <div class="panel-title">
+          <div>
+            <h2>จัดการคลังโจทย์ Code</h2>
+            <p>ระบบรองรับการเพิ่ม แก้ไข และลบโจทย์ Code ราย Level โดยกำหนดภาษา ระดับความยาก คะแนนฐาน เวลา และตัวคูณความยากได้ หากต้องการกลับค่าเริ่มต้นให้ใช้ปุ่มคืนค่า 12 Level เริ่มต้น</p>
+          </div>
+          <button id="seedDefaults" class="btn secondary">คืนค่า 12 Level เริ่มต้น</button>
+        </div>
+
+        <form id="levelForm" class="form-grid admin-level-form">
+          <label><span>Level</span><input id="editLevelNo" type="number" min="1" required></label>
+          <label><span>ชื่อโจทย์</span><input id="editTitle" required></label>
+          <label><span>ภาษา</span><input id="editLanguage" placeholder="HTML / CSS / JavaScript / Python" required></label>
+          <label><span>ระดับ</span>
+            <select id="editDifficulty">
+              <option>ง่าย</option><option>ปานกลาง</option><option>ยาก</option><option>Expert</option>
+            </select>
+          </label>
+          <label><span>คะแนนฐาน</span><input id="editBasePoints" type="number" min="1" value="100" required></label>
+          <label><span>เวลาเป้าหมาย (วินาที)</span><input id="editTimeLimit" type="number" min="10" value="90" required></label>
+          <label><span>ตัวคูณความยาก</span><input id="editMultiplier" type="number" step="0.05" min="1" value="1" required></label>
+          <label><span>คำอธิบาย</span><input id="editDescription"></label>
+          <label class="full"><span>Code</span><textarea id="editCode" rows="12" required></textarea></label>
+          <button class="btn primary full" type="submit">บันทึกโจทย์</button>
+        </form>
+
+        <div id="levelCards" class="level-admin-cards"></div>
+      </section>
+
+
+      <section id="officialTab" class="admin-tab-panel hidden">
+        <div class="panel-title">
+          <div>
+            <h2>คะแนนงานทางการ</h2>
+            <p>แสดงเฉพาะงานที่ User กด “ส่งงานทางการ” แล้ว คะแนนเต็ม 40 คะแนน</p>
+          </div>
+          <button id="exportOfficialCsv" class="btn secondary">ดาวน์โหลดคะแนน CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>วันส่ง</th><th>เลขนักศึกษา</th><th>ชื่อ</th><th>ชั้น/ห้อง</th>
+                <th>แผนก</th><th>สาขาวิชา</th><th>ทำครบ</th><th>คะแนน /40</th><th>Accuracy</th><th>WPM</th>
+              </tr>
+            </thead>
+            <tbody id="officialBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="rankingTab" class="admin-tab-panel hidden">
+        <div class="panel-title">
+          <div>
+            <h2>Ranking · รวม / แผนก / สาขาวิชา / ห้อง</h2>
+            <p>คำนวณจากความขยัน 35% · Accuracy 30% · Speed 20% · Consistency 15% และรองรับวันรีแรงค์ที่ Admin กำหนดเอง</p>
+          </div>
+          <div class="button-row">
+            <button id="recalculateRanking" class="btn secondary">คำนวณ Rank ใหม่</button>
+            <button id="resetRankingNow" class="btn danger">รีแรงค์ทันที</button>
+          </div>
+        </div>
+
+        <div class="ranking-reset-admin-card">
+          <div class="ranking-reset-admin-head">
+            <div><span class="section-kicker">RANK RESET SCHEDULE</span><h3>กำหนดวันและเวลารีแรงค์</h3></div>
+            <strong id="adminRankResetStatus">ยังไม่ได้กำหนด</strong>
+          </div>
+          <div class="ranking-reset-form">
+            <label><span>วัน / เวลารีแรงค์</span><input id="rankResetAtInput" type="datetime-local"></label>
+            <label class="rank-reset-message"><span>ข้อความแจ้ง User</span><input id="rankResetMessage" maxlength="120" placeholder="เช่น รีแรงค์ประจำรอบ เตรียมทำคะแนนก่อนเวลาที่กำหนด"></label>
+            <button id="saveRankResetSchedule" class="btn primary" type="button">บันทึกและแจ้ง User</button>
+            <button id="clearRankResetSchedule" class="btn ghost" type="button">ยกเลิกกำหนดการ</button>
+          </div>
+          <small>เมื่อถึงเวลาที่กำหนด ระบบ User จะเริ่มคำนวณ Rank จากผลงานหลังเวลานั้น และจะแจ้งเตือนกำหนดการบนหน้า User</small>
+        </div>
+
+        <div class="ranking-season-banner">
+          <span>Season</span><strong id="adminSeasonId">-</strong>
+          <span id="adminSeasonRange">-</span>
+          <label class="admin-ranking-filter"><span>แผนก</span><select id="adminRankingDepartmentFilter"><option value="">ทุกแผนก</option></select></label>
+          <label class="admin-ranking-filter"><span>สาขาวิชา</span><select id="adminRankingMajorFilter"><option value="">ทุกสาขาวิชา</option></select></label>
+          <label class="admin-ranking-filter"><span>ห้อง</span><select id="adminRankingClassFilter"><option value="">ทุกห้อง</option></select></label>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>อันดับรวม</th><th>อันดับห้อง</th><th>ผู้เล่น</th><th>ห้อง</th><th>โล่ Rank</th>
+                <th>Rating</th><th>ขยัน</th><th>แม่นยำ</th><th>ความเร็ว</th><th>สม่ำเสมอ</th><th>WPM เฉลี่ย</th>
+              </tr>
+            </thead>
+            <tbody id="rankingBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+
+      <section id="teacherQuestsTab" class="admin-tab-panel hidden">
+        <div class="panel-title">
+          <div>
+            <h2>🧙 ภารกิจจากครูผู้สอน</h2>
+            <p>สร้างภารกิจที่จะไปปรากฏที่พ่อมดใน 2D Zone · User ทำได้สูงสุด 3 ภารกิจ/วัน</p>
+          </div>
+          <button id="seedTeacherQuests" class="btn secondary" type="button">สร้างภารกิจตัวอย่าง</button>
+        </div>
+
+        <form id="teacherQuestForm" class="admin-quest-form">
+          <input id="teacherQuestEditId" type="hidden">
+          <label><span>ชื่อภารกิจ</span><input id="teacherQuestTitle" required placeholder="เช่น HTML Speed Challenge"></label>
+          <label><span>ภาษา</span><select id="teacherQuestLanguage"><option value="html">HTML</option><option value="python">Python</option></select></label>
+          <label><span>Stage</span><input id="teacherQuestStage" type="number" min="1" max="50" value="1" required></label>
+          <label><span>ความยาก</span><select id="teacherQuestDifficulty"><option value="easy">ง่าย</option><option value="medium">ปานกลาง</option><option value="hard">ยาก</option></select></label>
+          <label><span>เงื่อนไข</span><select id="teacherQuestObjective"><option value="pass">ผ่านด่าน</option><option value="time">กำหนดเวลา</option><option value="accuracy">กำหนด Accuracy</option></select></label>
+          <label><span>ค่าเป้าหมาย</span><input id="teacherQuestTarget" type="number" min="0" step="1" value="0"><small>เวลา = วินาที / Accuracy = %</small></label>
+          <label><span>Token พิเศษ</span><input id="teacherQuestReward" type="number" min="2" max="20" value="4" required><small id="teacherQuestRewardHint">ง่าย 2–5 Token</small></label>
+          <label><span>Rank ขั้นต่ำ</span><select id="teacherQuestMinRank"><option value="bronze">Bronze</option><option value="silver">Silver</option><option value="gold">Gold</option><option value="platinum">Platinum</option><option value="diamond">Diamond</option><option value="master">Master</option></select></label>
+          <label class="admin-quest-description"><span>คำอธิบาย</span><textarea id="teacherQuestDescription" rows="3" placeholder="อธิบายสิ่งที่ต้องทำ"></textarea></label>
+          <label class="admin-quest-check"><input id="teacherQuestActive" type="checkbox" checked> เปิดใช้งาน</label>
+          <div class="admin-quest-actions"><button class="btn primary" type="submit">บันทึกภารกิจ</button><button id="cancelTeacherQuestEdit" class="btn ghost" type="button">ล้างฟอร์ม</button></div>
+        </form>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ภารกิจ</th><th>ด่าน</th><th>ความยาก</th><th>เงื่อนไข</th><th>Rank ขั้นต่ำ</th><th>Token</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+            <tbody id="teacherQuestBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="zoneControlTab" class="admin-tab-panel hidden">
+        <div class="panel-title">
+          <div>
+            <h2>ควบคุม 2D Zone</h2>
+            <p>ดูผู้เล่นใน Zone แบบ Realtime · เตะออก · แบนตามระยะเวลา · ปลดแบน</p>
+          </div>
+          <div class="zone-admin-summary">
+            <span><b id="zoneOnlineMetric">0</b> ONLINE</span>
+            <span><b id="zoneBannedMetric">0</b> BANNED</span>
+          </div>
+        </div>
+
+        <div class="zone-admin-help">
+          <strong>เตะ:</strong> ออกจาก Zone ชั่วคราว และสามารถกลับเข้าใหม่ได้หลังช่วงเตะหมด
+          <strong>แบน:</strong> ไม่สามารถอ่าน/เขียนข้อมูล 2D Zone ได้จนกว่าจะครบเวลาหรือ GM ปลดแบน
+        </div>
+
+        <div class="table-wrap">
+          <table class="zone-control-table">
+            <thead>
+              <tr>
+                <th>รหัสนักศึกษา</th>
+                <th>ชื่อ</th>
+                <th>Rank</th>
+                <th>สถานะ Zone</th>
+                <th>ล่าสุด</th>
+                <th>แบนถึง</th>
+                <th>เหตุผล</th>
+                <th>ระยะเวลา</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="zoneControlBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+
+      <section id="zoneChatLogTab" class="admin-tab-panel hidden">
+        <div class="panel-title">
+          <div>
+            <h2>ประวัติแชต 2D Zone</h2>
+            <p>User เก็บ/แสดง 24 ชั่วโมง · GM เป็นข้อความถาวรจนกว่าจะลบ · ใช้ตรวจสอบการสนทนาในกลุ่ม</p>
+          </div>
+          <div class="button-row">
+            <button id="exportZoneChatCsv" class="btn secondary">ดาวน์โหลด Chat CSV</button>
+            <button id="cleanupExpiredZoneChat" class="btn warning">ล้าง User Chat ที่หมดอายุ</button>
+          </div>
+        </div>
+        <div class="admin-world-chat-composer">
+          <div>
+            <span class="section-kicker">GM WORLD CHAT</span>
+            <strong>คอมเมนต์/ประกาศจาก Admin ไปยังแชตโลก</strong>
+            <small>ข้อความ GM เป็นข้อความถาวร และผู้เล่นทุกคนใน 2D Zone จะเห็นในประวัติแชต</small>
+          </div>
+          <div class="admin-world-chat-input-row">
+            <textarea id="gmWorldChatInput" maxlength="120" rows="2" placeholder="GM พิมพ์ข้อความถึงผู้เล่นทุกคน..."></textarea>
+            <button id="sendGmWorldChat" class="btn primary" type="button">ส่งในแชตโลก</button>
+            <a class="btn gm-zone-entry" href="./zone.html?v=6.0.0#world-chat">เข้า World Chat</a>
+          </div>
+        </div>
+
+        <div class="admin-zone-chat-summary">
+          <span><b id="zoneChat24hMetric">0</b> USER 24H</span>
+          <span><b id="zoneChatGmMetric">0</b> GM PERMANENT</span>
+          <span><b id="zoneChatTotalMetric">0</b> ADMIN ARCHIVE</span>
+        </div>
+        <div id="zoneChatAdminList" class="admin-zone-chat-list"></div>
+      </section>
+
+      <section id="backupTab" class="admin-tab-panel hidden">
+        <div class="panel-title">
+          <div>
+            <h2>สำรอง / ย้ายข้อมูล</h2>
+            <p>ส่งออกข้อมูล Firestore เป็น JSON สำหรับสำรอง หรือ Import กลับเข้าสู่ระบบ</p>
+          </div>
+        </div>
+        <div class="backup-actions">
+          <button id="exportJson" class="btn primary">ดาวน์โหลดข้อมูล JSON</button>
+          <label class="file-label">
+            นำเข้า JSON
+            <input id="importJson" type="file" accept=".json,application/json">
+          </label>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  
+  <div id="passwordResetModal" class="admin-password-modal hidden">
+    <div class="admin-password-card">
+      <button id="closePasswordResetModal" class="admin-password-close" type="button">✕</button>
+      <span class="section-kicker">SECURE PASSWORD RESET</span>
+      <h2>ตั้งรหัสผ่านใหม่ให้นักศึกษา</h2>
+      <p><strong>ไม่สามารถดูรหัสผ่านเดิมได้</strong> ระบบจะตั้งรหัสใหม่ผ่าน Firebase Admin SDK ฝั่งเซิร์ฟเวอร์</p>
+      <div class="admin-password-user"><span>นักศึกษา</span><strong id="passwordResetStudent">-</strong><small id="passwordResetName">-</small></div>
+      <label><span>รหัสผ่านใหม่</span><div class="password-row"><input id="adminNewStudentPassword" type="text" minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร"><button id="generateStudentPassword" class="btn ghost" type="button">สุ่มรหัส</button></div></label>
+      <div class="admin-password-actions"><button id="confirmStudentPasswordReset" class="btn danger" type="button">ตั้งรหัสผ่านใหม่</button></div>
+      <small>หลังตั้งเสร็จ ให้แจ้งรหัสให้นักศึกษาโดยตรง และไม่ควรบันทึกรหัสผ่านไว้ใน Firestore/GitHub</small>
+    </div>
+  </div>
+
+  <div id="adminToast" class="admin-toast hidden" aria-live="polite"></div>
+  <script type="module" src="./admin.js?v=6.0.0"></script>
+</body>
+</html>
