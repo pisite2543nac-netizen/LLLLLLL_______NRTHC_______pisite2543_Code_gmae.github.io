@@ -29,6 +29,6 @@
 หมายเหตุ: อย่าใส่ Password Admin หรือ service-account JSON ลง GitHub
 
 
-## Firebase Project ที่ตั้งค่าใน V6.0.1
+## Firebase Project ที่ตั้งค่าใน V6.0.2
 
 `nr-game-code`

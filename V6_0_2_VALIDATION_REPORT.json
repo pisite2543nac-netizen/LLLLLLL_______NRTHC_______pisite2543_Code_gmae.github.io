@@ -1,0 +1,15 @@
+{
+  "syntax_firebase-config.js": true,
+  "syntax_app.js": true,
+  "syntax_admin.js": true,
+  "syntax_zone.js": true,
+  "syntax_ranking-system.js": true,
+  "syntax_quest-system.js": true,
+  "syntax_economy-system.js": true,
+  "syntax_functions/index.js": true,
+  "config_uid_ok": true,
+  "rules_uid_ok": true,
+  "functions_uid_ok": true,
+  "project_id_ok": true,
+  "all_passed": true
+}

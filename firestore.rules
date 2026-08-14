@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function signedIn() { return request.auth != null; }
-    function isAdmin() { return signedIn() && request.auth.uid == "TWUrLjOh3BTa1cBNwDXKk4X2IAg1"; }
+    function isAdmin() { return signedIn() && request.auth.uid == "Y2uDV9yAQ6Mpu2qwQH9cG4ko6ZQ2"; }
     function hasZoneModeration() { return signedIn() && exists(/databases/$(database)/documents/zone_moderation/$(request.auth.uid)); }
     function activeZoneBan() {
       return hasZoneModeration()

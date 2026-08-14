@@ -1,4 +1,4 @@
-V6.0.1 ตั้งค่า Firebase Web App เป็น project: nr-game-code แล้ว
+V6.0.2 ตั้งค่า Firebase Web App เป็น project: nr-game-code แล้ว
 
 ขั้นตอนต่อไป:
 1. Firebase Console > Authentication > Users

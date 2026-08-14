@@ -11,4 +11,4 @@ export const firebaseConfig = {
 export const ADMIN_USERNAME = "Pisit_2000";
 export const ADMIN_EMAIL = "pisit_2000@nr-game-code.local";
 
-export const ADMIN_UID = "TWUrLjOh3BTa1cBNwDXKk4X2IAg1";
+export const ADMIN_UID = "Y2uDV9yAQ6Mpu2qwQH9cG4ko6ZQ2";

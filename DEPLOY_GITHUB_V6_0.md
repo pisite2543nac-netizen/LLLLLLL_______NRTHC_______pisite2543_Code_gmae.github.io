@@ -14,6 +14,6 @@ Firebase ต้อง Deploy แยก:
 - Firestore data
 
 
-## Firebase Project ที่ตั้งค่าใน V6.0.1
+## Firebase Project ที่ตั้งค่าใน V6.0.2
 
 `nr-game-code`

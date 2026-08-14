@@ -7,7 +7,7 @@ const {getFirestore,FieldValue,Timestamp}=require("firebase-admin/firestore");
 initializeApp();
 setGlobalOptions({region:"asia-southeast1",maxInstances:10});
 const db=getFirestore();
-const ADMIN_UID="TWUrLjOh3BTa1cBNwDXKk4X2IAg1";
+const ADMIN_UID = "Y2uDV9yAQ6Mpu2qwQH9cG4ko6ZQ2";
 
 function requireAuth(request){
   if(!request.auth)throw new HttpsError("unauthenticated","กรุณา Login ก่อน");

@@ -25,6 +25,6 @@ Clean Build จากระบบที่ดีที่สุดและเ�
 - Admin Manual Rank Reset / Schedule
 
 
-## Firebase Project ที่ตั้งค่าใน V6.0.1
+## Firebase Project ที่ตั้งค่าใน V6.0.2
 
 `nr-game-code`
