@@ -27,3 +27,8 @@
 13. ทดสอบสมัคร User ด้วยรหัส 8 หลัก เช่น 11111111
 
 หมายเหตุ: อย่าใส่ Password Admin หรือ service-account JSON ลง GitHub
+
+
+## Firebase Project ที่ตั้งค่าใน V6.0.1
+
+`nr-game-code`

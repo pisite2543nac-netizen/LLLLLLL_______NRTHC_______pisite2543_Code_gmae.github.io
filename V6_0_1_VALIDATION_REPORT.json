@@ -1,0 +1,11 @@
+{
+  "firebase-config.js": true,
+  "app.js": true,
+  "admin.js": true,
+  "zone.js": true,
+  "ranking-system.js": true,
+  "functions/index.js": true,
+  "project_nr_game_code": true,
+  "firebase_config_single": true,
+  "all_passed": true
+}

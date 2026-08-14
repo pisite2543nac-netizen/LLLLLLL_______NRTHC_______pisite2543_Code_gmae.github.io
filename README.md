@@ -23,3 +23,8 @@ Clean Build จากระบบที่ดีที่สุดและเ�
 - Admin Password Reset / Delete Account
 - Admin Database Audit/Repair
 - Admin Manual Rank Reset / Schedule
+
+
+## Firebase Project ที่ตั้งค่าใน V6.0.1
+
+`nr-game-code`

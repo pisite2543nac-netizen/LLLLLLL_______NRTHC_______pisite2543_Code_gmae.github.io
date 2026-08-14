@@ -12,3 +12,8 @@ Firebase ต้อง Deploy แยก:
 - Cloud Functions
 - Authentication
 - Firestore data
+
+
+## Firebase Project ที่ตั้งค่าใน V6.0.1
+
+`nr-game-code`

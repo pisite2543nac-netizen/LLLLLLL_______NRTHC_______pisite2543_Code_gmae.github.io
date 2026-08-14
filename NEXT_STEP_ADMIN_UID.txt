@@ -1,0 +1,14 @@
+V6.0.1 ตั้งค่า Firebase Web App เป็น project: nr-game-code แล้ว
+
+ขั้นตอนต่อไป:
+1. Firebase Console > Authentication > Users
+2. สร้างหรือเลือกบัญชี Admin
+3. Copy UID ของ Admin
+4. นำ UID มาแทนให้ตรงกัน 3 จุด:
+   - firebase-config.js -> ADMIN_UID
+   - firestore.rules -> function isAdmin()
+   - functions/index.js -> const ADMIN_UID
+
+หมายเหตุ:
+- อย่าใส่ Password Admin ลง GitHub
+- firebaseConfig ฝั่ง Web เปิดเผยได้ตามปกติ แต่ Rules/Authentication ต้องตั้งให้ถูก
