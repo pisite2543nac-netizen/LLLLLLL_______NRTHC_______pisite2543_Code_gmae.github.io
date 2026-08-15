@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
   <title>ระบบเกมพิมพ์ Code | วิทยาลัยเทคนิคนางรอง</title>
-  <link rel="stylesheet" href="./style.css?v=4.7.6">
+  <link rel="stylesheet" href="./style.css?v=4.7.7">
 </head>
 <body>
 <header class="site-header">
@@ -387,16 +387,21 @@
         <div class="section-title compact">
           <div>
             <span class="section-kicker">DUAL RANKING · 60 DAY SEASON</span>
-            <h2>Ranking รวม / Ranking ห้อง</h2>
-            <p class="muted-line">แรงค์รวมใช้ผู้เล่นทุกคน ส่วนแรงค์ห้องเทียบเฉพาะเพื่อนห้องเดียวกัน</p>
+            <h2>Ranking รวม / Ranking สาขาวิชาและห้อง</h2>
+            <p class="muted-line">แรงค์รวมใช้ผู้เล่นทุกคน ส่วนแรงค์สาขา/ห้องจะเทียบเฉพาะผู้เรียนสาขาวิชาเดียวกันและชั้น/ห้องเดียวกัน</p>
           </div>
           <div id="leaderboardSeason" class="season-chip">SEASON</div>
         </div>
         <div class="ranking-mode-switch">
           <button id="rankingModeOverall" class="ranking-mode-btn active" type="button">🌐 แรงค์รวมทั้งหมด</button>
-          <button id="rankingModeClass" class="ranking-mode-btn" type="button">🏫 แรงค์ห้อง <span id="classRankingLabel">-</span></button>
+          <button id="rankingModeClass" class="ranking-mode-btn" type="button">🏫 <span id="classRankingLabel">สาขาวิชา / ห้องของฉัน</span></button>
         </div>
         <div id="topRankingList" class="top-ranking-list"></div>
+        <div id="academicRoomRankingScope" class="academic-room-ranking-scope hidden">
+          <span>กลุ่มจัดอันดับ</span>
+          <strong id="academicRoomRankingTitle">สาขาวิชา / ห้องของฉัน</strong>
+          <small id="academicRoomRankingMeta">ใช้เฉพาะผู้เรียนสาขาวิชาเดียวกันและห้องเดียวกัน</small>
+        </div>
         <div id="classRankingList" class="top-ranking-list hidden"></div>
         <div class="rank-shield-legend" aria-label="ระดับแรงค์">
           <div><span class="rank-shield rank-bronze small"><span class="rank-shield-letter">B</span></span><b>Bronze</b></div>
@@ -578,7 +583,7 @@
 </main>
 
 <footer><div class="wrap">ระบบเกมพิมพ์ Code · วิทยาลัยเทคนิคนางรอง</div></footer>
-<script type="module" src="./app.js?v=4.7.6"></script>
+<script type="module" src="./app.js?v=4.7.7"></script>
 
   <div id="characterSetupModal" class="character-modal hidden">
     <div class="character-modal-card character-setup-card">

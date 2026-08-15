@@ -1,0 +1,21 @@
+{
+  "syntax:app.js": true,
+  "syntax:admin.js": true,
+  "syntax:zone.js": true,
+  "syntax:ranking-system.js": true,
+  "syntax:quest-system.js": true,
+  "syntax:economy-system.js": true,
+  "syntax:reward-data.js": true,
+  "syntax:character-system.js": true,
+  "syntax:firebase-config.js": true,
+  "nr_game_code": true,
+  "title_updated": true,
+  "scope_ui_present": true,
+  "major_room_label": true,
+  "major_and_class_filter": true,
+  "major_code_display": true,
+  "room_label_display": true,
+  "gm_excluded": true,
+  "admin_uid_rules": true,
+  "all_passed": true
+}

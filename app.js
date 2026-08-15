@@ -7,14 +7,14 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, limit, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=4.7.6";
-import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.7.6";
-import { REWARD_ITEMS, RARITY_META } from "./reward-data.js?v=4.7.6";
-import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.7.6";
-import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.7.6";
-import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.7.6";
-import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.7.6";
-import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.7.6";
+import { firebaseConfig } from "./firebase-config.js?v=4.7.7";
+import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.7.7";
+import { REWARD_ITEMS, RARITY_META } from "./reward-data.js?v=4.7.7";
+import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.7.7";
+import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.7.7";
+import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.7.7";
+import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.7.7";
+import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.7.7";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -225,7 +225,7 @@ async function routeAuthenticatedStudent(){
     }catch(error){
       console.warn("mobile route sync skipped:", error);
     }
-    location.replace("./zone.html?v=4.7.6");
+    location.replace("./zone.html?v=4.7.7");
     return;
   }
 
@@ -490,7 +490,7 @@ async function maybeLaunchQuestFromUrl(){
   if(!id||state.questLaunchHandled||!state.uid||!state.player)return false;
   state.questLaunchHandled=true;
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.7.6");
+    location.replace("./zone.html?v=4.7.7");
     return true;
   }
   const quest=await resolveTeacherQuest(id);
@@ -843,7 +843,7 @@ $("nextLevelButton").onclick=async()=>{
   if(state.gameMode==="ranked"){state.rankedStage=next.stage;state.rankedTimeLimit=rankedTimeLimitForLesson(next);}
   prepareClassic();showScreen("gameScreen");await requestRealFullscreen();setTimeout(()=>$("typingInput").focus({preventScroll:true}),100);
 };
-$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.7.6"};
+$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.7.7"};
 $("portalButton").onclick=async()=>{state.activeQuest=null;history.replaceState(null,"",location.pathname);await ensureProfileDefaults();await enterPortal()};
 
 function renderRewardShop(){
@@ -1108,7 +1108,7 @@ async function saveCharacterGender(gender){
 
   // มือถือ/แท็บเล็ตใช้เฉพาะ 2D Zone หลังเลือกตัวละครเสร็จ
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.7.6");
+    location.replace("./zone.html?v=4.7.7");
   }
 }
 
@@ -1314,23 +1314,70 @@ function rankingRowsHtml(rows,scopeLabel){
   </div>`).join(''):`<div class="empty-card">ยังไม่มีข้อมูล Ranking</div>`;
 }
 function setupRankingModeSwitch(){
-  const overall=$("rankingModeOverall"),room=$("rankingModeClass");
-  if(overall)overall.onclick=()=>{overall.classList.add("active");room?.classList.remove("active");$("topRankingList")?.classList.remove("hidden");$("classRankingList")?.classList.add("hidden")};
-  if(room)room.onclick=()=>{room.classList.add("active");overall?.classList.remove("active");$("classRankingList")?.classList.remove("hidden");$("topRankingList")?.classList.add("hidden")};
+  const overall=$("rankingModeOverall"),room=$("rankingModeClass"),scope=$("academicRoomRankingScope");
+  if(overall)overall.onclick=()=>{
+    overall.classList.add("active");room?.classList.remove("active");
+    $("topRankingList")?.classList.remove("hidden");$("classRankingList")?.classList.add("hidden");
+    scope?.classList.add("hidden");
+  };
+  if(room)room.onclick=()=>{
+    room.classList.add("active");overall?.classList.remove("active");
+    $("classRankingList")?.classList.remove("hidden");$("topRankingList")?.classList.add("hidden");
+    scope?.classList.remove("hidden");
+  };
+}
+function normalizedAcademicMajor(value){
+  return String(value||"").trim();
+}
+function academicRoomRankingLabel(player){
+  const major=normalizedAcademicMajor(player?.major)||"ไม่ระบุสาขาวิชา";
+  const code=String(player?.majorCode||"").trim();
+  const room=classKey(player?.educationLevel,player?.classroom)||"ไม่ระบุห้อง";
+  return `${major}${code?` (${code})`:""} · ห้อง ${room}`;
+}
+function sameAcademicRoom(profile,player){
+  const profileClass=profile.classKey||classKey(profile.educationLevel,profile.classroom);
+  const playerClass=player?.classKey||classKey(player?.educationLevel,player?.classroom);
+  return profileClass===playerClass &&
+    normalizedAcademicMajor(profile.major)===normalizedAcademicMajor(player?.major);
 }
 function listenTopRanking(){
   if(state.leaderboardUnsub)state.leaderboardUnsub();
-  const myClass=classKey(state.player?.educationLevel,state.player?.classroom);
-  if($("classRankingLabel"))$("classRankingLabel").textContent=myClass||"ห้องของฉัน";
+
+  const myClass=state.player?.classKey||classKey(state.player?.educationLevel,state.player?.classroom);
+  const myMajor=normalizedAcademicMajor(state.player?.major);
+  const myMajorCode=String(state.player?.majorCode||"").trim();
+  const academicLabel=academicRoomRankingLabel(state.player);
+
+  if($("classRankingLabel"))$("classRankingLabel").textContent=academicLabel;
+  if($("academicRoomRankingTitle"))$("academicRoomRankingTitle").textContent=academicLabel;
+  if($("academicRoomRankingMeta")){
+    $("academicRoomRankingMeta").textContent=myMajor
+      ? `สาขา ${myMajor}${myMajorCode?` (${myMajorCode})`:""} · ชั้น/ห้อง ${myClass||"-"} · ไม่รวมสาขาหรือห้องอื่น`
+      : `ยังไม่มีข้อมูลสาขาวิชาใน Profile · กรุณาแก้ข้อมูลส่วนตัวก่อนใช้ Ranking กลุ่ม`;
+  }
+
   if($("leaderboardSeason"))$("leaderboardSeason").textContent=seasonIdFromDate(new Date());
   setupRankingModeSwitch();
+
   state.leaderboardUnsub=onSnapshot(collection(db,"public_profiles"),snap=>{
-    const all=snap.docs.map(d=>({uid:d.id,...d.data()})).filter(x=>x.uid!=="TWUrLjOh3BTa1cBNwDXKk4X2IAg1").map(x=>({...x,rank:effectiveRankForProfile(x)}));
+    const all=snap.docs
+      .map(d=>({uid:d.id,...d.data()}))
+      .filter(x=>x.uid!=="Y2uDV9yAQ6Mpu2qwQH9cG4ko6ZQ2")
+      .map(x=>({...x,rank:effectiveRankForProfile(x)}));
+
     const overall=rankProfiles(all,10);
-    const room=rankProfiles(all.filter(x=>(x.classKey||classKey(x.educationLevel,x.classroom))===myClass),10);
-    if($("topRankingList"))$("topRankingList").innerHTML=rankingRowsHtml(overall,"แรงค์รวม");
-    if($("classRankingList"))$("classRankingList").innerHTML=rankingRowsHtml(room,myClass||"แรงค์ห้อง");
-  },error=>console.warn("dual ranking:",error));
+    const academicRoom=myMajor
+      ? rankProfiles(all.filter(x=>sameAcademicRoom(x,state.player)),50)
+      : [];
+
+    if($("topRankingList"))$("topRankingList").innerHTML=rankingRowsHtml(overall,"แรงค์รวมทั้งหมด");
+    if($("classRankingList")){
+      $("classRankingList").innerHTML=myMajor
+        ? rankingRowsHtml(academicRoom,academicLabel)
+        : `<div class="empty-card">ยังไม่มีข้อมูลสาขาวิชาของบัญชีนี้ กรุณาแก้ไขข้อมูลส่วนตัวก่อน</div>`;
+    }
+  },error=>console.warn("major room ranking:",error));
 }
 function startSocialHub(){
   clearInterval(state.presenceTimer);
@@ -1340,7 +1387,7 @@ function startSocialHub(){
 window.addEventListener('pagehide',()=>markOffline());
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')writePresence(document.body.classList.contains('game-active')?'game':'portal')});
 
-/* ===== V4.7.6 PVP MULTI ROOM · 1/3/5 SHOT · 1V1/2V2 RELAY · TOKEN WAGER ===== */
+/* ===== V4.7.7 PVP MULTI ROOM · 1/3/5 SHOT · 1V1/2V2 RELAY · TOKEN WAGER ===== */
 const PVP_ROOM_STALE_MS=20*60*1000;
 const PVP_CREATE_FEE=6;
 const PVP_COUNTDOWN_MS=3000;
@@ -1670,7 +1717,7 @@ updateDeviceUX();
 
 onAuthStateChanged(auth,async user=>{
   if(!user){state.uid=null;state.player=null;showScreen("authScreen");return;}
-  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.7.6");return;}
+  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.7.7");return;}
   state.uid=user.uid;
   try{
     await routeAuthenticatedStudent();

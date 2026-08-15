@@ -1,4 +1,4 @@
-# V4.7.6 — nr-game-code Ranking Challenge
+# V4.7.7 — nr-game-code Ranking Challenge
 
 Firebase Project: `nr-game-code`
 Admin UID: `Y2uDV9yAQ6Mpu2qwQH9cG4ko6ZQ2`
