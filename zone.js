@@ -4,13 +4,13 @@ import {
   getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot,
   serverTimestamp, query, orderBy, limit, Timestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.7.9";
-import { REWARD_ITEMS, RARITY_META } from "./reward-data.js?v=4.7.9";
-import { DEFAULT_CHARACTER } from "./character-system.js?v=4.7.9";
+import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.8.0";
+import { REWARD_ITEMS, RARITY_META } from "./reward-data.js?v=4.8.0";
+import { DEFAULT_CHARACTER } from "./character-system.js?v=4.8.0";
 import {
   QUEST_CONFIG, DEFAULT_TEACHER_QUESTS, localDayKey, activeQuestLimit,
   canAccessQuest, clampQuestReward, questDifficultyName, questObjectiveLabel
-} from "./quest-system.js?v=4.7.9";
+} from "./quest-system.js?v=4.8.0";
 
 const firebaseApp=initializeApp(firebaseConfig);
 const auth=getAuth(firebaseApp);
@@ -18,10 +18,10 @@ const db=getFirestore(firebaseApp);
 const $=id=>document.getElementById(id);
 
 const ZONE_ID="thai_social_zone_v4_1";
-const WORLD={width:2800,height:900};
-const WALK_Y=690;
-const WALK_LEFT=100;
-const WALK_RIGHT=2700;
+const WORLD={width:3000,height:1000};
+const WALK_Y=835;
+const WALK_LEFT=150;
+const WALK_RIGHT=2850;
 const PLAYER_MAX_SPEED=410;
 const ACCELERATION=1900;
 const DECELERATION=2400;
@@ -31,11 +31,58 @@ const ONLINE_STALE_MS=95000;
 const USER_CHAT_TTL_MS=24*60*60*1000;
 const BUBBLE_MS=9000;
 const DAY_NIGHT_MS=3*60*60*1000;
-const WIZARD_X=900;
-const SHOP_X=1900;
-const INTERACT_DISTANCE=190;
+const WIZARD_X=1180;
+const SHOP_X=2600;
+const INTERACT_DISTANCE=210;
 
 const canvas=$("zoneCanvas"),ctx=canvas.getContext("2d",{alpha:false});
+
+// ===== V4.8.0 REAL ART ASSETS =====
+const ZONE_ART_PATH={
+  world:"./assets/zone/zone-world-day.png",
+  maleIdle:"./assets/zone/male-idle-right.png",
+  maleWalk1:"./assets/zone/male-walk-right-1.png",
+  maleWalk2:"./assets/zone/male-walk-right-2.png",
+  femaleIdle:"./assets/zone/female-idle-right.png",
+  femaleWalk1:"./assets/zone/female-walk-right-1.png",
+  femaleWalk2:"./assets/zone/female-walk-right-2.png",
+  wizardIdle:"./assets/zone/wizard-idle-right.png",
+  wizardWalk1:"./assets/zone/wizard-walk-right-1.png",
+  wizardWalk2:"./assets/zone/wizard-walk-right-2.png",
+  merchantIdle:"./assets/zone/merchant-idle-right.png",
+  merchantWalk1:"./assets/zone/merchant-walk-right-1.png",
+  merchantWalk2:"./assets/zone/merchant-walk-right-2.png",
+  token:"./assets/zone/item-token.png",
+  gem:"./assets/zone/item-gem.png",
+  chest:"./assets/zone/item-chest.png",
+  scroll:"./assets/zone/item-scroll.png",
+  potionRed:"./assets/zone/item-potion-red.png",
+  potionBlue:"./assets/zone/item-potion-blue.png",
+  potionGreen:"./assets/zone/item-potion-green.png"
+};
+const zoneArt={};
+function loadZoneImage(key,src){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.decoding="async";
+    img.onload=()=>{zoneArt[key]=img;resolve(true)};
+    img.onerror=()=>{console.warn("Zone art load failed",key,src);resolve(false)};
+    img.src=src;
+  });
+}
+async function loadZoneArt(){
+  const rows=await Promise.all(Object.entries(ZONE_ART_PATH).map(([k,v])=>loadZoneImage(k,v)));
+  return rows.some(Boolean);
+}
+function shopArtForItem(item){
+  if(item?.slot==="back")return ZONE_ART_PATH.chest;
+  if(item?.slot==="hand")return ZONE_ART_PATH.scroll;
+  if(item?.slot==="aura")return ZONE_ART_PATH.gem;
+  if(item?.slot==="pet")return ZONE_ART_PATH.potionGreen;
+  const rarity=String(item?.rarity||"common");
+  return rarity==="mythic"?ZONE_ART_PATH.chest:rarity==="legendary"?ZONE_ART_PATH.gem:rarity==="epic"?ZONE_ART_PATH.potionBlue:rarity==="rare"?ZONE_ART_PATH.potionGreen:ZONE_ART_PATH.potionRed;
+}
+
 let cssW=1,cssH=1,dpr=1,zoom=1;
 let uid=null,profile=null,blocked=true;
 let players=new Map(),messages=[],messagesByUid=new Map();
@@ -89,7 +136,7 @@ async function checkModeration(){
     if(s.banned){showGate("ถูกระงับการเข้า 2D Zone",`แบนถึง ${s.bannedUntil.toLocaleString("th-TH")}`);return false}
     if(s.kicked){showGate("ถูก GM เตะออกจาก 2D Zone",`กลับเข้าได้หลัง ${s.kickedUntil.toLocaleTimeString("th-TH")}`);return false}
     return true;
-  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.7.9");return false}
+  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.8.0");return false}
 }
 function listenModeration(){
   if(isGM())return;
@@ -270,7 +317,7 @@ async function acceptQuest(id){
 function startQuest(id){
   const q=teacherQuests.find(x=>x.id===id)||DEFAULT_TEACHER_QUESTS.find(x=>x.id===id);if(!q)return;
   if(isTouchOnly()){alert("รับภารกิจแล้ว กรุณาเปิดบัญชีนี้บนคอมพิวเตอร์เพื่อทำภารกิจ");return}
-  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.7.9`;
+  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.8.0`;
 }
 $("openWizardQuests").onclick=async()=>{await loadQuestProgress();renderQuestModal();$("zoneQuestModal").classList.remove("hidden")};
 $("closeWizardQuests").onclick=()=>$("zoneQuestModal").classList.add("hidden");
@@ -284,7 +331,7 @@ function renderShop(){
     const own=owned.has(item.id),on=wearing.has(item.id);
     return `<article class="zone47-shop-item rarity-${esc(item.rarity)} ${on?"wearing":""}">
       <div class="zone47-shop-rarity">${esc(RARITY_META[item.rarity]?.name||item.rarity)}</div>
-      <div class="zone47-shop-icon">${item.icon}</div><strong>${esc(item.name)}</strong><small>${esc(item.description)}</small>
+      <div class="zone47-shop-icon zone47-shop-real-art"><img src="${shopArtForItem(item)}" alt=""><span>${item.icon}</span></div><strong>${esc(item.name)}</strong><small>${esc(item.description)}</small>
       <em>${Number(item.cost).toLocaleString()} Token</em>
       <button class="btn ${on?"ghost":own?"secondary":"primary"}" data-shop-item="${esc(item.id)}" ${!own&&balance<item.cost?"disabled":""}>${on?"ถอด":own?"สวมใส่":balance<item.cost?"Token ไม่พอ":"แลกไอเท็ม"}</button>
     </article>`;
@@ -368,7 +415,7 @@ $("zoneNearbyAction").onclick=triggerNearbyAction;
 
 function resizeCanvas(){
   const r=canvas.getBoundingClientRect();cssW=Math.max(1,r.width);cssH=Math.max(1,r.height);dpr=Math.min(2.5,window.devicePixelRatio||1);
-  canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);zoom=Math.max(.7,Math.min(1.18,cssH/850));ctx.imageSmoothingEnabled=false;
+  canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);zoom=Math.max(.7,Math.min(1.18,cssH/850));ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
 }
 function updateCamera(dt){
   const viewW=cssW/zoom,target=Math.max(0,Math.min(WORLD.width-viewW,me.x-viewW/2));
@@ -413,56 +460,87 @@ function drawShop(x,y,day){
   ctx.fillStyle=day?"#173b4e":"#fff0a5";ctx.font="900 17px system-ui";ctx.textAlign="center";ctx.fillText("TOKEN SHOP",0,-88);
   ctx.restore();
 }
+function drawArtSprite(c,img,x,y,w,h,flip=false,alpha=1){
+  if(!img?.complete||!img.naturalWidth)return false;
+  c.save();c.globalAlpha=alpha;c.translate(x,y);if(flip)c.scale(-1,1);
+  c.drawImage(img,-w/2,-h,w,h);c.restore();return true;
+}
+function drawNpcLabel(c,x,y,label,accent="#2f6f98"){
+  c.save();c.font="800 13px system-ui";c.textAlign="center";
+  const w=Math.max(126,c.measureText(label).width+28);
+  c.fillStyle="rgba(12,31,43,.90)";rr(c,x-w/2,y,w,30,9);c.fill();
+  c.strokeStyle=accent;c.lineWidth=2;c.stroke();c.fillStyle="#fff5cc";c.fillText(label,x,y+20);c.restore();
+}
+function drawZoneNpc(now){
+  const bob=Math.sin(now/330)*2.3;
+  const wiz=zoneArt.wizardIdle;
+  drawArtSprite(ctx,wiz,WIZARD_X,WALK_Y+bob,135,153,false,1);
+  drawNpcLabel(ctx,WIZARD_X,WALK_Y-184,"พ่อมดภารกิจ","#7b5ab6");
+
+  const merchant=zoneArt.merchantIdle;
+  drawArtSprite(ctx,merchant,SHOP_X-85,WALK_Y,128,145,false,1);
+  drawNpcLabel(ctx,SHOP_X-85,WALK_Y-171,"พ่อค้า Token","#c59835");
+}
 function drawWorld(now){
   const t=worldTimeState(),day=t.day;
-  const bg=ctx.createLinearGradient(0,0,0,WORLD.height);
-  if(day){bg.addColorStop(0,"#80c9ec");bg.addColorStop(.58,"#cae9e6");bg.addColorStop(.59,"#72a760");bg.addColorStop(1,"#50884d")}
-  else{bg.addColorStop(0,"#082638");bg.addColorStop(.58,"#174457");bg.addColorStop(.59,"#355b47");bg.addColorStop(1,"#284532")}
-  ctx.fillStyle=bg;ctx.fillRect(0,0,WORLD.width,WORLD.height);
-  if(day){ctx.fillStyle="#ffe26c";ctx.beginPath();ctx.arc(2200,115,48,0,Math.PI*2);ctx.fill()}
-  else{ctx.fillStyle="#ffe8aa";ctx.beginPath();ctx.arc(2200,115,43,0,Math.PI*2);ctx.fill();ctx.fillStyle="rgba(255,255,255,.8)";for(let i=0;i<70;i++)ctx.fillRect((i*181)%WORLD.width,40+(i*73)%260,2,2)}
-  drawHouse(100,300,390,250,"#2d5870","#8a4931",day,"SOCIAL HOUSE");
-  drawHouse(2240,300,390,250,"#69416d","#835a3c",day,"RANK HALL");
-  drawWizard(WIZARD_X,615,now);drawShop(SHOP_X,645,day);
-  ctx.fillStyle=day?"#bdaf91":"#68716b";rr(ctx,430,570,1810,210,40);ctx.fill();
-  ctx.strokeStyle=day?"rgba(98,76,54,.17)":"rgba(255,255,255,.07)";ctx.lineWidth=2;
-  for(let x=460;x<2200;x+=90){ctx.beginPath();ctx.moveTo(x,580);ctx.lineTo(x-20,770);ctx.stroke()}
-  [[540,500],[690,500],[1080,500],[1290,500],[2140,500]].forEach(([x,y])=>drawTree(x,y,day));
+  if(zoneArt.world?.complete&&zoneArt.world.naturalWidth){
+    ctx.drawImage(zoneArt.world,0,0,WORLD.width,WORLD.height);
+  }else{
+    const bg=ctx.createLinearGradient(0,0,0,WORLD.height);
+    bg.addColorStop(0,day?"#80c9ec":"#082638");bg.addColorStop(.6,day?"#cae9e6":"#174457");bg.addColorStop(1,day?"#659951":"#284532");
+    ctx.fillStyle=bg;ctx.fillRect(0,0,WORLD.width,WORLD.height);
+  }
+  if(!day){
+    ctx.fillStyle="rgba(5,20,45,.48)";ctx.fillRect(0,0,WORLD.width,WORLD.height);
+    ctx.fillStyle="rgba(235,245,255,.9)";ctx.beginPath();ctx.arc(2450,120,42,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.65)";for(let i=0;i<42;i++)ctx.fillRect((i*211)%WORLD.width,40+(i*91)%280,2,2);
+  }
+  // Walk-lane highlight stays subtle so the illustrated environment remains visible.
+  const lane=ctx.createLinearGradient(0,710,0,950);lane.addColorStop(0,"rgba(255,255,255,0)");lane.addColorStop(1,day?"rgba(255,238,196,.08)":"rgba(89,133,160,.08)");ctx.fillStyle=lane;ctx.fillRect(0,690,WORLD.width,280);
+  drawZoneNpc(now);
 }
 function itemColor(item){const key=String(item?.visual||item?.id||"");let h=0;for(const ch of key)h=(h*31+ch.charCodeAt(0))%360;return `hsl(${h} 48% 45%)`}
 function drawRankShield(c,x,y,rank){const r=rankMeta(rank);c.save();c.translate(x,y);c.fillStyle=r.color;c.beginPath();c.moveTo(-10,-8);c.lineTo(10,-8);c.lineTo(8,7);c.lineTo(0,14);c.lineTo(-8,7);c.closePath();c.fill();c.fillStyle="#fff";c.font="900 9px system-ui";c.textAlign="center";c.fillText(r.letter,0,3);c.restore()}
 function drawName(c,p,gm){
   const label=gm?"GM":String(p.studentId||"USER");c.font="800 14px system-ui";const w=Math.max(gm?76:105,c.measureText(label).width+45);
-  c.fillStyle=gm?"rgba(91,22,49,.95)":"rgba(9,28,39,.9)";rr(c,-w/2,-143,w,29,8);c.fill();c.strokeStyle=gm?"#ebc34e":"rgba(255,255,255,.1)";c.lineWidth=2;c.stroke();
-  c.fillStyle="#fff";c.textAlign="center";c.fillText(label,0,-124);drawRankShield(c,-w/2+16,-130,gm?GM_RANK:p.rank);drawBubble(c,p);
+  const barY=-188;
+  c.fillStyle=gm?"rgba(91,22,49,.95)":"rgba(9,28,39,.90)";rr(c,-w/2,barY,w,29,8);c.fill();c.strokeStyle=gm?"#ebc34e":"rgba(255,255,255,.16)";c.lineWidth=2;c.stroke();
+  c.fillStyle="#fff";c.textAlign="center";c.fillText(label,0,barY+19);drawRankShield(c,-w/2+16,barY+13,gm?GM_RANK:p.rank);drawBubble(c,p,barY);
 }
-function drawBubble(c,p){
+function drawBubble(c,p,barY=-188){
   const m=messagesByUid.get(p.uid);if(!m?.text)return;const dt=m.createdAt?.toDate?.();if(dt&&Date.now()-dt.getTime()>BUBBLE_MS)return;
   const text=String(m.text),lines=[];c.font="600 14px system-ui";let line="";for(const ch of [...text]){const t=line+ch;if(c.measureText(t).width>220&&line){lines.push(line);line=ch}else line=t}if(line)lines.push(line);
-  const show=lines.slice(0,3),bw=Math.max(110,Math.min(245,Math.max(...show.map(x=>c.measureText(x).width))+25)),bh=17+show.length*20,by=-164-bh;
+  const show=lines.slice(0,3),bw=Math.max(110,Math.min(245,Math.max(...show.map(x=>c.measureText(x).width))+25)),bh=17+show.length*20,by=barY-13-bh;
   c.fillStyle=p.isAdmin?"#fff3c9":"rgba(255,255,255,.97)";rr(c,-bw/2,by,bw,bh,12);c.fill();c.strokeStyle="rgba(35,55,68,.18)";c.stroke();c.fillStyle="#17364a";c.textAlign="center";show.forEach((ln,i)=>c.fillText(ln,0,by+23+i*20));
 }
+function drawEquipmentFx(c,p,now){
+  if(isGMPlayer(p))return;
+  const eq=equipped(p.character||{}),aura=itemById(eq.aura),pet=itemById(eq.pet),hand=itemById(eq.hand),back=itemById(eq.back);
+  if(aura){c.save();c.globalAlpha=.44;c.strokeStyle=itemColor(aura);c.lineWidth=5;c.beginPath();c.ellipse(0,-65,54,83,0,0,Math.PI*2);c.stroke();c.restore()}
+  if(back){c.save();c.font="27px system-ui";c.textAlign="center";c.fillText(back.icon||"🎒",-48,-38);c.restore()}
+  if(hand){c.save();c.font="26px system-ui";c.textAlign="center";c.fillText(hand.icon||"✨",48,-44);c.restore()}
+  if(pet){c.save();c.font="29px system-ui";c.textAlign="center";c.fillText(pet.icon||"🐾",62,5+Math.sin(now/260)*4);c.restore()}
+}
+function playerArtImage(p,now){
+  if(isGMPlayer(p))return zoneArt.wizardIdle;
+  const gender=p?.character?.gender==="female"?"female":"male";
+  if(!p?.moving)return zoneArt[`${gender}Idle`];
+  return (Math.floor(now/150)%2===0)?zoneArt[`${gender}Walk1`]:zoneArt[`${gender}Walk2`];
+}
 function drawCharacter(c,p,x,y,now){
-  const gm=isGMPlayer(p),moving=!!p.moving,bob=moving?Math.sin(now/75)*3:0;
+  const gm=isGMPlayer(p),moving=!!p.moving,bob=moving?Math.sin(now/80)*1.5:0;
   c.save();c.translate(x,y+bob);
   if(gm){
-    c.strokeStyle="rgba(255,208,77,.72)";c.lineWidth=6;c.beginPath();c.ellipse(0,-35,48,73,0,0,Math.PI*2);c.stroke();
-    c.fillStyle="#511b3b";c.beginPath();c.moveTo(-38,-48);c.lineTo(38,-48);c.lineTo(54,36);c.lineTo(0,18);c.lineTo(-54,36);c.closePath();c.fill();
-    c.fillStyle="#f0c84e";c.beginPath();c.moveTo(-25,-88);c.lineTo(-20,-117);c.lineTo(-7,-101);c.lineTo(0,-126);c.lineTo(10,-101);c.lineTo(23,-116);c.lineTo(25,-88);c.closePath();c.fill();
-    c.fillStyle="#edc49e";c.beginPath();c.arc(0,-72,23,0,Math.PI*2);c.fill();drawName(c,p,true);c.restore();return;
+    c.save();c.globalAlpha=.55;c.strokeStyle="#ffd55b";c.lineWidth=6;c.beginPath();c.ellipse(0,-70,61,92,0,0,Math.PI*2);c.stroke();c.restore();
   }
-  const char=p.character||{},eq=equipped(char),gender=char.gender==="female"?"female":"male";
-  const top=itemById(eq.top),head=itemById(eq.head),back=itemById(eq.back),hand=itemById(eq.hand),pet=itemById(eq.pet),aura=itemById(eq.aura);
-  if(aura){c.strokeStyle=itemColor(aura);c.lineWidth=5;c.globalAlpha=.55;c.beginPath();c.ellipse(0,-34,43,67,0,0,Math.PI*2);c.stroke();c.globalAlpha=1}
-  if(back){c.font="31px system-ui";c.textAlign="center";c.fillText(back.icon||"🎒",-30,-20)}
-  c.fillStyle="rgba(0,0,0,.18)";c.beginPath();c.ellipse(0,30,28,9,0,0,Math.PI*2);c.fill();
-  c.fillStyle="#e8bd98";c.fillRect(-13,6,9,30);c.fillRect(5,6,9,30);c.fillStyle="#263442";rr(c,-18,29,17,9,5);c.fill();rr(c,2,29,17,9,5);c.fill();
-  c.fillStyle="#315b82";rr(c,-21,-5,42,21,6);c.fill();c.fillStyle=top?itemColor(top):"#f3f0e8";rr(c,-23,-48,46,46,12);c.fill();
-  c.fillStyle="#eabf99";rr(c,-33,-40,10,42,6);c.fill();rr(c,23,-40,10,42,6);c.fill();
-  if(gender==="female"){c.fillStyle="#2d211e";c.beginPath();c.ellipse(0,-74,28,37,0,0,Math.PI*2);c.fill()}
-  c.fillStyle="#efc6a0";c.beginPath();c.arc(0,-74,23,0,Math.PI*2);c.fill();c.fillStyle="#2d211e";c.beginPath();c.arc(0,-82,24,Math.PI,Math.PI*2);c.fill();
-  if(head){c.font="27px system-ui";c.textAlign="center";c.fillText(head.icon||"🧢",0,-104)}if(hand){c.font="27px system-ui";c.fillText(hand.icon||"✨",39,-17)}if(pet){c.font="30px system-ui";c.fillText(pet.icon||"🐾",55,12)}
-  drawName(c,p,false);c.restore();
+  drawEquipmentFx(c,p,now);
+  const img=playerArtImage(p,now),flip=p.direction==="left";
+  const w=gm?145:132,h=gm?164:149;
+  if(!drawArtSprite(c,img,0,0,w,h,flip,1)){
+    // Emergency fallback only when an image file failed to load.
+    c.fillStyle=gm?"#56345f":"#315b82";rr(c,-25,-100,50,100,12);c.fill();
+  }
+  drawName(c,p,gm);c.restore();
 }
 function drawFrame(now){
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle="#102c3d";ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -476,7 +554,7 @@ function loop(now){const dt=Math.min(.04,(now-lastFrame)/1000);lastFrame=now;upd
 canvas.onclick=e=>{
   const pt=screenToWorld(e.clientX,e.clientY);
   if(Math.abs(pt.x-WIZARD_X)<95){$("openWizardQuests").click();return}
-  if(Math.abs(pt.x-SHOP_X)<175){$("openZoneShop").click();return}
+  if(Math.abs(pt.x-SHOP_X)<250){$("openZoneShop").click();return}
   let selected=null,best=999;for(const p of players.values()){const d=Math.abs(p.currentX-pt.x);if(d<65&&d<best){selected=p;best=d}}if(selected)openPlayerCard(selected);
 };
 function openPlayerCard(p){
@@ -509,6 +587,7 @@ window.onresize=resizeCanvas;window.addEventListener("pagehide",leaveZone);$("le
 onAuthStateChanged(auth,async user=>{
   if(!user){showGate("กรุณา Login ก่อน","2D Zone ใช้บัญชีที่ลงทะเบียนแล้ว");return}
   uid=user.uid;if(!(await loadProfile()))return;if(!(await checkModeration()))return;
+  await loadZoneArt();
   hideGate();$("zoneMyStudentId").textContent=isGM()?"GM":profile.studentId;$("zoneChatIdentity").textContent=isGM()?"GM":profile.studentId;
   $("zoneMyShield").innerHTML=rankShieldHTML(isGM()?GM_RANK:profile.rank);$("zoneTokenBalance").textContent=isGM()?"∞":Number(profile.tokenBalance||0).toLocaleString();
   if(isGM()){$("openAdminPanel").classList.remove("hidden");$("leaveZoneButton").href="./admin.html";$("zoneChatInput").placeholder="GM พิมพ์ข้อความหรือประกาศ..."}
