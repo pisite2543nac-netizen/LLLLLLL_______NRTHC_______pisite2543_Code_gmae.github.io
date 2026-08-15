@@ -1,0 +1,23 @@
+{
+  "syntax:app.js": true,
+  "syntax:zone.js": true,
+  "syntax:item-assets.js": true,
+  "syntax:reward-data.js": true,
+  "syntax:admin.js": true,
+  "syntax:ranking-system.js": true,
+  "syntax:quest-system.js": true,
+  "syntax:economy-system.js": true,
+  "syntax:character-system.js": true,
+  "syntax:firebase-config.js": true,
+  "item_count_36": true,
+  "art_count_36": true,
+  "real_ai_8": true,
+  "requested_items": true,
+  "inventory_25": true,
+  "sellback_30": true,
+  "shop_real_art": true,
+  "wardrobe_real_art": true,
+  "zone_equipment_art": true,
+  "nr_game_code": true,
+  "all_passed": true
+}

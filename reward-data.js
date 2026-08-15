@@ -38,7 +38,21 @@ export const REWARD_ITEMS = [
   {id:"set2_spirit_wings",name:"ปีก Spirit Guardian",icon:"🪽",baseCost:9500,cost:12350,type:"wearable",slot:"back",rarity:"mythic",set:"set2",visual:"spirit_wings",description:"ปีกวิญญาณสีฟ้าขนาดใหญ่ ชุด 2 ราคา +30%"},
   {id:"set2_storm_aura",name:"Storm Code Aura",icon:"⚡",baseCost:12500,cost:16250,type:"wearable",slot:"aura",rarity:"mythic",set:"set2",visual:"storm_aura",description:"สายฟ้าหมุนรอบตัวละคร ชุด 2 ราคา +30%"}
 
+  // ===== REQUESTED ITEM EXPANSION =====
+  {id:"code_blade",name:"ดาบ Code Blade",icon:"⚔️",cost:2600,type:"wearable",slot:"hand",rarity:"epic",set:"requested",visual:"code_blade",description:"ดาบพลังงานสำหรับสาย Coder"},
+  {id:"guardian_armor",name:"เกราะ Guardian Code",icon:"🛡️",cost:4600,type:"wearable",slot:"top",rarity:"legendary",set:"requested",visual:"guardian_armor",description:"เกราะป้องกันลายวงจรสีทอง"},
+  {id:"arcane_crown",name:"มงกุฎ Arcane Coder",icon:"👑",cost:5600,type:"wearable",slot:"head",rarity:"legendary",set:"requested",visual:"arcane_crown",description:"มงกุฎเวทสำหรับผู้เล่นระดับสูง"},
+  {id:"spell_tome",name:"คาถา Code Grimoire",icon:"📖",cost:3200,type:"wearable",slot:"hand",rarity:"epic",set:"requested",visual:"spell_tome",description:"คัมภีร์คาถาโค้ดพร้อมแสงเวท"},
+  {id:"golden_dragon_pet",name:"สัตว์เลี้ยงมังกรทอง",icon:"🐉",cost:16500,type:"wearable",slot:"pet",rarity:"mythic",set:"requested",visual:"golden_dragon_pet",description:"มังกรทองบินตามตัวละครใน 2D Zone"},
+  {id:"monkey_pet",name:"สัตว์เลี้ยงลิง Coder",icon:"🐒",cost:4300,type:"wearable",slot:"pet",rarity:"legendary",set:"requested",visual:"monkey_pet",description:"ลิงคู่หูสายโค้ดที่วิ่งตามผู้เล่น"},
+  {id:"gold_sword",name:"ดาบทอง Code Emperor",icon:"🗡️",cost:7200,type:"wearable",slot:"hand",rarity:"legendary",set:"requested",visual:"gold_sword",description:"ดาบทองพลังงานระดับ Legendary"},
+  {id:"purple_sword",name:"ดาบม่วง Void Coder",icon:"🗡️",cost:5800,type:"wearable",slot:"hand",rarity:"legendary",set:"requested",visual:"purple_sword",description:"ดาบม่วงพลัง Void พร้อมเอฟเฟกต์ Neon"},
+
 ];
+
+export const INVENTORY_LIMIT = 25;
+export const SELLBACK_RATE = 0.30;
+export function sellBackValue(item){ return Math.max(1,Math.floor(Number(item?.cost||0)*SELLBACK_RATE)); }
 
 export const RARITY_META = {
   common:{name:"COMMON",order:1},

@@ -7,14 +7,15 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, limit, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=4.8.1";
-import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.8.1";
-import { REWARD_ITEMS, RARITY_META } from "./reward-data.js?v=4.8.1";
-import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.8.1";
-import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.8.1";
-import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.8.1";
-import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.8.1";
-import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.8.1";
+import { firebaseConfig } from "./firebase-config.js?v=4.8.2";
+import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.8.2";
+import { REWARD_ITEMS, RARITY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue } from "./reward-data.js?v=4.8.2";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.8.2";
+import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.8.2";
+import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.8.2";
+import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.8.2";
+import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.8.2";
+import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.8.2";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -361,7 +362,7 @@ async function routeAuthenticatedStudent(){
     }catch(error){
       console.warn("mobile route sync skipped:", error);
     }
-    location.replace("./zone.html?v=4.8.1");
+    location.replace("./zone.html?v=4.8.2");
     return;
   }
 
@@ -626,7 +627,7 @@ async function maybeLaunchQuestFromUrl(){
   if(!id||state.questLaunchHandled||!state.uid||!state.player)return false;
   state.questLaunchHandled=true;
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.8.1");
+    location.replace("./zone.html?v=4.8.2");
     return true;
   }
   const quest=await resolveTeacherQuest(id);
@@ -979,34 +980,32 @@ $("nextLevelButton").onclick=async()=>{
   if(state.gameMode==="ranked"){state.rankedStage=next.stage;state.rankedTimeLimit=rankedTimeLimitForLesson(next);}
   prepareClassic();showScreen("gameScreen");await requestRealFullscreen();setTimeout(()=>$("typingInput").focus({preventScroll:true}),100);
 };
-$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.8.1"};
+$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.8.2"};
 $("portalButton").onclick=async()=>{state.activeQuest=null;history.replaceState(null,"",location.pathname);await ensureProfileDefaults();await enterPortal()};
 
 function renderRewardShop(){
-  if(!$("rewardShop"))return;
+  if(!$('rewardShop'))return;
   const balance=Number(state.player?.tokenBalance||0);
   const owned=new Set(state.player?.inventory||[]);
-
-  const items=[...REWARD_ITEMS].sort((a,b)=>
-    (RARITY_META[a.rarity]?.order||0)-(RARITY_META[b.rarity]?.order||0) || a.cost-b.cost
-  );
-
-  $("rewardShop").innerHTML=items.map(item=>`
-    <article class="reward-card rarity-${item.rarity} ${owned.has(item.id)?"owned":""}">
-      <div class="reward-rarity">${RARITY_META[item.rarity]?.name||item.rarity}${item.set==="set2"?" · SET 2 +30%":""}</div>
-      <div class="reward-icon">${item.icon}</div>
-      <h3>${esc(item.name)}</h3>
-      <p>${esc(item.description)}</p>
+  const capacity=`${owned.size}/${INVENTORY_LIMIT}`;
+  const items=[...REWARD_ITEMS].sort((a,b)=>(RARITY_META[a.rarity]?.order||0)-(RARITY_META[b.rarity]?.order||0)||a.cost-b.cost);
+  $('rewardShop').innerHTML=items.map(item=>{
+    const own=owned.has(item.id),sell=sellBackValue(item);
+    return `<article class="reward-card rarity-${item.rarity} ${own?'owned':''}">
+      <div class="reward-rarity">${RARITY_META[item.rarity]?.name||item.rarity}${item.set==='set2'?' · SET 2 +30%':item.set==='requested'?' · NEW':''}</div>
+      <div class="reward-icon reward-real-art"><img src="${itemArtSrc(item.id)}" alt="${esc(item.name)}"><span>${item.icon}</span></div>
+      <h3>${esc(item.name)}</h3><p>${esc(item.description)}</p>
       <div class="reward-slot">SLOT · ${item.slot.toUpperCase()}</div>
       <div class="reward-cost">${item.cost.toLocaleString()} Token</div>
-      <button class="btn ${owned.has(item.id)?"ghost":"secondary"}" data-redeem="${item.id}" ${owned.has(item.id)||balance<item.cost?"disabled":""}>
-        ${owned.has(item.id)?"มีแล้ว":balance<item.cost?"Token ไม่พอ":"แลกไอเท็ม"}
-      </button>
-    </article>`).join("");
-
-  document.querySelectorAll("[data-redeem]:not([disabled])").forEach(b=>{
-    b.onclick=()=>redeemReward(b.dataset.redeem);
-  });
+      <small class="reward-capacity">กระเป๋า ${capacity} · ขายคืน ${sell.toLocaleString()} Token</small>
+      <div class="reward-actions">
+        <button class="btn ${own?'ghost':'secondary'}" data-redeem="${item.id}" ${own||balance<item.cost||owned.size>=INVENTORY_LIMIT?'disabled':''}>${own?'มีแล้ว':owned.size>=INVENTORY_LIMIT?'กระเป๋าเต็ม':balance<item.cost?'Token ไม่พอ':'แลกไอเท็ม'}</button>
+        ${own?`<button class="btn danger-soft" data-sell-reward="${item.id}" type="button">ขายคืน 30%</button>`:''}
+      </div>
+    </article>`;
+  }).join('');
+  document.querySelectorAll('[data-redeem]:not([disabled])').forEach(b=>b.onclick=()=>redeemReward(b.dataset.redeem));
+  document.querySelectorAll('[data-sell-reward]').forEach(b=>b.onclick=()=>sellOwnedItem(b.dataset.sellReward));
 }
 async function redeemReward(id){
   const item=REWARD_ITEMS.find(x=>x.id===id);
@@ -1019,6 +1018,7 @@ async function redeemReward(id){
       const balance=Number(d.tokenBalance||0);
       const inv=Array.isArray(d.inventory)?d.inventory:[];
       if(inv.includes(id))throw new Error("มีไอเทมแล้ว");
+      if(inv.length>=INVENTORY_LIMIT)throw new Error(`กระเป๋าเต็ม ${INVENTORY_LIMIT} ไอเท็ม`);
       if(balance<item.cost)throw new Error("แต้มไม่พอ");
       tx.update(ref,{tokenBalance:balance-item.cost,inventory:[...inv,id],updatedAt:serverTimestamp()});
     });
@@ -1028,6 +1028,24 @@ async function redeemReward(id){
     renderRewardShop();
     if(!$("characterProfileModal")?.classList.contains("hidden")) renderCharacterProfile();
   }catch(err){alert(err.message)}
+}
+
+async function sellOwnedItem(id){
+  const item=REWARD_ITEMS.find(x=>x.id===id);if(!item)return;
+  if(!confirm(`ขาย ${item.name} คืนร้าน ${sellBackValue(item).toLocaleString()} Token?`))return;
+  const ref=doc(db,'users',state.uid);
+  try{
+    await runTransaction(db,async tx=>{
+      const snap=await tx.get(ref);if(!snap.exists())throw new Error('ไม่พบ User');
+      const d=snap.data(),inv=Array.isArray(d.inventory)?d.inventory:[];
+      if(!inv.includes(id))return;
+      const equipped={...DEFAULT_CHARACTER.equipped,...(d.character?.equipped||{})};
+      Object.keys(equipped).forEach(slot=>{if(equipped[slot]===id)equipped[slot]=null});
+      tx.update(ref,{tokenBalance:Number(d.tokenBalance||0)+sellBackValue(item),inventory:inv.filter(x=>x!==id),character:{...DEFAULT_CHARACTER,...(d.character||{}),equipped},updatedAt:serverTimestamp()});
+    });
+    await ensureProfileDefaults();$('userTokens').textContent=Number(state.player.tokenBalance||0).toLocaleString();renderRewardShop();
+    if(!$('characterProfileModal')?.classList.contains('hidden'))renderCharacterProfile();
+  }catch(err){alert(err.message||String(err))}
 }
 
 function listenHistory(){
@@ -1244,7 +1262,7 @@ async function saveCharacterGender(gender){
 
   // มือถือ/แท็บเล็ตใช้เฉพาะ 2D Zone หลังเลือกตัวละครเสร็จ
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.8.1");
+    location.replace("./zone.html?v=4.8.2");
   }
 }
 
@@ -1288,7 +1306,7 @@ function renderCharacterProfile(){
   $("characterProfileStudentId").textContent=state.player.studentId||"-";
   $("characterTokenBalance").textContent=Number(state.player.tokenBalance||0).toLocaleString();
   $("characterRankName").textContent=state.player.rank?.tierName||"Bronze";
-  $("characterOwnedCount").textContent=(state.player.inventory||[]).length;
+  $("characterOwnedCount").textContent=`${(state.player.inventory||[]).length}/${INVENTORY_LIMIT}`;
 
   applyCharacterVisual();
 
@@ -1301,7 +1319,7 @@ function renderCharacterProfile(){
 
   $("characterInventoryList").innerHTML=items.length?items.map(item=>`
     <article class="wardrobe-item rarity-${item.rarity} ${equippedIds.has(item.id)?"equipped":""}">
-      <div class="wardrobe-icon">${item.icon}</div>
+      <div class="wardrobe-icon wardrobe-real-art"><img src="${itemArtSrc(item.id)}" alt="${esc(item.name)}"><span>${item.icon}</span></div>
       <div class="wardrobe-info">
         <span>${RARITY_META[item.rarity]?.name||item.rarity}</span>
         <strong>${esc(item.name)}</strong>
@@ -1309,16 +1327,14 @@ function renderCharacterProfile(){
       </div>
       <div class="wardrobe-action">
         <small>${item.slot.toUpperCase()}</small>
-        <button data-equip-item="${item.id}" class="btn ${equippedIds.has(item.id)?"ghost":"secondary"}" type="button">
-          ${equippedIds.has(item.id)?"ถอด":"สวมใส่"}
-        </button>
+        <button data-equip-item="${item.id}" class="btn ${equippedIds.has(item.id)?"ghost":"secondary"}" type="button">${equippedIds.has(item.id)?"ถอด":"สวมใส่"}</button>
+        <button data-sell-character-item="${item.id}" class="btn danger-soft" type="button">ขาย ${sellBackValue(item).toLocaleString()}</button>
       </div>
     </article>
   `).join(""):`<div class="empty-card">ยังไม่มีไอเท็มแต่งตัว ไปที่ Token Shop เพื่อแลกไอเท็ม</div>`;
 
-  document.querySelectorAll("[data-equip-item]").forEach(btn=>{
-    btn.onclick=()=>toggleEquipItem(btn.dataset.equipItem);
-  });
+  document.querySelectorAll("[data-equip-item]").forEach(btn=>{btn.onclick=()=>toggleEquipItem(btn.dataset.equipItem);});
+  document.querySelectorAll("[data-sell-character-item]").forEach(btn=>{btn.onclick=()=>sellOwnedItem(btn.dataset.sellCharacterItem);});
 }
 
 async function openCharacterProfile(){
@@ -1523,7 +1539,7 @@ function startSocialHub(){
 window.addEventListener('pagehide',()=>markOffline());
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')writePresence(document.body.classList.contains('game-active')?'game':'portal')});
 
-/* ===== V4.8.1 PVP MULTI ROOM · 1/3/5 SHOT · 1V1/2V2 RELAY · TOKEN WAGER ===== */
+/* ===== V4.8.2 PVP MULTI ROOM · 1/3/5 SHOT · 1V1/2V2 RELAY · TOKEN WAGER ===== */
 const PVP_ROOM_STALE_MS=20*60*1000;
 const PVP_CREATE_FEE=6;
 const PVP_COUNTDOWN_MS=3000;
@@ -1853,7 +1869,7 @@ updateDeviceUX();
 
 onAuthStateChanged(auth,async user=>{
   if(!user){state.uid=null;state.player=null;showScreen("authScreen");return;}
-  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.8.1");return;}
+  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.8.2");return;}
   state.uid=user.uid;
   try{
     await routeAuthenticatedStudent();

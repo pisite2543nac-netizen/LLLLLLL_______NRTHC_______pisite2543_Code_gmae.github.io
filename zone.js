@@ -4,14 +4,15 @@ import {
   getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot,
   serverTimestamp, query, orderBy, limit, Timestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.8.1";
-import { REWARD_ITEMS, RARITY_META } from "./reward-data.js?v=4.8.1";
-import { DEFAULT_CHARACTER } from "./character-system.js?v=4.8.1";
-import { ZONE_ART_DATA } from "./zone-assets.js?v=4.8.1";
+import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.8.2";
+import { REWARD_ITEMS, RARITY_META, INVENTORY_LIMIT, sellBackValue } from "./reward-data.js?v=4.8.2";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.8.2";
+import { DEFAULT_CHARACTER } from "./character-system.js?v=4.8.2";
+import { ZONE_ART_DATA } from "./zone-assets.js?v=4.8.2";
 import {
   QUEST_CONFIG, DEFAULT_TEACHER_QUESTS, localDayKey, activeQuestLimit,
   canAccessQuest, clampQuestReward, questDifficultyName, questObjectiveLabel
-} from "./quest-system.js?v=4.8.1";
+} from "./quest-system.js?v=4.8.2";
 
 const firebaseApp=initializeApp(firebaseConfig);
 const auth=getAuth(firebaseApp);
@@ -38,7 +39,7 @@ const INTERACT_DISTANCE=210;
 
 const canvas=$("zoneCanvas"),ctx=canvas.getContext("2d",{alpha:false});
 
-// ===== V4.8.1 REAL ART ASSETS =====
+// ===== V4.8.2 REAL ART ASSETS =====
 const ZONE_ART_PATH={
   world:"./assets/zone/zone-world-day.png",
   maleIdle:"./assets/zone/male-idle-right.png",
@@ -99,7 +100,7 @@ async function loadZoneArt(){
     Object.entries(ZONE_ART_PATH).map(([k,v])=>loadZoneImage(k,v))
   );
   const missing=REQUIRED_ZONE_ART.filter(k=>!zoneArt[k]?.naturalWidth);
-  console.info("ZONE ART V4.8.1",{
+  console.info("ZONE ART V4.8.2",{
     loaded:zoneArtStatus.loaded,
     embedded:zoneArtStatus.embedded,
     external:zoneArtStatus.external,
@@ -108,14 +109,19 @@ async function loadZoneArt(){
   });
   return {ok:missing.length===0,missing};
 }
-function shopArtForItem(item){
-  if(item?.slot==="back")return ZONE_ART_PATH.chest;
-  if(item?.slot==="hand")return ZONE_ART_PATH.scroll;
-  if(item?.slot==="aura")return ZONE_ART_PATH.gem;
-  if(item?.slot==="pet")return ZONE_ART_PATH.potionGreen;
-  const rarity=String(item?.rarity||"common");
-  return rarity==="mythic"?ZONE_ART_PATH.chest:rarity==="legendary"?ZONE_ART_PATH.gem:rarity==="epic"?ZONE_ART_PATH.potionBlue:rarity==="rare"?ZONE_ART_PATH.potionGreen:ZONE_ART_PATH.potionRed;
+function shopArtForItem(item){ return itemArtSrc(item?.id); }
+
+const itemArtImages={};
+async function loadItemArtImages(){
+  const jobs=REWARD_ITEMS.map(item=>new Promise(resolve=>{
+    const img=new Image();img.decoding='async';img.onload=()=>{itemArtImages[item.id]=img;resolve(true)};img.onerror=()=>resolve(false);img.src=itemArtSrc(item.id);
+  }));
+  await Promise.all(jobs);
 }
+function drawEquippedArt(c,item,x,y,w,h,flip=false,alpha=1){
+  const img=itemArtImages[item?.id];if(!img?.naturalWidth)return false;return drawArtSprite(c,img,x,y,w,h,flip,alpha);
+}
+
 
 let cssW=1,cssH=1,dpr=1,zoom=1;
 let uid=null,profile=null,blocked=true;
@@ -170,7 +176,7 @@ async function checkModeration(){
     if(s.banned){showGate("ถูกระงับการเข้า 2D Zone",`แบนถึง ${s.bannedUntil.toLocaleString("th-TH")}`);return false}
     if(s.kicked){showGate("ถูก GM เตะออกจาก 2D Zone",`กลับเข้าได้หลัง ${s.kickedUntil.toLocaleTimeString("th-TH")}`);return false}
     return true;
-  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.8.1");return false}
+  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.8.2");return false}
 }
 function listenModeration(){
   if(isGM())return;
@@ -351,7 +357,7 @@ async function acceptQuest(id){
 function startQuest(id){
   const q=teacherQuests.find(x=>x.id===id)||DEFAULT_TEACHER_QUESTS.find(x=>x.id===id);if(!q)return;
   if(isTouchOnly()){alert("รับภารกิจแล้ว กรุณาเปิดบัญชีนี้บนคอมพิวเตอร์เพื่อทำภารกิจ");return}
-  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.8.1`;
+  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.8.2`;
 }
 $("openWizardQuests").onclick=async()=>{await loadQuestProgress();renderQuestModal();$("zoneQuestModal").classList.remove("hidden")};
 $("closeWizardQuests").onclick=()=>$("zoneQuestModal").classList.add("hidden");
@@ -359,18 +365,23 @@ $("closeWizardQuests").onclick=()=>$("zoneQuestModal").classList.add("hidden");
 function renderShop(){
   if(!profile||isGM())return;
   const owned=new Set(profile.inventory||[]),eq=equipped(profile.character),wearing=new Set(Object.values(eq).filter(Boolean)),balance=Number(profile.tokenBalance||0);
-  $("zoneTokenBalance").textContent=balance.toLocaleString();$("zoneShopBalance").textContent=balance.toLocaleString();
+  $('zoneTokenBalance').textContent=balance.toLocaleString();$('zoneShopBalance').textContent=balance.toLocaleString();
+  if($('zoneShopInventory'))$('zoneShopInventory').textContent=`กระเป๋า ${owned.size}/${INVENTORY_LIMIT}`;
   const items=[...REWARD_ITEMS].sort((a,b)=>(RARITY_META[a.rarity]?.order||0)-(RARITY_META[b.rarity]?.order||0)||a.cost-b.cost);
-  $("zoneShopGrid").innerHTML=items.map(item=>{
-    const own=owned.has(item.id),on=wearing.has(item.id);
-    return `<article class="zone47-shop-item rarity-${esc(item.rarity)} ${on?"wearing":""}">
-      <div class="zone47-shop-rarity">${esc(RARITY_META[item.rarity]?.name||item.rarity)}</div>
-      <div class="zone47-shop-icon zone47-shop-real-art"><img src="${shopArtForItem(item)}" alt=""><span>${item.icon}</span></div><strong>${esc(item.name)}</strong><small>${esc(item.description)}</small>
-      <em>${Number(item.cost).toLocaleString()} Token</em>
-      <button class="btn ${on?"ghost":own?"secondary":"primary"}" data-shop-item="${esc(item.id)}" ${!own&&balance<item.cost?"disabled":""}>${on?"ถอด":own?"สวมใส่":balance<item.cost?"Token ไม่พอ":"แลกไอเท็ม"}</button>
+  $('zoneShopGrid').innerHTML=items.map(item=>{
+    const own=owned.has(item.id),on=wearing.has(item.id),sell=sellBackValue(item),full=!own&&owned.size>=INVENTORY_LIMIT;
+    return `<article class="zone47-shop-item rarity-${esc(item.rarity)} ${on?'wearing':''}">
+      <div class="zone47-shop-rarity">${esc(RARITY_META[item.rarity]?.name||item.rarity)}${item.set==='requested'?' · NEW':''}</div>
+      <div class="zone47-shop-icon zone47-shop-real-art"><img src="${shopArtForItem(item)}" alt="${esc(item.name)}"><span>${item.icon}</span></div>
+      <strong>${esc(item.name)}</strong><small>${esc(item.description)}</small><em>${Number(item.cost).toLocaleString()} Token</em>
+      <div class="zone47-shop-actions">
+        <button class="btn ${on?'ghost':own?'secondary':'primary'}" data-shop-item="${esc(item.id)}" ${!own&&(balance<item.cost||full)?'disabled':''}>${on?'ถอด':own?'สวมใส่':full?'กระเป๋าเต็ม':balance<item.cost?'Token ไม่พอ':'แลกไอเท็ม'}</button>
+        ${own?`<button class="btn danger-soft" data-zone-sell-item="${esc(item.id)}" type="button">ขายคืน ${sell.toLocaleString()}</button>`:''}
+      </div>
     </article>`;
-  }).join("");
-  document.querySelectorAll("[data-shop-item]:not([disabled])").forEach(btn=>btn.onclick=()=>handleShopItem(btn.dataset.shopItem));
+  }).join('');
+  document.querySelectorAll('[data-shop-item]:not([disabled])').forEach(btn=>btn.onclick=()=>handleShopItem(btn.dataset.shopItem));
+  document.querySelectorAll('[data-zone-sell-item]').forEach(btn=>btn.onclick=()=>sellZoneItem(btn.dataset.zoneSellItem));
 }
 async function refreshProfile(){
   if(isGM())return;
@@ -386,7 +397,7 @@ async function handleShopItem(id){
       await runTransaction(db,async tx=>{
         const snap=await tx.get(userRef);if(!snap.exists())throw new Error("ไม่พบ User");
         const d=snap.data(),balance=Number(d.tokenBalance||0),inv=Array.isArray(d.inventory)?d.inventory:[];
-        if(inv.includes(id))return;if(balance<item.cost)throw new Error("Token ไม่พอ");
+        if(inv.includes(id))return;if(inv.length>=INVENTORY_LIMIT)throw new Error(`กระเป๋าเต็ม ${INVENTORY_LIMIT} ไอเท็ม`);if(balance<item.cost)throw new Error("Token ไม่พอ");
         tx.update(userRef,{tokenBalance:balance-item.cost,inventory:[...inv,id],updatedAt:serverTimestamp()});
       });await refreshProfile();
     }catch(error){alert(error.message)}return;
@@ -395,6 +406,20 @@ async function handleShopItem(id){
   await updateDoc(userRef,{character:{...DEFAULT_CHARACTER,...profile.character,equipped:current},updatedAt:serverTimestamp()});
   await refreshProfile();
 }
+async function sellZoneItem(id){
+  if(isGM())return;const item=itemById(id);if(!item)return;
+  if(!confirm(`ขาย ${item.name} คืนร้าน ${sellBackValue(item).toLocaleString()} Token?`))return;
+  const userRef=doc(db,'users',uid);
+  try{
+    await runTransaction(db,async tx=>{
+      const snap=await tx.get(userRef);if(!snap.exists())throw new Error('ไม่พบ User');
+      const d=snap.data(),inv=Array.isArray(d.inventory)?d.inventory:[];if(!inv.includes(id))return;
+      const eq={...DEFAULT_CHARACTER.equipped,...(d.character?.equipped||{})};Object.keys(eq).forEach(slot=>{if(eq[slot]===id)eq[slot]=null});
+      tx.update(userRef,{tokenBalance:Number(d.tokenBalance||0)+sellBackValue(item),inventory:inv.filter(x=>x!==id),character:{...DEFAULT_CHARACTER,...(d.character||{}),equipped:eq},updatedAt:serverTimestamp()});
+    });await refreshProfile();
+  }catch(error){alert(error.message||String(error))}
+}
+
 $("openZoneShop").onclick=()=>{if(isGM()){alert("GM ใช้ไอเท็มพิเศษเฉพาะ ไม่ซื้อจากร้าน");return}renderShop();$("zoneShopModal").classList.remove("hidden")};
 $("closeZoneShop").onclick=()=>$("zoneShopModal").classList.add("hidden");
 
@@ -520,7 +545,7 @@ function drawWorld(now){
   if(zoneArt.world?.complete&&zoneArt.world.naturalWidth){
     ctx.drawImage(zoneArt.world,0,0,WORLD.width,WORLD.height);
   }else{
-    // V4.8.1 intentionally does not draw the old primitive scene.
+    // V4.8.2 intentionally does not draw the old primitive scene.
     ctx.fillStyle="#102c3d";
     ctx.fillRect(0,0,WORLD.width,WORLD.height);
   }
@@ -547,13 +572,22 @@ function drawBubble(c,p,barY=-188){
   const show=lines.slice(0,3),bw=Math.max(110,Math.min(245,Math.max(...show.map(x=>c.measureText(x).width))+25)),bh=17+show.length*20,by=barY-13-bh;
   c.fillStyle=p.isAdmin?"#fff3c9":"rgba(255,255,255,.97)";rr(c,-bw/2,by,bw,bh,12);c.fill();c.strokeStyle="rgba(35,55,68,.18)";c.stroke();c.fillStyle="#17364a";c.textAlign="center";show.forEach((ln,i)=>c.fillText(ln,0,by+23+i*20));
 }
-function drawEquipmentFx(c,p,now){
+function drawEquipmentBehind(c,p,now){
   if(isGMPlayer(p))return;
-  const eq=equipped(p.character||{}),aura=itemById(eq.aura),pet=itemById(eq.pet),hand=itemById(eq.hand),back=itemById(eq.back);
-  if(aura){c.save();c.globalAlpha=.44;c.strokeStyle=itemColor(aura);c.lineWidth=5;c.beginPath();c.ellipse(0,-65,54,83,0,0,Math.PI*2);c.stroke();c.restore()}
-  if(back){c.save();c.font="27px system-ui";c.textAlign="center";c.fillText(back.icon||"🎒",-48,-38);c.restore()}
-  if(hand){c.save();c.font="26px system-ui";c.textAlign="center";c.fillText(hand.icon||"✨",48,-44);c.restore()}
-  if(pet){c.save();c.font="29px system-ui";c.textAlign="center";c.fillText(pet.icon||"🐾",62,5+Math.sin(now/260)*4);c.restore()}
+  const eq=equipped(p.character||{}),aura=itemById(eq.aura),back=itemById(eq.back);
+  if(aura){c.save();c.globalAlpha=.55;c.strokeStyle=itemColor(aura);c.lineWidth=6;c.beginPath();c.ellipse(0,-65,58,88,0,0,Math.PI*2);c.stroke();c.restore();drawEquippedArt(c,aura,0,-65,62,62,false,.28);}
+  if(back)drawEquippedArt(c,back,-38,-53,58,66,p.direction==='left',.9);
+}
+function drawEquipmentFront(c,p,now){
+  if(isGMPlayer(p))return;
+  const eq=equipped(p.character||{});
+  const head=itemById(eq.head),face=itemById(eq.face),top=itemById(eq.top),shoes=itemById(eq.shoes),hand=itemById(eq.hand),pet=itemById(eq.pet);
+  if(top)drawEquippedArt(c,top,0,-55,58,64,false,.92);
+  if(head)drawEquippedArt(c,head,0,-116,52,52,false,.96);
+  if(face)drawEquippedArt(c,face,0,-91,42,27,false,.98);
+  if(shoes)drawEquippedArt(c,shoes,0,-5,50,28,false,.96);
+  if(hand)drawEquippedArt(c,hand,p.direction==='left'?-44:44,-43,46,46,p.direction==='left',.97);
+  if(pet)drawEquippedArt(c,pet,p.direction==='left'?68:-68,-13+Math.sin(now/260)*4,58,58,p.direction!=='left',.98);
 }
 function playerArtImage(p,now){
   if(isGMPlayer(p))return zoneArt.wizardIdle;
@@ -567,13 +601,13 @@ function drawCharacter(c,p,x,y,now){
   if(gm){
     c.save();c.globalAlpha=.55;c.strokeStyle="#ffd55b";c.lineWidth=6;c.beginPath();c.ellipse(0,-70,61,92,0,0,Math.PI*2);c.stroke();c.restore();
   }
-  drawEquipmentFx(c,p,now);
+  drawEquipmentBehind(c,p,now);
   const img=playerArtImage(p,now),flip=p.direction==="left";
   const w=gm?145:132,h=gm?164:149;
   if(!drawArtSprite(c,img,0,0,w,h,flip,1)){
-    // Production art should always be available in V4.8.1.
     c.fillStyle="#d84f4f";c.font="700 18px system-ui";c.textAlign="center";c.fillText("ART?",0,-55);
   }
+  drawEquipmentFront(c,p,now);
   drawName(c,p,gm);c.restore();
 }
 function drawFrame(now){
@@ -596,7 +630,7 @@ function openPlayerCard(p){
   $("zonePlayerCardRank").textContent=gm?"GAME MASTER":`${p.rank?.tierName||"Bronze"} · ${Number(p.rank?.rating||0)} Rating`;
   $("zonePlayerCardItemTitle").textContent=gm?"GM EXCLUSIVE":"ไอเท็มที่กำลังสวม";
   const list=gm?GM_ITEMS:equippedItems(p.character).map(x=>x.item);
-  $("zonePlayerCardItems").innerHTML=list.length?list.map(i=>`<div><span>${i.icon||"✨"}</span><small>${esc(i.name||"Item")}</small></div>`).join(""):`<div class="empty">ยังไม่ได้สวมไอเท็ม</div>`;
+  $("zonePlayerCardItems").innerHTML=list.length?list.map(i=>`<div><img class="zone47-card-item-art" src="${itemArtSrc(i.id)}" alt=""><small>${esc(i.name||"Item")}</small></div>`).join(""):`<div class="empty">ยังไม่ได้สวมไอเท็ม</div>`;
   $("zonePlayerCard").classList.remove("hidden");
 }
 $("closeZonePlayerCard").onclick=()=>$("zonePlayerCard").classList.add("hidden");
@@ -622,11 +656,12 @@ onAuthStateChanged(auth,async user=>{
   if(!user){showGate("กรุณา Login ก่อน","2D Zone ใช้บัญชีที่ลงทะเบียนแล้ว");return}
   uid=user.uid;if(!(await loadProfile()))return;if(!(await checkModeration()))return;
   const artResult=await loadZoneArt();
+  await loadItemArtImages();
   if(!artResult.ok){
     showGate(
       "โหลดภาพ 2D Zone ไม่ครบ",
       `ไม่พบ Asset สำคัญ: ${artResult.missing.join(", ")}`,
-      "V4.8.1 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
+      "V4.8.2 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
     );
     return;
   }
