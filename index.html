@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
   <title>ระบบเกมพิมพ์ Code | วิทยาลัยเทคนิคนางรอง</title>
-  <link rel="stylesheet" href="./style.css?v=4.7.1">
+  <link rel="stylesheet" href="./style.css?v=4.7.3">
 </head>
 <body>
 <header class="site-header">
@@ -87,6 +87,26 @@
             <option>/4</option><option>/5</option><option>/6</option>
           </select>
         </label>
+        <label>
+          <span>แผนกวิชา</span>
+          <select id="department" required>
+            <option value="">-- เลือกแผนก --</option>
+            <option value="คอมพิวเตอร์">คอมพิวเตอร์</option>
+            <option value="อิเล็กทรอนิค">อิเล็กทรอนิค</option>
+          </select>
+        </label>
+
+        <label>
+          <span>สาขาวิชา</span>
+          <select id="major" required>
+            <option value="">-- เลือกสาขาวิชา --</option>
+            <option value="เทคโนโลยีสารสนเทศ" data-code="ทส.">เทคโนโลยีสารสนเทศ (ทส.)</option>
+            <option value="เทคโนโลยีธุรกิจดิจิทัล" data-code="ทธ.">เทคโนโลยีธุรกิจดิจิทัล (ทธ.)</option>
+            <option value="คอมพิวเตอร์ธุรกิจ" data-code="คธ.">คอมพิวเตอร์ธุรกิจ (คธ.)</option>
+          </select>
+          <small id="majorCodePreview" class="academic-code-preview">รหัสสาขา: -</small>
+        </label>
+
 <label>
           <span>สร้างรหัสผ่าน</span>
           <div class="password-row">
@@ -504,7 +524,7 @@
 </main>
 
 <footer><div class="wrap">ระบบเกมพิมพ์ Code · วิทยาลัยเทคนิคนางรอง</div></footer>
-<script type="module" src="./app.js?v=4.7.1"></script>
+<script type="module" src="./app.js?v=4.7.3"></script>
 
   <div id="characterSetupModal" class="character-modal hidden">
     <div class="character-modal-card character-setup-card">
