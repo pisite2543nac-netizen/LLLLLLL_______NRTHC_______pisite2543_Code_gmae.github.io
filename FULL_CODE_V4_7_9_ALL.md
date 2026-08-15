@@ -1,4 +1,4 @@
-# FULL CODE V4.7.9 NR-GAME DAILY FULLSCREEN QUEST
+# FULL CODE V4.7.9 NR-GAME 15 DIGIT STUDENT ID
 
 
 ## index.html
@@ -41,7 +41,7 @@
       <form id="loginForm" class="form-grid">
         <label>
           <span>เลขประจำตัวนักศึกษา</span>
-          <input id="loginStudentId" inputmode="numeric" pattern="[0-9]{8}" minlength="8" maxlength="8" required placeholder="เช่น 11111111">
+          <input id="loginStudentId" inputmode="numeric" pattern="[0-9]{1,15}" minlength="1" maxlength="15" required placeholder="เลขประจำตัวนักศึกษา 1–15 หลัก">
         </label>
         <label>
           <span>รหัสผ่าน</span>
@@ -65,7 +65,8 @@
       <form id="registerForm" class="form-grid">
         <label>
           <span>เลขประจำตัวนักศึกษา</span>
-          <input id="studentId" inputmode="numeric" pattern="[0-9]{8}" minlength="8" maxlength="8" required placeholder="เช่น 11111111">
+          <input id="studentId" inputmode="numeric" pattern="[0-9]{1,15}" minlength="1" maxlength="15" required placeholder="เลขประจำตัวนักศึกษา สูงสุด 15 หลัก เช่น 11111111">
+          <small id="studentId15Hint" class="academic-code-preview">กรอกตัวเลขเท่านั้น สูงสุด 15 หลัก</small>
         </label>
 
         <label>
@@ -4417,6 +4418,9 @@ html,body.social-zone-page{
 .daily-fullscreen-meta,.daily-fullscreen-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.daily-fullscreen-meta{font-size:8px;color:#607681}.daily-fullscreen-meta #dailyFullscreenTimer{font-weight:900;color:#345a46}.daily-fullscreen-actions{margin-top:10px}.daily-fullscreen-actions span{font-size:9px;font-weight:900;color:#4c6958}
 @media(max-width:650px){.daily-fullscreen-head{flex-direction:column}.daily-quest-status{align-self:flex-start}}
 
+/* V4.7.9 Student ID 1-15 digits */
+#studentId15Hint{color:#607888}
+
 ```
 
 
@@ -4708,7 +4712,7 @@ function refreshMajorCodePreview(){
 }
 
 function registerValid(){
-  return /^\d{8}$/.test($("studentId").value.trim()) &&
+  return /^\d{1,15}$/.test($("studentId").value.trim()) &&
     $("fullName").value.trim() && $("educationLevel").value && $("classroom").value &&
     $("department").value && $("major").value && $("password").value.length >= 6 &&
     $("password").value === $("confirmPassword").value && $("acceptRules").checked;
@@ -4751,6 +4755,13 @@ $("registerForm").addEventListener("submit",async e=>{
 });
 
 $("loginForm").addEventListener("submit",async e=>{
+  // STUDENT_ID_15_DIGIT_LOGIN_GUARD
+  const sidValue=$("loginStudentId").value.trim();
+  if(!/^\d{1,15}$/.test(sidValue)){
+    e.preventDefault();
+    $("loginMessage").textContent="กรุณากรอกเลขประจำตัวนักศึกษาเป็นตัวเลข 1–15 หลัก";
+    return;
+  }
   e.preventDefault();
   try{
     const cred=await signInWithEmailAndPassword(auth,studentEmail($("loginStudentId").value.trim()),$("loginPassword").value);

@@ -1,4 +1,4 @@
-# V4.7.8 — Academic Hierarchy / nr-game-code
+# V4.7.9 — Academic Hierarchy / nr-game-code
 
 Firebase Project: `nr-game-code`
 Admin UID: `Y2uDV9yAQ6Mpu2qwQH9cG4ko6ZQ2`

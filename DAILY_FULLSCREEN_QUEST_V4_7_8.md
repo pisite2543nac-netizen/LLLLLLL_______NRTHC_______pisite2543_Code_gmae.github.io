@@ -1,4 +1,4 @@
-# V4.7.8 — nr-game-code Daily Fullscreen Quest
+# V4.7.9 — nr-game-code Daily Fullscreen Quest
 
 Firebase Project: `nr-game-code`
 Admin UID: `Y2uDV9yAQ6Mpu2qwQH9cG4ko6ZQ2`
@@ -30,6 +30,6 @@ Fields:
 ## Deploy
 1. อัป ZIP ไป GitHub Root
 2. Firebase Project ต้องเป็น `nr-game-code`
-3. Publish `firestore.rules` จาก V4.7.8
+3. Publish `firestore.rules` จาก V4.7.9
 4. รอ GitHub Pages Success
 5. Login → Browser จะขอ Fullscreen

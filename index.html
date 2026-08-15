@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
   <title>ระบบเกมพิมพ์ Code | วิทยาลัยเทคนิคนางรอง</title>
-  <link rel="stylesheet" href="./style.css?v=4.7.8">
+  <link rel="stylesheet" href="./style.css?v=4.7.9">
 </head>
 <body>
 <header class="site-header">
@@ -35,7 +35,7 @@
       <form id="loginForm" class="form-grid">
         <label>
           <span>เลขประจำตัวนักศึกษา</span>
-          <input id="loginStudentId" inputmode="numeric" pattern="[0-9]{8}" minlength="8" maxlength="8" required placeholder="เช่น 11111111">
+          <input id="loginStudentId" inputmode="numeric" pattern="[0-9]{1,15}" minlength="1" maxlength="15" required placeholder="เลขประจำตัวนักศึกษา 1–15 หลัก">
         </label>
         <label>
           <span>รหัสผ่าน</span>
@@ -59,7 +59,8 @@
       <form id="registerForm" class="form-grid">
         <label>
           <span>เลขประจำตัวนักศึกษา</span>
-          <input id="studentId" inputmode="numeric" pattern="[0-9]{8}" minlength="8" maxlength="8" required placeholder="เช่น 11111111">
+          <input id="studentId" inputmode="numeric" pattern="[0-9]{1,15}" minlength="1" maxlength="15" required placeholder="เลขประจำตัวนักศึกษา สูงสุด 15 หลัก เช่น 11111111">
+          <small id="studentId15Hint" class="academic-code-preview">กรอกตัวเลขเท่านั้น สูงสุด 15 หลัก</small>
         </label>
 
         <label>
@@ -604,7 +605,7 @@
 </main>
 
 <footer><div class="wrap">ระบบเกมพิมพ์ Code · วิทยาลัยเทคนิคนางรอง</div></footer>
-<script type="module" src="./app.js?v=4.7.8"></script>
+<script type="module" src="./app.js?v=4.7.9"></script>
 
   <div id="characterSetupModal" class="character-modal hidden">
     <div class="character-modal-card character-setup-card">

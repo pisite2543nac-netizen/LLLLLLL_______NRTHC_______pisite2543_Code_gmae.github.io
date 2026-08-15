@@ -1,0 +1,19 @@
+{
+  "syntax:app.js": true,
+  "syntax:admin.js": true,
+  "syntax:zone.js": true,
+  "syntax:ranking-system.js": true,
+  "syntax:quest-system.js": true,
+  "syntax:economy-system.js": true,
+  "syntax:reward-data.js": true,
+  "syntax:character-system.js": true,
+  "syntax:firebase-config.js": true,
+  "nr_game_code": true,
+  "register_html_15": true,
+  "login_html_15": true,
+  "register_js_15": true,
+  "login_guard_15": true,
+  "daily_fullscreen_preserved": true,
+  "ranking_preserved": true,
+  "all_passed": true
+}
