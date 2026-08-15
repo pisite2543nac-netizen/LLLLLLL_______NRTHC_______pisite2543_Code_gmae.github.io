@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Admin | ระบบเกมพิมพ์ Code</title>
-  <link rel="stylesheet" href="./style.css?v=4.7.3">
+  <link rel="stylesheet" href="./style.css?v=4.7.6">
 </head>
 <body class="admin-page">
   <main class="wrap admin-wrap">
@@ -38,7 +38,7 @@
           <p>ผู้จัดทำ: นายพิสิษฐ์ หุนตระนี ครูพิเศษสอน</p>
         </div>
         <div>
-          <a class="btn gm-zone-entry" href="./zone.html?v=4.7.3">🌙 เข้า 2D Zone · GM</a>
+          <a class="btn gm-zone-entry" href="./zone.html?v=4.7.6">🌙 เข้า 2D Zone · GM</a>
           <a class="btn ghost" href="index.html">หน้าผู้เล่น</a>
           <button id="logoutAdmin" class="btn secondary">ออกจากระบบ</button>
         </div>
@@ -227,7 +227,7 @@
         <div class="panel-title">
           <div>
             <h2>Ranking · รวมทั้งหมด / รายห้อง</h2>
-            <p>คำนวณจากความขยัน 35% · Accuracy 30% · Speed 20% · Consistency 15% และรองรับวันรีแรงค์ที่ Admin กำหนดเอง</p>
+            <p>ใช้เฉพาะผลจาก Ranking Challenge: ความเร็ว 40% · Accuracy 40% · ผิดน้อย 20% · Timeout มีผลลด Rating</p>
           </div>
           <div class="button-row">
             <button id="recalculateRanking" class="btn secondary">คำนวณ Rank ใหม่</button>
@@ -262,7 +262,7 @@
             <thead>
               <tr>
                 <th>อันดับรวม</th><th>อันดับห้อง</th><th>ผู้เล่น</th><th>ห้อง</th><th>โล่ Rank</th>
-                <th>Rating</th><th>ขยัน</th><th>แม่นยำ</th><th>ความเร็ว</th><th>สม่ำเสมอ</th><th>WPM เฉลี่ย</th>
+                <th>Rating</th><th>ผิดน้อย</th><th>แม่นยำ</th><th>ความเร็ว</th><th>ผ่านเวลา</th><th>WPM เฉลี่ย</th>
               </tr>
             </thead>
             <tbody id="rankingBody"></tbody>
@@ -361,7 +361,7 @@
           <div class="admin-world-chat-input-row">
             <textarea id="gmWorldChatInput" maxlength="120" rows="2" placeholder="GM พิมพ์ข้อความถึงผู้เล่นทุกคน..."></textarea>
             <button id="sendGmWorldChat" class="btn primary" type="button">ส่งในแชตโลก</button>
-            <a class="btn gm-zone-entry" href="./zone.html?v=4.7.3#world-chat">เข้า World Chat</a>
+            <a class="btn gm-zone-entry" href="./zone.html?v=4.7.6#world-chat">เข้า World Chat</a>
           </div>
         </div>
 
@@ -392,6 +392,6 @@
   </main>
 
   <div id="adminToast" class="admin-toast hidden" aria-live="polite"></div>
-  <script type="module" src="./admin.js?v=4.7.3"></script>
+  <script type="module" src="./admin.js?v=4.7.6"></script>
 </body>
 </html>

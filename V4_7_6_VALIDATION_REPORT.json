@@ -1,0 +1,33 @@
+{
+  "syntax:app.js": true,
+  "syntax:admin.js": true,
+  "syntax:zone.js": true,
+  "syntax:ranking-system.js": true,
+  "syntax:quest-system.js": true,
+  "syntax:economy-system.js": true,
+  "syntax:reward-data.js": true,
+  "syntax:character-system.js": true,
+  "syntax:firebase-config.js": true,
+  "syntax:levels-html.js": true,
+  "syntax:levels-python.js": true,
+  "nr_game_code": true,
+  "play_style_ui": true,
+  "ranked_config_ui": true,
+  "ranked_mode_logic": true,
+  "ranked_time_limit": true,
+  "ranked_bonus_15": true,
+  "rank_formula_40_40_20": true,
+  "ranked_attempts_only": true,
+  "timeout_rank_penalty": true,
+  "all_100_levels_keyboard_safe": true,
+  "html_count": true,
+  "python_count": true,
+  "admin_uid": true,
+  "unsafe_chars": [],
+  "removed_unicode_chars": [
+    "©",
+    "·",
+    "×"
+  ],
+  "all_passed": true
+}

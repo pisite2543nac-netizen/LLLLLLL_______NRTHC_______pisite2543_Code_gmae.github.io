@@ -7,14 +7,14 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, limit, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=4.7.3";
-import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.7.3";
-import { REWARD_ITEMS, RARITY_META } from "./reward-data.js?v=4.7.3";
-import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.7.3";
-import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.7.3";
-import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.7.3";
-import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.7.3";
-import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.7.3";
+import { firebaseConfig } from "./firebase-config.js?v=4.7.6";
+import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.7.6";
+import { REWARD_ITEMS, RARITY_META } from "./reward-data.js?v=4.7.6";
+import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.7.6";
+import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.7.6";
+import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.7.6";
+import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.7.6";
+import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.7.6";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -35,7 +35,8 @@ const state = {
   pvpRoomListUnsub:null,pvpStakeLocking:false,pvpCurrentShot:-1,pvpShotRecorded:-1,
   pvpAggregate:{typedChars:0,keys:0,mistakes:0,seconds:0},pvpPayoutClaimed:false,pvpWasActive:false,pvpTargetCode:"",pvpTurnSignature:null,pvpRecordedSignature:null,
   pvpCountdownTimer:null,pvpCountdownEndMs:0,rankSettingsUnsub:null,rankResetTimer:null,rankSettings:{},rankResetAppliedVersion:null,
-  activeQuest:null,questLaunchHandled:false
+  activeQuest:null,questLaunchHandled:false,
+  playStyle:null,rankedTimeLimit:0,rankedTimedOut:false,rankedStage:1
 };
 
 const studentEmail = id => `${String(id).trim()}@student.nr-game-code.local`;
@@ -57,6 +58,40 @@ function maxUnlocked(languageId){
   return Number(state.player?.progress?.[languageId]?.maxUnlockedStage || 1);
 }
 
+function rankedMaxUnlocked(languageId){
+  return Math.max(1,Math.min(50,Number(state.player?.rankedProgress?.[languageId]?.maxUnlockedStage||1)));
+}
+function rankedTimeLimitForLesson(lesson){
+  return Math.max(25,Number(lesson?.timeLimit||60));
+}
+function rankedTokenReward(lesson,wpmValue,accuracyValue){
+  const base=calculateStageTokenReward(lesson,wpmValue,accuracyValue);
+  return {base:base.earned,earned:Math.min(85,base.earned+15),maxToken:Math.min(85,base.maxToken+15)};
+}
+function rankedMistakeScore(mistakes){
+  return Math.max(0,Math.min(100,100-Number(mistakes||0)*10));
+}
+function prepareRankedLesson(){
+  if(!state.language)return false;
+  state.rankedStage=rankedMaxUnlocked(state.language.id);
+  const lesson=languageLessons().find(x=>Number(x.stage)===Number(state.rankedStage))||languageLessons()[0];
+  if(!lesson)return false;
+  state.lesson=lesson;
+  state.difficulty=DIFFICULTIES.find(x=>x.id===lesson.difficulty)||DIFFICULTIES[0];
+  state.rankedTimeLimit=rankedTimeLimitForLesson(lesson);
+  state.rankedTimedOut=false;
+  return true;
+}
+function renderRankedConfig(){
+  if(!$("rankedConfig")||!state.language||!prepareRankedLesson())return;
+  $("rankedStageLabel").textContent=String(state.lesson.stage).padStart(2,"0");
+  $("rankedDifficultyLabel").textContent=state.difficulty.name;
+  $("rankedTimeLimitLabel").textContent=`${state.rankedTimeLimit}s`;
+  $("rankedProgressText").textContent=`Stage ${state.lesson.stage} / 50`;
+  $("rankedProgressBar").style.width=`${Math.max(2,state.lesson.stage/50*100)}%`;
+  $("rankedLessonSummary").textContent=`${state.language.name} · Stage ${state.lesson.stage} · ${state.lesson.title} · สูงสุด ${Math.min(85,maxTokenForLesson(state.lesson)+15)} Token`;
+}
+
 async function ensureProfileDefaults(){
   if(!state.uid) return;
   const ref = doc(db,"users",state.uid);
@@ -72,6 +107,7 @@ async function ensureProfileDefaults(){
   }
   if(!Array.isArray(d.inventory)) patch.inventory = [];
   if(!d.progress) patch.progress = {html:{maxUnlockedStage:1},python:{maxUnlockedStage:1}};
+  if(!d.rankedProgress) patch.rankedProgress = {html:{maxUnlockedStage:1},python:{maxUnlockedStage:1}};
   else {
     patch.progress = {
       html:{maxUnlockedStage:Number(d.progress?.html?.maxUnlockedStage || 1)},
@@ -189,7 +225,7 @@ async function routeAuthenticatedStudent(){
     }catch(error){
       console.warn("mobile route sync skipped:", error);
     }
-    location.replace("./zone.html?v=4.7.3");
+    location.replace("./zone.html?v=4.7.6");
     return;
   }
 
@@ -255,21 +291,47 @@ function renderLanguages(){
 
 function selectLanguage(id){
   state.language=LANGUAGES.find(x=>x.id===id);
-  state.lesson=null;
-  state.difficulty=null;
+  state.lesson=null;state.difficulty=null;state.playStyle=null;
   renderLanguages();
-  $("learningSection").classList.remove("hidden");
-  $("modeSection").classList.remove("hidden");
-  $("classicConfig").classList.remove("hidden");
-  $("learningTitle").textContent=`${state.language.icon} ${state.language.name} · 50 STAGES`;
-  $("learningTagline").textContent=state.language.description;
-  renderLessonTabs();
-  renderDifficulty();
-  renderClassicStages();
-  renderLessonDetail();
-  updateClassicSummary();
-  $("learningSection").scrollIntoView({behavior:"smooth",block:"start"});
+  $("playStyleSection").classList.remove("hidden");
+  ["learningSection","modeSection","classicConfig","rankedConfig","officialConfig","pvpConfig"].forEach(id=>$(id)?.classList.add("hidden"));
+  $("playStyleSection").scrollIntoView({behavior:"smooth",block:"start"});
 }
+function choosePlayStyle(style){
+  state.playStyle=style;
+  document.querySelectorAll(".play-style-choice").forEach(x=>x.classList.toggle("selected",
+    (style==="classic"&&x.id==="chooseClassicStyle")||(style==="ranked"&&x.id==="chooseRankedStyle")));
+  if(style==="classic"){
+    state.gameMode="classic";
+    $("learningSection").classList.remove("hidden");
+    $("modeSection").classList.remove("hidden");
+    $("classicConfig").classList.remove("hidden");
+    $("rankedConfig").classList.add("hidden");
+    $("officialConfig").classList.add("hidden");$("pvpConfig").classList.add("hidden");
+    $("learningTitle").textContent=`${state.language.icon} ${state.language.name} · 50 STAGES`;
+    $("learningTagline").textContent=state.language.description;
+    renderLessonTabs();renderDifficulty();renderClassicStages();renderLessonDetail();updateClassicSummary();
+    $("learningSection").scrollIntoView({behavior:"smooth",block:"start"});
+  }else{
+    state.gameMode="ranked";
+    state.activeQuest=null;
+    $("learningSection").classList.add("hidden");
+    $("modeSection").classList.add("hidden");$("classicConfig").classList.add("hidden");
+    $("officialConfig").classList.add("hidden");$("pvpConfig").classList.add("hidden");
+    $("rankedConfig").classList.remove("hidden");
+    renderRankedConfig();
+    $("rankedConfig").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+}
+$("chooseClassicStyle").onclick=()=>choosePlayStyle("classic");
+$("chooseRankedStyle").onclick=()=>choosePlayStyle("ranked");
+$("startRankedButton").onclick=async()=>{
+  if(!prepareRankedLesson())return;
+  state.gameMode="ranked";
+  prepareClassic();showScreen("gameScreen");
+  await requestRealFullscreen();
+  setTimeout(()=>$("typingInput").focus({preventScroll:true}),150);
+};
 
 function renderLessonTabs(){
   $("lessonTabs").innerHTML=DIFFICULTIES.map(d=>`
@@ -336,6 +398,7 @@ document.querySelectorAll("[data-game-mode]").forEach(b=>b.onclick=()=>{
   $("classicConfig").classList.toggle("hidden",state.gameMode!=="classic");
   $("officialConfig").classList.toggle("hidden",state.gameMode!=="official");
   $("pvpConfig").classList.toggle("hidden",state.gameMode!=="pvp");
+  $("rankedConfig")?.classList.add("hidden");
   if(state.gameMode==="official") renderOfficialStages();
 });
 
@@ -427,7 +490,7 @@ async function maybeLaunchQuestFromUrl(){
   if(!id||state.questLaunchHandled||!state.uid||!state.player)return false;
   state.questLaunchHandled=true;
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.7.3");
+    location.replace("./zone.html?v=4.7.6");
     return true;
   }
   const quest=await resolveTeacherQuest(id);
@@ -494,19 +557,19 @@ async function completeActiveQuestIfEligible(result){
 function prepareClassic(){
   $("resultExplanation")?.classList.add("hidden");
   $("questZoneButton")?.classList.add("hidden");
-  state.attemptId=null;state.started=false;state.finished=false;state.mistakes=0;state.keystrokes=0;state.correctText="";
+  state.attemptId=null;state.started=false;state.finished=false;state.mistakes=0;state.keystrokes=0;state.correctText="";state.rankedTimedOut=false;
   clearInterval(state.timer);$("typingInput").value="";
-  $("modeBadge").textContent=`⌨️ CLASSIC · ${state.language.name}`;
+  $("modeBadge").textContent=state.gameMode==="ranked"?`🏆 RANKING · ${state.language.name}`:`⌨️ CLASSIC · ${state.language.name}`;
   $("challengeTitle").textContent=`Stage ${state.lesson.stage} · ${state.lesson.title}`;
   $("challengeDescription").textContent=state.lesson.description;
   $("playerName").textContent=state.player.fullName;
   $("statLevel").textContent=String(state.lesson.stage).padStart(2,"0");
   $("languageLabel").textContent=state.language.name;
   $("difficultyLabel").textContent=state.difficulty.name;
-  $("timeRuleLabel").textContent=`เป้าหมาย ${state.lesson.timeLimit}s`;
+  $("timeRuleLabel").textContent=state.gameMode==="ranked"?`เวลาจำกัด ${rankedTimeLimitForLesson(state.lesson)}s`:`เป้าหมาย ${state.lesson.timeLimit}s`;
   $("fileName").textContent=`${state.language.id}_stage_${String(state.lesson.stage).padStart(2,"0")}`;
-  $("typingStatus").textContent="พิมพ์ตัวแรกเพื่อเริ่มจับเวลา";
-  $("saveState").textContent=`รางวัลสูงสุด ${maxTokenForLesson(state.lesson)} Token`;
+  $("typingStatus").textContent=state.gameMode==="ranked"?"พิมพ์ตัวแรกเพื่อเริ่ม Countdown":"พิมพ์ตัวแรกเพื่อเริ่มจับเวลา";
+  $("saveState").textContent=state.gameMode==="ranked"?`Ranking Bonus +15 · สูงสุด ${Math.min(85,maxTokenForLesson(state.lesson)+15)} Token`:`รางวัลสูงสุด ${maxTokenForLesson(state.lesson)} Token`;
   $("statTime").textContent="00:00";
   ["statWpm","statMistakes","statScore"].forEach(id=>$(id).textContent="0");
   $("statAccuracy").textContent="100%";
@@ -521,10 +584,10 @@ async function startClassic(){
   const r=await addDoc(collection(db,"attempts"),{
     uid:state.uid,studentId:state.player.studentId,fullName:state.player.fullName,
     educationLevel:state.player.educationLevel,classroom:state.player.classroom,department:state.player.department||"",major:state.player.major||"",majorCode:state.player.majorCode||majorCodeFor(state.player.educationLevel,state.player.major),
-    language:state.language.name,languageId:state.language.id,modeName:state.gameMode==="official"?"Official":"Classic",
+    language:state.language.name,languageId:state.language.id,modeName:state.gameMode==="official"?"Official":state.gameMode==="ranked"?"Ranking":"Classic",
     difficulty:state.difficulty.name,difficultyId:state.difficulty.id,stage:state.lesson.stage,
     lessonId:state.lesson.id,levelTitle:state.lesson.title,questId:state.activeQuest?.id||null,questTitle:state.activeQuest?.title||null,status:"playing",
-    score:0,rewardPoints:0,maxRewardPoints:state.gameMode==="official"?0:maxTokenForLesson(state.lesson),wpm:0,accuracy:0,mistakes:0,elapsedSeconds:0,createdAt:serverTimestamp()
+    score:0,rewardPoints:0,maxRewardPoints:state.gameMode==="official"?0:state.gameMode==="ranked"?Math.min(85,maxTokenForLesson(state.lesson)+15):maxTokenForLesson(state.lesson),rankedTimeLimit:state.gameMode==="ranked"?rankedTimeLimitForLesson(state.lesson):null,wpm:0,accuracy:0,mistakes:0,elapsedSeconds:0,createdAt:serverTimestamp()
   });
   state.attemptId=r.id;
   state.timer=setInterval(updateClassicStats,100);
@@ -607,34 +670,61 @@ $("typingInput").addEventListener("keydown",async e=>{
 });
 
 function updateClassicStats(){
-  $("statTime").textContent=fmtTime(elapsed());
+  const e=elapsed();
+  if(state.gameMode==="ranked"){
+    const remain=Math.max(0,state.rankedTimeLimit-e);
+    $("statTime").textContent=fmtTime(remain);
+    if(state.started&&remain<=0&&!state.finished&&!state.rankedTimedOut){state.rankedTimedOut=true;failRankedStage();}
+  }else $("statTime").textContent=fmtTime(e);
   $("statWpm").textContent=Math.round(wpm());
   $("statAccuracy").textContent=`${accuracy().toFixed(0)}%`;
   $("statMistakes").textContent=state.mistakes;
   if(state.gameMode==="official") $("statScore").textContent="—";
+  else if(state.gameMode==="ranked"){const live=rankedTokenReward(state.lesson,wpm(),accuracy());$("statScore").textContent=`${live.earned}/${live.maxToken}`;}
   else { const live=calculateStageTokenReward(state.lesson,wpm(),accuracy()); $("statScore").textContent=`${live.earned}/${live.maxToken}`; }
   syncMobileStats();
+}
+async function failRankedStage(){
+  if(state.finished)return;
+  state.finished=true;clearInterval(state.timer);
+  const e=elapsed(),wp=Math.round(wpm()*100)/100,acc=Math.round(accuracy()*100)/100;
+  if(state.attemptId)await updateDoc(doc(db,"attempts",state.attemptId),{
+    status:"timeout",modeName:"Ranking",score:0,rewardPoints:0,wpm:wp,accuracy:acc,mistakes:state.mistakes,
+    keystrokes:state.keystrokes,typedChars:state.correctText.length,timedOut:true,
+    elapsedSeconds:Math.round(e*100)/100,finishedAt:serverTimestamp()
+  });
+  await updateMyRank();
+  $("resultTitle").textContent=`หมดเวลา · Ranking Stage ${state.lesson.stage}`;
+  $("resultText").textContent=`ด่านนี้จำกัด ${state.rankedTimeLimit} วินาที · ลองใหม่ได้ คะแนน Rank จะบันทึกผล Timeout รอบนี้`;
+  $("resultScore").textContent="+0 Token";
+  $("resultWpm").textContent=wp;$("resultAccuracy").textContent=`${acc}%`;$("resultTime").textContent=`${e.toFixed(2)}s`;
+  $("nextLevelButton").style.display="none";
+  renderResultExplanation(state.lesson);
+  await leaveRealFullscreen();showScreen("resultScreen");
 }
 
 async function awardCompletion(reward){
   const ref=doc(db,"users",state.uid);
   const lang=state.language.id;
   const stage=state.lesson.stage;
-  reward=Math.min(70,Math.max(0,Number(reward||0)));
+  reward=Math.min(state.gameMode==="ranked"?85:70,Math.max(0,Number(reward||0)));
   await runTransaction(db,async tx=>{
     const snap=await tx.get(ref);
     if(!snap.exists())return;
     const d=snap.data();
-    const currentUnlocked=Number(d.progress?.[lang]?.maxUnlockedStage||1);
-    const newUnlocked=Math.max(currentUnlocked,Math.min(50,stage+1));
-    const progress={...(d.progress||{})};
-    progress[lang]={...(progress[lang]||{}),maxUnlockedStage:newUnlocked};
-    tx.update(ref,{
-      tokenBalance:Number(d.tokenBalance||0)+reward,
-      tokenLifetime:Number(d.tokenLifetime||0)+reward,
-      progress,
-      updatedAt:serverTimestamp()
-    });
+    const update={tokenBalance:Number(d.tokenBalance||0)+reward,tokenLifetime:Number(d.tokenLifetime||0)+reward,updatedAt:serverTimestamp()};
+    if(state.gameMode==="ranked"){
+      const rankedProgress={...(d.rankedProgress||{})};
+      const current=Number(rankedProgress?.[lang]?.maxUnlockedStage||1);
+      rankedProgress[lang]={...(rankedProgress[lang]||{}),maxUnlockedStage:Math.max(current,Math.min(50,stage+1))};
+      update.rankedProgress=rankedProgress;
+    }else{
+      const currentUnlocked=Number(d.progress?.[lang]?.maxUnlockedStage||1);
+      const progress={...(d.progress||{})};
+      progress[lang]={...(progress[lang]||{}),maxUnlockedStage:Math.max(currentUnlocked,Math.min(50,stage+1))};
+      update.progress=progress;
+    }
+    tx.update(ref,update);
   });
   await ensureProfileDefaults();
 }
@@ -694,10 +784,13 @@ async function finishClassic(){
   }
 
   const tokenResult=calculateStageTokenReward(state.lesson,wp,acc);
-  const earnedToken=Math.min(70,tokenResult.earned);
+  const rankedReward=state.gameMode==="ranked"?rankedTokenReward(state.lesson,wp,acc):null;
+  const earnedToken=state.gameMode==="ranked"?rankedReward.earned:Math.min(70,tokenResult.earned);
   if(state.attemptId)await updateDoc(doc(db,"attempts",state.attemptId),{
-    status:"completed",score,rewardPoints:earnedToken,maxRewardPoints:tokenResult.maxToken,wpm:wp,accuracy:acc,
-    mistakes:state.mistakes,elapsedSeconds:Math.round(e*100)/100,finishedAt:serverTimestamp()
+    status:"completed",score,rewardPoints:earnedToken,maxRewardPoints:state.gameMode==="ranked"?rankedReward.maxToken:tokenResult.maxToken,wpm:wp,accuracy:acc,
+    mistakes:state.mistakes,keystrokes:state.keystrokes,typedChars:state.correctText.length,timedOut:false,
+    rankAttemptScore:state.gameMode==="ranked"?Math.round(Math.min(100,(wp/({easy:28,medium:42,hard:58}[state.lesson.difficulty]||42))*100)*.40+acc*.40+rankedMistakeScore(state.mistakes)*.20):null,
+    elapsedSeconds:Math.round(e*100)/100,finishedAt:serverTimestamp()
   });
 
   await awardCompletion(earnedToken);
@@ -706,12 +799,18 @@ async function finishClassic(){
   });
   await updateMyRank();
 
-  if(state.activeQuest&&questBonus.rewarded){
+  if(state.gameMode==="ranked"){
+    $("resultTitle").textContent=`🏆 Ranking Stage ${state.lesson.stage} ผ่าน! +${earnedToken} Token`;
+    $("resultText").textContent=`Classic reward ${rankedReward.base} + Ranking Bonus 15 · Rank คิดจากความเร็ว ความถูกต้อง และจำนวนครั้งที่พิมพ์ผิด`;
+    $("resultScore").textContent=`+${earnedToken} / ${rankedReward.maxToken} Token`;
+  }else if(state.activeQuest&&questBonus.rewarded){
     $("resultTitle").textContent=`ภารกิจสำเร็จ! +${earnedToken+questBonus.rewarded} Token`;
   }else{
     $("resultTitle").textContent=`ผ่าน Stage ${state.lesson.stage} +${earnedToken} Token`;
   }
-  if(state.activeQuest){
+  if(state.gameMode==="ranked"){
+    // ranked result already rendered above
+  }else if(state.activeQuest){
     $("resultText").textContent=questBonus.rewarded
       ?`${state.language.name} · ${state.lesson.title} · โบนัสภารกิจ +${questBonus.rewarded} Token`
       :`${state.language.name} · ${state.lesson.title} · ภารกิจยังไม่สำเร็จ: ${questObjectiveLabel(state.activeQuest)}`;
@@ -725,6 +824,7 @@ async function finishClassic(){
   $("resultAccuracy").textContent=`${acc}%`;
   $("resultTime").textContent=`${e.toFixed(2)}s`;
   $("nextLevelButton").style.display=state.activeQuest?"none":(state.lesson.stage<50?"":"none");
+  if(state.gameMode==="ranked"&&state.lesson.stage<50)$("nextLevelButton").style.display="";
   renderResultExplanation(state.lesson);
 
   await leaveRealFullscreen();
@@ -740,9 +840,10 @@ $("nextLevelButton").onclick=async()=>{
   const next=languageLessons().find(x=>x.stage===state.lesson.stage+1);
   if(!next)return;
   state.lesson=next;state.difficulty=DIFFICULTIES.find(x=>x.id===next.difficulty);
+  if(state.gameMode==="ranked"){state.rankedStage=next.stage;state.rankedTimeLimit=rankedTimeLimitForLesson(next);}
   prepareClassic();showScreen("gameScreen");await requestRealFullscreen();setTimeout(()=>$("typingInput").focus({preventScroll:true}),100);
 };
-$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.7.3"};
+$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.7.6"};
 $("portalButton").onclick=async()=>{state.activeQuest=null;history.replaceState(null,"",location.pathname);await ensureProfileDefaults();await enterPortal()};
 
 function renderRewardShop(){
@@ -1007,7 +1108,7 @@ async function saveCharacterGender(gender){
 
   // มือถือ/แท็บเล็ตใช้เฉพาะ 2D Zone หลังเลือกตัวละครเสร็จ
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.7.3");
+    location.replace("./zone.html?v=4.7.6");
   }
 }
 
@@ -1239,7 +1340,7 @@ function startSocialHub(){
 window.addEventListener('pagehide',()=>markOffline());
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')writePresence(document.body.classList.contains('game-active')?'game':'portal')});
 
-/* ===== V4.7.3 PVP MULTI ROOM · 1/3/5 SHOT · 1V1/2V2 RELAY · TOKEN WAGER ===== */
+/* ===== V4.7.6 PVP MULTI ROOM · 1/3/5 SHOT · 1V1/2V2 RELAY · TOKEN WAGER ===== */
 const PVP_ROOM_STALE_MS=20*60*1000;
 const PVP_CREATE_FEE=6;
 const PVP_COUNTDOWN_MS=3000;
@@ -1569,7 +1670,7 @@ updateDeviceUX();
 
 onAuthStateChanged(auth,async user=>{
   if(!user){state.uid=null;state.player=null;showScreen("authScreen");return;}
-  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.7.3");return;}
+  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.7.6");return;}
   state.uid=user.uid;
   try{
     await routeAuthenticatedStudent();

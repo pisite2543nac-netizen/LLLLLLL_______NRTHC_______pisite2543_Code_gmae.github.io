@@ -1,4 +1,4 @@
-# FULL CODE V4.7.6 NR-GAME ACADEMIC HIERARCHY
+# FULL CODE V4.7.6 NR-GAME RANKED CHALLENGE
 
 
 ## index.html
@@ -196,6 +196,35 @@
       <div id="languageCards" class="language-grid"></div>
     </section>
 
+
+    <section id="playStyleSection" class="card hidden ranked-style-card">
+      <div class="section-title">
+        <div>
+          <span class="section-kicker">STEP 2 · PLAY STYLE</span>
+          <h2>เลือกวิธีเล่น</h2>
+          <p class="muted-line">เลือกฝึกแบบธรรมดาตาม Stage หรือเข้าสู่ Ranking Challenge ที่มีเวลาจำกัดทุกด่าน</p>
+        </div>
+      </div>
+      <div class="play-style-grid">
+        <button id="chooseClassicStyle" class="play-style-choice" type="button">
+          <span class="play-style-icon">⌨️</span>
+          <div>
+            <strong>เขียน Code แบบธรรมดา</strong>
+            <p>ฝึกตาม Stage เลือกระดับและด่านได้ตามที่ปลดล็อก จับเวลาเพื่อดูสถิติแต่ไม่มีเวลาบังคับ</p>
+            <small>CLASSIC · PRACTICE · STEP BY STEP</small>
+          </div>
+        </button>
+        <button id="chooseRankedStyle" class="play-style-choice ranked" type="button">
+          <span class="play-style-icon">🏆</span>
+          <div>
+            <strong>เล่นระบบ Ranking</strong>
+            <p>เล่นต่อเนื่องทีละ Stage มีเวลาจำกัดทุกด่าน ความยากเพิ่มขึ้น และใช้ผลเฉพาะโหมดนี้คำนวณ Rank</p>
+            <small>40% SPEED · 40% ACCURACY · 20% LOW MISTAKES · +15 TOKEN</small>
+          </div>
+        </button>
+      </div>
+    </section>
+
     <section id="learningSection" class="card hidden">
       <div class="section-title">
         <div>
@@ -213,18 +242,12 @@
     <section id="modeSection" class="card hidden">
       <div class="section-title">
         <div>
-          <span class="section-kicker">STEP 2 · GAME MODE</span>
-          <h2>เลือกโหมดเกม</h2>
+          <span class="section-kicker">โหมดเพิ่มเติม</span>
+          <h2>Official / PVP</h2>
         </div>
       </div>
       <div class="mode-card-grid two-col">
-        <button class="mode-choice selected" data-game-mode="classic">
-          <span class="mode-choice-icon">⌨️</span>
-          <strong>Classic Solo</strong>
-          <small>เล่นคนเดียว จับเวลา วัด WPM / Accuracy / Mistakes และคะแนน</small>
-          <div><span>Solo</span><span>Timer</span><span>3 Difficulties</span></div>
-        </button>
-        <button class="mode-choice official-mode" data-game-mode="official">
+<button class="mode-choice official-mode" data-game-mode="official">
           <span class="mode-choice-icon">📋</span>
           <strong>ทางการ</strong>
           <small>30 ด่านสำหรับงานครู คะแนนรวมเต็ม 40 คะแนน ต้องกดส่งงานเมื่อทำเสร็จ</small>
@@ -258,6 +281,37 @@
       </div>
     </section>
 
+
+
+    <section id="rankedConfig" class="card hidden ranked-config-card">
+      <div class="section-title">
+        <div>
+          <span class="section-kicker">RANKING CHALLENGE</span>
+          <h2>🏆 Ranking Run</h2>
+          <p class="muted-line">ทุก Stage มีเวลาจำกัด เล่นผ่านแล้วปลดล็อกด่านถัดไปอัตโนมัติ และรับ Token เพิ่มจากรางวัล Classic อีก 15 Token</p>
+        </div>
+      </div>
+      <div class="ranked-rule-grid">
+        <div><span>Stage ปัจจุบัน</span><strong id="rankedStageLabel">01</strong></div>
+        <div><span>ความยาก</span><strong id="rankedDifficultyLabel">Easy</strong></div>
+        <div><span>เวลาจำกัด</span><strong id="rankedTimeLimitLabel">--</strong></div>
+        <div><span>โบนัส</span><strong>+15 Token</strong></div>
+      </div>
+      <div class="ranked-score-rule">
+        <span>🏃 ความเร็ว 40%</span><span>🎯 ความถูกต้อง 40%</span><span>✅ ผิดน้อย 20%</span>
+      </div>
+      <div class="ranked-progress-box">
+        <div>
+          <small>RANKED PROGRESS</small>
+          <strong id="rankedProgressText">Stage 1 / 50</strong>
+        </div>
+        <div class="ranked-progress-track"><i id="rankedProgressBar"></i></div>
+      </div>
+      <div class="config-footer">
+        <div id="rankedLessonSummary" class="selected-summary">เลือกภาษาเพื่อเริ่ม Ranking</div>
+        <button id="startRankedButton" class="btn primary" type="button">เริ่ม Ranking Stage</button>
+      </div>
+    </section>
 
     <section id="officialConfig" class="card hidden">
       <div class="section-title">
@@ -855,7 +909,7 @@
         <div class="panel-title">
           <div>
             <h2>Ranking · รวมทั้งหมด / รายห้อง</h2>
-            <p>คำนวณจากความขยัน 35% · Accuracy 30% · Speed 20% · Consistency 15% และรองรับวันรีแรงค์ที่ Admin กำหนดเอง</p>
+            <p>ใช้เฉพาะผลจาก Ranking Challenge: ความเร็ว 40% · Accuracy 40% · ผิดน้อย 20% · Timeout มีผลลด Rating</p>
           </div>
           <div class="button-row">
             <button id="recalculateRanking" class="btn secondary">คำนวณ Rank ใหม่</button>
@@ -890,7 +944,7 @@
             <thead>
               <tr>
                 <th>อันดับรวม</th><th>อันดับห้อง</th><th>ผู้เล่น</th><th>ห้อง</th><th>โล่ Rank</th>
-                <th>Rating</th><th>ขยัน</th><th>แม่นยำ</th><th>ความเร็ว</th><th>สม่ำเสมอ</th><th>WPM เฉลี่ย</th>
+                <th>Rating</th><th>ผิดน้อย</th><th>แม่นยำ</th><th>ความเร็ว</th><th>ผ่านเวลา</th><th>WPM เฉลี่ย</th>
               </tr>
             </thead>
             <tbody id="rankingBody"></tbody>
@@ -4283,6 +4337,18 @@ html,body.social-zone-page{
 .academic-filter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}.academic-filter-grid label{display:grid;gap:5px}.academic-filter-grid label>span{font-size:8px;font-weight:900;color:#4b6474}.academic-filter-grid select,.academic-filter-grid input{min-height:42px;border:1px solid #d0dde5;border-radius:10px;background:#fff;padding:0 10px}.academic-filter-search{grid-column:span 2}.academic-summary{margin:8px 0 10px;padding:9px 12px;border-radius:10px;background:#f0f6fa;color:#46667a;font-size:9px;font-weight:800}
 @media(max-width:900px){.academic-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.academic-filter-search{grid-column:span 2}}@media(max-width:600px){.academic-filter-grid{grid-template-columns:1fr}.academic-filter-search{grid-column:auto}}
 
+/* ===== V4.7.6 PLAY STYLE + RANKED CHALLENGE ===== */
+.play-style-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.play-style-choice{display:flex;gap:15px;align-items:flex-start;text-align:left;padding:20px;border:1px solid #d7e2e9;border-radius:16px;background:#fff;cursor:pointer;transition:.16s ease}
+.play-style-choice:hover,.play-style-choice.selected{border-color:#6097bc;box-shadow:0 10px 30px rgba(47,111,167,.11);transform:translateY(-1px)}
+.play-style-choice.ranked{background:linear-gradient(135deg,#fff,#fff9e8);border-color:#e6d39b}
+.play-style-choice.ranked:hover,.play-style-choice.ranked.selected{border-color:#c69c32;box-shadow:0 10px 30px rgba(157,117,20,.12)}
+.play-style-icon{font-size:28px}.play-style-choice strong{display:block;font-size:15px;color:#17354c;margin-bottom:6px}.play-style-choice p{margin:0 0 10px;color:#6b7f8c;line-height:1.65}.play-style-choice small{font-size:8px;font-weight:900;letter-spacing:.07em;color:#50728a}
+.ranked-rule-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}.ranked-rule-grid>div{padding:14px;border:1px solid #dce5eb;border-radius:12px;background:#fbfcfd}.ranked-rule-grid span,.ranked-rule-grid strong{display:block}.ranked-rule-grid span{font-size:8px;color:#778a96;margin-bottom:5px}.ranked-rule-grid strong{font-size:17px;color:#244c67}
+.ranked-score-rule{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.ranked-score-rule span{padding:7px 10px;border-radius:999px;background:#edf5fa;color:#3d667f;font-size:8px;font-weight:900}
+.ranked-progress-box{padding:13px;border-radius:12px;background:#f7fafb;border:1px solid #e0e7eb;margin-bottom:14px}.ranked-progress-box>div:first-child{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}.ranked-progress-box small{font-size:7px;letter-spacing:.08em;color:#738693;font-weight:900}.ranked-progress-box strong{font-size:10px}.ranked-progress-track{height:8px;border-radius:999px;background:#e3eaf0;overflow:hidden}.ranked-progress-track i{display:block;height:100%;width:2%;background:linear-gradient(90deg,#3e7dad,#d4a62f);border-radius:inherit}
+@media(max-width:760px){.play-style-grid{grid-template-columns:1fr}.ranked-rule-grid{grid-template-columns:repeat(2,1fr)}}
+
 ```
 
 
@@ -4326,7 +4392,8 @@ const state = {
   pvpRoomListUnsub:null,pvpStakeLocking:false,pvpCurrentShot:-1,pvpShotRecorded:-1,
   pvpAggregate:{typedChars:0,keys:0,mistakes:0,seconds:0},pvpPayoutClaimed:false,pvpWasActive:false,pvpTargetCode:"",pvpTurnSignature:null,pvpRecordedSignature:null,
   pvpCountdownTimer:null,pvpCountdownEndMs:0,rankSettingsUnsub:null,rankResetTimer:null,rankSettings:{},rankResetAppliedVersion:null,
-  activeQuest:null,questLaunchHandled:false
+  activeQuest:null,questLaunchHandled:false,
+  playStyle:null,rankedTimeLimit:0,rankedTimedOut:false,rankedStage:1
 };
 
 const studentEmail = id => `${String(id).trim()}@student.nr-game-code.local`;
@@ -4348,6 +4415,40 @@ function maxUnlocked(languageId){
   return Number(state.player?.progress?.[languageId]?.maxUnlockedStage || 1);
 }
 
+function rankedMaxUnlocked(languageId){
+  return Math.max(1,Math.min(50,Number(state.player?.rankedProgress?.[languageId]?.maxUnlockedStage||1)));
+}
+function rankedTimeLimitForLesson(lesson){
+  return Math.max(25,Number(lesson?.timeLimit||60));
+}
+function rankedTokenReward(lesson,wpmValue,accuracyValue){
+  const base=calculateStageTokenReward(lesson,wpmValue,accuracyValue);
+  return {base:base.earned,earned:Math.min(85,base.earned+15),maxToken:Math.min(85,base.maxToken+15)};
+}
+function rankedMistakeScore(mistakes){
+  return Math.max(0,Math.min(100,100-Number(mistakes||0)*10));
+}
+function prepareRankedLesson(){
+  if(!state.language)return false;
+  state.rankedStage=rankedMaxUnlocked(state.language.id);
+  const lesson=languageLessons().find(x=>Number(x.stage)===Number(state.rankedStage))||languageLessons()[0];
+  if(!lesson)return false;
+  state.lesson=lesson;
+  state.difficulty=DIFFICULTIES.find(x=>x.id===lesson.difficulty)||DIFFICULTIES[0];
+  state.rankedTimeLimit=rankedTimeLimitForLesson(lesson);
+  state.rankedTimedOut=false;
+  return true;
+}
+function renderRankedConfig(){
+  if(!$("rankedConfig")||!state.language||!prepareRankedLesson())return;
+  $("rankedStageLabel").textContent=String(state.lesson.stage).padStart(2,"0");
+  $("rankedDifficultyLabel").textContent=state.difficulty.name;
+  $("rankedTimeLimitLabel").textContent=`${state.rankedTimeLimit}s`;
+  $("rankedProgressText").textContent=`Stage ${state.lesson.stage} / 50`;
+  $("rankedProgressBar").style.width=`${Math.max(2,state.lesson.stage/50*100)}%`;
+  $("rankedLessonSummary").textContent=`${state.language.name} · Stage ${state.lesson.stage} · ${state.lesson.title} · สูงสุด ${Math.min(85,maxTokenForLesson(state.lesson)+15)} Token`;
+}
+
 async function ensureProfileDefaults(){
   if(!state.uid) return;
   const ref = doc(db,"users",state.uid);
@@ -4363,6 +4464,7 @@ async function ensureProfileDefaults(){
   }
   if(!Array.isArray(d.inventory)) patch.inventory = [];
   if(!d.progress) patch.progress = {html:{maxUnlockedStage:1},python:{maxUnlockedStage:1}};
+  if(!d.rankedProgress) patch.rankedProgress = {html:{maxUnlockedStage:1},python:{maxUnlockedStage:1}};
   else {
     patch.progress = {
       html:{maxUnlockedStage:Number(d.progress?.html?.maxUnlockedStage || 1)},
@@ -4546,21 +4648,47 @@ function renderLanguages(){
 
 function selectLanguage(id){
   state.language=LANGUAGES.find(x=>x.id===id);
-  state.lesson=null;
-  state.difficulty=null;
+  state.lesson=null;state.difficulty=null;state.playStyle=null;
   renderLanguages();
-  $("learningSection").classList.remove("hidden");
-  $("modeSection").classList.remove("hidden");
-  $("classicConfig").classList.remove("hidden");
-  $("learningTitle").textContent=`${state.language.icon} ${state.language.name} · 50 STAGES`;
-  $("learningTagline").textContent=state.language.description;
-  renderLessonTabs();
-  renderDifficulty();
-  renderClassicStages();
-  renderLessonDetail();
-  updateClassicSummary();
-  $("learningSection").scrollIntoView({behavior:"smooth",block:"start"});
+  $("playStyleSection").classList.remove("hidden");
+  ["learningSection","modeSection","classicConfig","rankedConfig","officialConfig","pvpConfig"].forEach(id=>$(id)?.classList.add("hidden"));
+  $("playStyleSection").scrollIntoView({behavior:"smooth",block:"start"});
 }
+function choosePlayStyle(style){
+  state.playStyle=style;
+  document.querySelectorAll(".play-style-choice").forEach(x=>x.classList.toggle("selected",
+    (style==="classic"&&x.id==="chooseClassicStyle")||(style==="ranked"&&x.id==="chooseRankedStyle")));
+  if(style==="classic"){
+    state.gameMode="classic";
+    $("learningSection").classList.remove("hidden");
+    $("modeSection").classList.remove("hidden");
+    $("classicConfig").classList.remove("hidden");
+    $("rankedConfig").classList.add("hidden");
+    $("officialConfig").classList.add("hidden");$("pvpConfig").classList.add("hidden");
+    $("learningTitle").textContent=`${state.language.icon} ${state.language.name} · 50 STAGES`;
+    $("learningTagline").textContent=state.language.description;
+    renderLessonTabs();renderDifficulty();renderClassicStages();renderLessonDetail();updateClassicSummary();
+    $("learningSection").scrollIntoView({behavior:"smooth",block:"start"});
+  }else{
+    state.gameMode="ranked";
+    state.activeQuest=null;
+    $("learningSection").classList.add("hidden");
+    $("modeSection").classList.add("hidden");$("classicConfig").classList.add("hidden");
+    $("officialConfig").classList.add("hidden");$("pvpConfig").classList.add("hidden");
+    $("rankedConfig").classList.remove("hidden");
+    renderRankedConfig();
+    $("rankedConfig").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+}
+$("chooseClassicStyle").onclick=()=>choosePlayStyle("classic");
+$("chooseRankedStyle").onclick=()=>choosePlayStyle("ranked");
+$("startRankedButton").onclick=async()=>{
+  if(!prepareRankedLesson())return;
+  state.gameMode="ranked";
+  prepareClassic();showScreen("gameScreen");
+  await requestRealFullscreen();
+  setTimeout(()=>$("typingInput").focus({preventScroll:true}),150);
+};
 
 function renderLessonTabs(){
   $("lessonTabs").innerHTML=DIFFICULTIES.map(d=>`
@@ -4627,6 +4755,7 @@ document.querySelectorAll("[data-game-mode]").forEach(b=>b.onclick=()=>{
   $("classicConfig").classList.toggle("hidden",state.gameMode!=="classic");
   $("officialConfig").classList.toggle("hidden",state.gameMode!=="official");
   $("pvpConfig").classList.toggle("hidden",state.gameMode!=="pvp");
+  $("rankedConfig")?.classList.add("hidden");
   if(state.gameMode==="official") renderOfficialStages();
 });
 
@@ -4785,19 +4914,19 @@ async function completeActiveQuestIfEligible(result){
 function prepareClassic(){
   $("resultExplanation")?.classList.add("hidden");
   $("questZoneButton")?.classList.add("hidden");
-  state.attemptId=null;state.started=false;state.finished=false;state.mistakes=0;state.keystrokes=0;state.correctText="";
+  state.attemptId=null;state.started=false;state.finished=false;state.mistakes=0;state.keystrokes=0;state.correctText="";state.rankedTimedOut=false;
   clearInterval(state.timer);$("typingInput").value="";
-  $("modeBadge").textContent=`⌨️ CLASSIC · ${state.language.name}`;
+  $("modeBadge").textContent=state.gameMode==="ranked"?`🏆 RANKING · ${state.language.name}`:`⌨️ CLASSIC · ${state.language.name}`;
   $("challengeTitle").textContent=`Stage ${state.lesson.stage} · ${state.lesson.title}`;
   $("challengeDescription").textContent=state.lesson.description;
   $("playerName").textContent=state.player.fullName;
   $("statLevel").textContent=String(state.lesson.stage).padStart(2,"0");
   $("languageLabel").textContent=state.language.name;
   $("difficultyLabel").textContent=state.difficulty.name;
-  $("timeRuleLabel").textContent=`เป้าหมาย ${state.lesson.timeLimit}s`;
+  $("timeRuleLabel").textContent=state.gameMode==="ranked"?`เวลาจำกัด ${rankedTimeLimitForLesson(state.lesson)}s`:`เป้าหมาย ${state.lesson.timeLimit}s`;
   $("fileName").textContent=`${state.language.id}_stage_${String(state.lesson.stage).padStart(2,"0")}`;
-  $("typingStatus").textContent="พิมพ์ตัวแรกเพื่อเริ่มจับเวลา";
-  $("saveState").textContent=`รางวัลสูงสุด ${maxTokenForLesson(state.lesson)} Token`;
+  $("typingStatus").textContent=state.gameMode==="ranked"?"พิมพ์ตัวแรกเพื่อเริ่ม Countdown":"พิมพ์ตัวแรกเพื่อเริ่มจับเวลา";
+  $("saveState").textContent=state.gameMode==="ranked"?`Ranking Bonus +15 · สูงสุด ${Math.min(85,maxTokenForLesson(state.lesson)+15)} Token`:`รางวัลสูงสุด ${maxTokenForLesson(state.lesson)} Token`;
   $("statTime").textContent="00:00";
   ["statWpm","statMistakes","statScore"].forEach(id=>$(id).textContent="0");
   $("statAccuracy").textContent="100%";
@@ -4812,10 +4941,10 @@ async function startClassic(){
   const r=await addDoc(collection(db,"attempts"),{
     uid:state.uid,studentId:state.player.studentId,fullName:state.player.fullName,
     educationLevel:state.player.educationLevel,classroom:state.player.classroom,department:state.player.department||"",major:state.player.major||"",majorCode:state.player.majorCode||majorCodeFor(state.player.educationLevel,state.player.major),
-    language:state.language.name,languageId:state.language.id,modeName:state.gameMode==="official"?"Official":"Classic",
+    language:state.language.name,languageId:state.language.id,modeName:state.gameMode==="official"?"Official":state.gameMode==="ranked"?"Ranking":"Classic",
     difficulty:state.difficulty.name,difficultyId:state.difficulty.id,stage:state.lesson.stage,
     lessonId:state.lesson.id,levelTitle:state.lesson.title,questId:state.activeQuest?.id||null,questTitle:state.activeQuest?.title||null,status:"playing",
-    score:0,rewardPoints:0,maxRewardPoints:state.gameMode==="official"?0:maxTokenForLesson(state.lesson),wpm:0,accuracy:0,mistakes:0,elapsedSeconds:0,createdAt:serverTimestamp()
+    score:0,rewardPoints:0,maxRewardPoints:state.gameMode==="official"?0:state.gameMode==="ranked"?Math.min(85,maxTokenForLesson(state.lesson)+15):maxTokenForLesson(state.lesson),rankedTimeLimit:state.gameMode==="ranked"?rankedTimeLimitForLesson(state.lesson):null,wpm:0,accuracy:0,mistakes:0,elapsedSeconds:0,createdAt:serverTimestamp()
   });
   state.attemptId=r.id;
   state.timer=setInterval(updateClassicStats,100);
@@ -4898,34 +5027,61 @@ $("typingInput").addEventListener("keydown",async e=>{
 });
 
 function updateClassicStats(){
-  $("statTime").textContent=fmtTime(elapsed());
+  const e=elapsed();
+  if(state.gameMode==="ranked"){
+    const remain=Math.max(0,state.rankedTimeLimit-e);
+    $("statTime").textContent=fmtTime(remain);
+    if(state.started&&remain<=0&&!state.finished&&!state.rankedTimedOut){state.rankedTimedOut=true;failRankedStage();}
+  }else $("statTime").textContent=fmtTime(e);
   $("statWpm").textContent=Math.round(wpm());
   $("statAccuracy").textContent=`${accuracy().toFixed(0)}%`;
   $("statMistakes").textContent=state.mistakes;
   if(state.gameMode==="official") $("statScore").textContent="—";
+  else if(state.gameMode==="ranked"){const live=rankedTokenReward(state.lesson,wpm(),accuracy());$("statScore").textContent=`${live.earned}/${live.maxToken}`;}
   else { const live=calculateStageTokenReward(state.lesson,wpm(),accuracy()); $("statScore").textContent=`${live.earned}/${live.maxToken}`; }
   syncMobileStats();
+}
+async function failRankedStage(){
+  if(state.finished)return;
+  state.finished=true;clearInterval(state.timer);
+  const e=elapsed(),wp=Math.round(wpm()*100)/100,acc=Math.round(accuracy()*100)/100;
+  if(state.attemptId)await updateDoc(doc(db,"attempts",state.attemptId),{
+    status:"timeout",modeName:"Ranking",score:0,rewardPoints:0,wpm:wp,accuracy:acc,mistakes:state.mistakes,
+    keystrokes:state.keystrokes,typedChars:state.correctText.length,timedOut:true,
+    elapsedSeconds:Math.round(e*100)/100,finishedAt:serverTimestamp()
+  });
+  await updateMyRank();
+  $("resultTitle").textContent=`หมดเวลา · Ranking Stage ${state.lesson.stage}`;
+  $("resultText").textContent=`ด่านนี้จำกัด ${state.rankedTimeLimit} วินาที · ลองใหม่ได้ คะแนน Rank จะบันทึกผล Timeout รอบนี้`;
+  $("resultScore").textContent="+0 Token";
+  $("resultWpm").textContent=wp;$("resultAccuracy").textContent=`${acc}%`;$("resultTime").textContent=`${e.toFixed(2)}s`;
+  $("nextLevelButton").style.display="none";
+  renderResultExplanation(state.lesson);
+  await leaveRealFullscreen();showScreen("resultScreen");
 }
 
 async function awardCompletion(reward){
   const ref=doc(db,"users",state.uid);
   const lang=state.language.id;
   const stage=state.lesson.stage;
-  reward=Math.min(70,Math.max(0,Number(reward||0)));
+  reward=Math.min(state.gameMode==="ranked"?85:70,Math.max(0,Number(reward||0)));
   await runTransaction(db,async tx=>{
     const snap=await tx.get(ref);
     if(!snap.exists())return;
     const d=snap.data();
-    const currentUnlocked=Number(d.progress?.[lang]?.maxUnlockedStage||1);
-    const newUnlocked=Math.max(currentUnlocked,Math.min(50,stage+1));
-    const progress={...(d.progress||{})};
-    progress[lang]={...(progress[lang]||{}),maxUnlockedStage:newUnlocked};
-    tx.update(ref,{
-      tokenBalance:Number(d.tokenBalance||0)+reward,
-      tokenLifetime:Number(d.tokenLifetime||0)+reward,
-      progress,
-      updatedAt:serverTimestamp()
-    });
+    const update={tokenBalance:Number(d.tokenBalance||0)+reward,tokenLifetime:Number(d.tokenLifetime||0)+reward,updatedAt:serverTimestamp()};
+    if(state.gameMode==="ranked"){
+      const rankedProgress={...(d.rankedProgress||{})};
+      const current=Number(rankedProgress?.[lang]?.maxUnlockedStage||1);
+      rankedProgress[lang]={...(rankedProgress[lang]||{}),maxUnlockedStage:Math.max(current,Math.min(50,stage+1))};
+      update.rankedProgress=rankedProgress;
+    }else{
+      const currentUnlocked=Number(d.progress?.[lang]?.maxUnlockedStage||1);
+      const progress={...(d.progress||{})};
+      progress[lang]={...(progress[lang]||{}),maxUnlockedStage:Math.max(currentUnlocked,Math.min(50,stage+1))};
+      update.progress=progress;
+    }
+    tx.update(ref,update);
   });
   await ensureProfileDefaults();
 }
@@ -4985,10 +5141,13 @@ async function finishClassic(){
   }
 
   const tokenResult=calculateStageTokenReward(state.lesson,wp,acc);
-  const earnedToken=Math.min(70,tokenResult.earned);
+  const rankedReward=state.gameMode==="ranked"?rankedTokenReward(state.lesson,wp,acc):null;
+  const earnedToken=state.gameMode==="ranked"?rankedReward.earned:Math.min(70,tokenResult.earned);
   if(state.attemptId)await updateDoc(doc(db,"attempts",state.attemptId),{
-    status:"completed",score,rewardPoints:earnedToken,maxRewardPoints:tokenResult.maxToken,wpm:wp,accuracy:acc,
-    mistakes:state.mistakes,elapsedSeconds:Math.round(e*100)/100,finishedAt:serverTimestamp()
+    status:"completed",score,rewardPoints:earnedToken,maxRewardPoints:state.gameMode==="ranked"?rankedReward.maxToken:tokenResult.maxToken,wpm:wp,accuracy:acc,
+    mistakes:state.mistakes,keystrokes:state.keystrokes,typedChars:state.correctText.length,timedOut:false,
+    rankAttemptScore:state.gameMode==="ranked"?Math.round(Math.min(100,(wp/({easy:28,medium:42,hard:58}[state.lesson.difficulty]||42))*100)*.40+acc*.40+rankedMistakeScore(state.mistakes)*.20):null,
+    elapsedSeconds:Math.round(e*100)/100,finishedAt:serverTimestamp()
   });
 
   await awardCompletion(earnedToken);
@@ -4997,12 +5156,18 @@ async function finishClassic(){
   });
   await updateMyRank();
 
-  if(state.activeQuest&&questBonus.rewarded){
+  if(state.gameMode==="ranked"){
+    $("resultTitle").textContent=`🏆 Ranking Stage ${state.lesson.stage} ผ่าน! +${earnedToken} Token`;
+    $("resultText").textContent=`Classic reward ${rankedReward.base} + Ranking Bonus 15 · Rank คิดจากความเร็ว ความถูกต้อง และจำนวนครั้งที่พิมพ์ผิด`;
+    $("resultScore").textContent=`+${earnedToken} / ${rankedReward.maxToken} Token`;
+  }else if(state.activeQuest&&questBonus.rewarded){
     $("resultTitle").textContent=`ภารกิจสำเร็จ! +${earnedToken+questBonus.rewarded} Token`;
   }else{
     $("resultTitle").textContent=`ผ่าน Stage ${state.lesson.stage} +${earnedToken} Token`;
   }
-  if(state.activeQuest){
+  if(state.gameMode==="ranked"){
+    // ranked result already rendered above
+  }else if(state.activeQuest){
     $("resultText").textContent=questBonus.rewarded
       ?`${state.language.name} · ${state.lesson.title} · โบนัสภารกิจ +${questBonus.rewarded} Token`
       :`${state.language.name} · ${state.lesson.title} · ภารกิจยังไม่สำเร็จ: ${questObjectiveLabel(state.activeQuest)}`;
@@ -5016,6 +5181,7 @@ async function finishClassic(){
   $("resultAccuracy").textContent=`${acc}%`;
   $("resultTime").textContent=`${e.toFixed(2)}s`;
   $("nextLevelButton").style.display=state.activeQuest?"none":(state.lesson.stage<50?"":"none");
+  if(state.gameMode==="ranked"&&state.lesson.stage<50)$("nextLevelButton").style.display="";
   renderResultExplanation(state.lesson);
 
   await leaveRealFullscreen();
@@ -5031,6 +5197,7 @@ $("nextLevelButton").onclick=async()=>{
   const next=languageLessons().find(x=>x.stage===state.lesson.stage+1);
   if(!next)return;
   state.lesson=next;state.difficulty=DIFFICULTIES.find(x=>x.id===next.difficulty);
+  if(state.gameMode==="ranked"){state.rankedStage=next.stage;state.rankedTimeLimit=rankedTimeLimitForLesson(next);}
   prepareClassic();showScreen("gameScreen");await requestRealFullscreen();setTimeout(()=>$("typingInput").focus({preventScroll:true}),100);
 };
 $("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.7.6"};
@@ -6197,7 +6364,7 @@ async function persistRanking(){
   const seasonId=seasonIdFromDate(new Date()),rows=buildAdminRankingRows();
   let batch=writeBatch(db),writes=0;
   for(const r of rows){
-    const rank={seasonId,rating:r.rating,tierId:r.tierId,tierName:r.tierName,tierIcon:r.tierIcon,diligence:r.diligence,accuracy:r.accuracy,speed:r.speed,consistency:r.consistency,avgWpm:r.avgWpm,avgAccuracy:r.avgAccuracy,completedAttempts:r.completedAttempts,activeDayCount:r.activeDayCount,updatedAt:new Date().toISOString(),resetBoundaryAt:rankResetBoundaryMs()?new Date(rankResetBoundaryMs()).toISOString():null};
+    const rank={seasonId,rating:r.rating,tierId:r.tierId,tierName:r.tierName,tierIcon:r.tierIcon,diligence:r.diligence,mistakeControl:r.mistakeControl,accuracy:r.accuracy,speed:r.speed,consistency:r.consistency,avgWpm:r.avgWpm,avgAccuracy:r.avgAccuracy,avgMistakes:r.avgMistakes,rankedAttempts:r.rankedAttempts,completedAttempts:r.completedAttempts,activeDayCount:r.activeDayCount,updatedAt:new Date().toISOString(),resetBoundaryAt:rankResetBoundaryMs()?new Date(rankResetBoundaryMs()).toISOString():null};
     batch.set(doc(db,"rankings",`${seasonId}_${r.user.id}`),{seasonId,uid:r.user.id,studentId:r.user.studentId,fullName:r.user.fullName,classKey:r.classKey,globalPosition:r.globalPosition,classPosition:r.classPosition,...rank,updatedAt:serverTimestamp()},{merge:true});writes++;
     batch.set(doc(db,"users",r.user.id),{rank,updatedAt:serverTimestamp()},{merge:true});writes++;
     batch.set(doc(db,"public_profiles",r.user.id),{rank,educationLevel:r.user.educationLevel||"",classroom:r.user.classroom||"",classKey:r.classKey,department:r.user.department||"",major:r.user.major||"",majorCode:r.user.majorCode||"",updatedAt:serverTimestamp()},{merge:true});writes++;
@@ -7224,17 +7391,8 @@ export const RARITY_META = {
 ```js
 export const RANKING_CONFIG = {
   seasonDays: 60,
-
-  weights: {
-    diligence: 0.35,
-    accuracy: 0.30,
-    speed: 0.20,
-    consistency: 0.15
-  },
-
-  // WPM เทียบกับช่วงคะแนนความเร็ว 0-100
-  speedReferenceWpm: 80,
-
+  weights: { speed: 0.40, accuracy: 0.40, mistakeControl: 0.20 },
+  speedTargets: { easy:28, medium:42, hard:58 },
   tiers: [
     {id:"bronze", name:"Bronze", icon:"🥉", min:0},
     {id:"silver", name:"Silver", icon:"🥈", min:35},
@@ -7244,93 +7402,50 @@ export const RANKING_CONFIG = {
     {id:"master", name:"Master", icon:"👑", min:92}
   ]
 };
+const clamp=(v,min=0,max=100)=>Math.max(min,Math.min(max,Number(v||0)));
 
 export function seasonIdFromDate(date = new Date()) {
-  const epoch = Date.UTC(2026, 0, 1);
-  const days = Math.floor((date.getTime() - epoch) / 86400000);
-  const season = Math.floor(Math.max(0, days) / RANKING_CONFIG.seasonDays) + 1;
-  return `S${String(season).padStart(3, "0")}`;
+  const epoch = Date.UTC(2026,0,1),days=Math.floor((date.getTime()-epoch)/86400000);
+  return `S${String(Math.floor(Math.max(0,days)/RANKING_CONFIG.seasonDays)+1).padStart(3,"0")}`;
 }
-
 export function seasonRange(date = new Date()) {
-  const epoch = Date.UTC(2026, 0, 1);
-  const days = Math.floor((date.getTime() - epoch) / 86400000);
-  const seasonIndex = Math.floor(Math.max(0, days) / RANKING_CONFIG.seasonDays);
-  const start = new Date(epoch + seasonIndex * RANKING_CONFIG.seasonDays * 86400000);
-  const end = new Date(start.getTime() + RANKING_CONFIG.seasonDays * 86400000 - 1);
-  return { start, end };
+  const epoch=Date.UTC(2026,0,1),days=Math.floor((date.getTime()-epoch)/86400000),idx=Math.floor(Math.max(0,days)/RANKING_CONFIG.seasonDays);
+  const start=new Date(epoch+idx*RANKING_CONFIG.seasonDays*86400000);
+  return {start,end:new Date(start.getTime()+RANKING_CONFIG.seasonDays*86400000-1)};
 }
-
-export function calculateRankMetrics(attempts, activeDayCount = 0) {
-  const completed = attempts.filter(a => a.status === "completed");
-  const total = completed.length;
-
-  const avgAccuracy = total
-    ? completed.reduce((s,a)=>s + Number(a.accuracy || 0), 0) / total
-    : 0;
-
-  const avgWpm = total
-    ? completed.reduce((s,a)=>s + Number(a.wpm || 0), 0) / total
-    : 0;
-
-  // ความขยัน: จำนวนด่าน + จำนวนวันที่กลับมาใช้งาน
-  const attemptFactor = Math.min(100, total * 2.5);
-  const dayFactor = Math.min(100, activeDayCount * 4);
-  const diligence = attemptFactor * 0.65 + dayFactor * 0.35;
-
-  // ความเร็ว: ไม่ให้ความเร็วสูงอย่างเดียวชนะ Accuracy
-  const speed = Math.min(100, (avgWpm / RANKING_CONFIG.speedReferenceWpm) * 100);
-
-  // ความสม่ำเสมอ: Accuracy กระจายน้อย + มีหลายรอบ
-  let consistency = 0;
-  if (total) {
-    const mean = avgAccuracy;
-    const variance = completed.reduce((s,a)=>{
-      const d = Number(a.accuracy || 0) - mean;
-      return s + d*d;
-    },0) / total;
-    const std = Math.sqrt(variance);
-    const stability = Math.max(0, 100 - std * 2);
-    const volume = Math.min(100, total * 4);
-    consistency = stability * 0.7 + volume * 0.3;
+export function calculateRankMetrics(attempts,activeDayCount=0){
+  const ranked=(attempts||[]).filter(a=>a.modeName==="Ranking"&&["completed","timeout"].includes(a.status));
+  const total=ranked.length;
+  if(!total){
+    const t=RANKING_CONFIG.tiers[0];
+    return {rating:0,tierId:t.id,tierName:t.name,tierIcon:t.icon,speed:0,accuracy:0,mistakeControl:0,
+      diligence:0,consistency:0,avgWpm:0,avgAccuracy:0,avgMistakes:0,completedAttempts:0,activeDayCount,rankedAttempts:0};
   }
-
-  const accuracy = Math.max(0, Math.min(100, avgAccuracy));
-
-  const rating = Math.round(
-    diligence * RANKING_CONFIG.weights.diligence +
-    accuracy * RANKING_CONFIG.weights.accuracy +
-    speed * RANKING_CONFIG.weights.speed +
-    consistency * RANKING_CONFIG.weights.consistency
-  );
-
-  const tiers = [...RANKING_CONFIG.tiers].sort((a,b)=>b.min-a.min);
-  const tier = tiers.find(t => rating >= t.min) || RANKING_CONFIG.tiers[0];
-
+  let speedSum=0,accuracySum=0,mistakeSum=0,wpmSum=0,mistakesRaw=0,completed=0;
+  ranked.forEach(a=>{
+    const target=RANKING_CONFIG.speedTargets[a.difficultyId]||42;
+    const speed=clamp(Number(a.wpm||0)/target*100);
+    const acc=clamp(a.accuracy);
+    const mistakeControl=clamp(100-Number(a.mistakes||0)*10);
+    const success=a.status==="completed"?1:.65; // timeout ลด component ทั้งหมด
+    speedSum+=speed*success;accuracySum+=acc*success;mistakeSum+=mistakeControl*success;
+    wpmSum+=Number(a.wpm||0);mistakesRaw+=Number(a.mistakes||0);
+    if(a.status==="completed")completed++;
+  });
+  const speed=speedSum/total,accuracy=accuracySum/total,mistakeControl=mistakeSum/total;
+  const rating=Math.round(speed*.40+accuracy*.40+mistakeControl*.20);
+  const tier=[...RANKING_CONFIG.tiers].sort((a,b)=>b.min-a.min).find(t=>rating>=t.min)||RANKING_CONFIG.tiers[0];
   return {
-    rating,
-    tierId: tier.id,
-    tierName: tier.name,
-    tierIcon: tier.icon,
-    diligence: Math.round(diligence),
-    accuracy: Math.round(accuracy),
-    speed: Math.round(speed),
-    consistency: Math.round(consistency),
-    avgWpm: Math.round(avgWpm * 10) / 10,
-    avgAccuracy: Math.round(avgAccuracy * 10) / 10,
-    completedAttempts: total,
-    activeDayCount
+    rating,tierId:tier.id,tierName:tier.name,tierIcon:tier.icon,
+    speed:Math.round(speed),accuracy:Math.round(accuracy),mistakeControl:Math.round(mistakeControl),
+    // legacy aliases so older UI remains compatible
+    diligence:Math.round(mistakeControl),consistency:Math.round(completed/total*100),
+    avgWpm:Math.round(wpmSum/total*10)/10,avgAccuracy:Math.round(ranked.reduce((s,a)=>s+Number(a.accuracy||0),0)/total*10)/10,
+    avgMistakes:Math.round(mistakesRaw/total*10)/10,completedAttempts:completed,activeDayCount,rankedAttempts:total
   };
 }
-
-
-export function rankingClassKey(educationLevel,classroom){
-  return `${String(educationLevel||"").trim()}${String(classroom||"").trim()}`;
-}
-
-export function rankProfiles(profiles,limit=10){
-  return [...profiles].sort((a,b)=>Number(b?.rank?.rating||0)-Number(a?.rank?.rating||0)).slice(0,limit);
-}
+export function rankingClassKey(educationLevel,classroom){return `${String(educationLevel||"").trim()}${String(classroom||"").trim()}`;}
+export function rankProfiles(profiles,limit=10){return [...profiles].sort((a,b)=>Number(b?.rank?.rating||0)-Number(a?.rank?.rating||0)).slice(0,limit);}
 
 ```
 
@@ -7987,7 +8102,7 @@ export const HTML_LEVELS = [
     "description": "ด่าน HTML 27: footer",
     "usage": "footer คือส่วนท้าย",
     "benefit": "ฝึกอ่านและพิมพ์โครงสร้าง HTML ให้แม่นยำ พร้อมเข้าใจหน้าที่ของแท็ก",
-    "code": "<footer>\n  <p>© 2026 Code Academy</p>\n</footer>",
+    "code": "<footer>\n  <p> 2026 Code Academy</p>\n</footer>",
     "outputExplain": "footer คือส่วนท้าย",
     "basePoints": 370,
     "rewardPoints": 42,
@@ -8197,7 +8312,7 @@ export const HTML_LEVELS = [
     "description": "ด่าน HTML 41: ARIA label",
     "usage": "aria-label ช่วย Screen Reader",
     "benefit": "ฝึกอ่านและพิมพ์โครงสร้าง HTML ให้แม่นยำ พร้อมเข้าใจหน้าที่ของแท็ก",
-    "code": "<button aria-label=\"ปิดหน้าต่าง\">×</button>",
+    "code": "<button aria-label=\"ปิดหน้าต่าง\"></button>",
     "outputExplain": "aria-label ช่วย Screen Reader",
     "basePoints": 510,
     "rewardPoints": 58,
@@ -8302,7 +8417,7 @@ export const HTML_LEVELS = [
     "description": "ด่าน HTML 48: หน้า Profile",
     "usage": "รวม semantic elements เป็นหน้าโปรไฟล์",
     "benefit": "ฝึกอ่านและพิมพ์โครงสร้าง HTML ให้แม่นยำ พร้อมเข้าใจหน้าที่ของแท็ก",
-    "code": "<main>\n  <article class=\"profile\">\n    <img src=\"avatar.png\" alt=\"รูปผู้เล่น\">\n    <h1>Pisit</h1>\n    <p>Level 25 · 2,450 Points</p>\n    <button>แก้ไขตัวละคร</button>\n  </article>\n</main>",
+    "code": "<main>\n  <article class=\"profile\">\n    <img src=\"avatar.png\" alt=\"รูปผู้เล่น\">\n    <h1>Pisit</h1>\n    <p>Level 25  2,450 Points</p>\n    <button>แก้ไขตัวละคร</button>\n  </article>\n</main>",
     "outputExplain": "รวม semantic elements เป็นหน้าโปรไฟล์",
     "basePoints": 580,
     "rewardPoints": 67,
@@ -8332,7 +8447,7 @@ export const HTML_LEVELS = [
     "description": "ด่าน HTML 50: หน้าเกม Semantic",
     "usage": "ด่านสุดท้ายรวมโครงสร้าง HTML5 หลายส่วน",
     "benefit": "ฝึกอ่านและพิมพ์โครงสร้าง HTML ให้แม่นยำ พร้อมเข้าใจหน้าที่ของแท็ก",
-    "code": "<!DOCTYPE html>\n<html lang=\"th\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Code Typing Arena</title>\n</head>\n<body>\n  <header>\n    <h1>Code Typing Arena</h1>\n    <nav><a href=\"#classic\">Classic</a> <a href=\"#pvp\">PVP</a></nav>\n  </header>\n  <main>\n    <section id=\"classic\">\n      <h2>Classic Mode</h2>\n      <p>พิมพ์โค้ดให้ถูกต้องและเร็วที่สุด</p>\n      <button type=\"button\">เริ่มเกม</button>\n    </section>\n  </main>\n  <footer>© 2026 Nangrong Technical College</footer>\n</body>\n</html>",
+    "code": "<!DOCTYPE html>\n<html lang=\"th\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Code Typing Arena</title>\n</head>\n<body>\n  <header>\n    <h1>Code Typing Arena</h1>\n    <nav><a href=\"#classic\">Classic</a> <a href=\"#pvp\">PVP</a></nav>\n  </header>\n  <main>\n    <section id=\"classic\">\n      <h2>Classic Mode</h2>\n      <p>พิมพ์โค้ดให้ถูกต้องและเร็วที่สุด</p>\n      <button type=\"button\">เริ่มเกม</button>\n    </section>\n  </main>\n  <footer> 2026 Nangrong Technical College</footer>\n</body>\n</html>",
     "outputExplain": "ด่านสุดท้ายรวมโครงสร้าง HTML5 หลายส่วน",
     "basePoints": 600,
     "rewardPoints": 70,

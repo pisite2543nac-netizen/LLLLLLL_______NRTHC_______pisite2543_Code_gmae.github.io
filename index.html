@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
   <title>ระบบเกมพิมพ์ Code | วิทยาลัยเทคนิคนางรอง</title>
-  <link rel="stylesheet" href="./style.css?v=4.7.3">
+  <link rel="stylesheet" href="./style.css?v=4.7.6">
 </head>
 <body>
 <header class="site-header">
@@ -190,6 +190,35 @@
       <div id="languageCards" class="language-grid"></div>
     </section>
 
+
+    <section id="playStyleSection" class="card hidden ranked-style-card">
+      <div class="section-title">
+        <div>
+          <span class="section-kicker">STEP 2 · PLAY STYLE</span>
+          <h2>เลือกวิธีเล่น</h2>
+          <p class="muted-line">เลือกฝึกแบบธรรมดาตาม Stage หรือเข้าสู่ Ranking Challenge ที่มีเวลาจำกัดทุกด่าน</p>
+        </div>
+      </div>
+      <div class="play-style-grid">
+        <button id="chooseClassicStyle" class="play-style-choice" type="button">
+          <span class="play-style-icon">⌨️</span>
+          <div>
+            <strong>เขียน Code แบบธรรมดา</strong>
+            <p>ฝึกตาม Stage เลือกระดับและด่านได้ตามที่ปลดล็อก จับเวลาเพื่อดูสถิติแต่ไม่มีเวลาบังคับ</p>
+            <small>CLASSIC · PRACTICE · STEP BY STEP</small>
+          </div>
+        </button>
+        <button id="chooseRankedStyle" class="play-style-choice ranked" type="button">
+          <span class="play-style-icon">🏆</span>
+          <div>
+            <strong>เล่นระบบ Ranking</strong>
+            <p>เล่นต่อเนื่องทีละ Stage มีเวลาจำกัดทุกด่าน ความยากเพิ่มขึ้น และใช้ผลเฉพาะโหมดนี้คำนวณ Rank</p>
+            <small>40% SPEED · 40% ACCURACY · 20% LOW MISTAKES · +15 TOKEN</small>
+          </div>
+        </button>
+      </div>
+    </section>
+
     <section id="learningSection" class="card hidden">
       <div class="section-title">
         <div>
@@ -207,18 +236,12 @@
     <section id="modeSection" class="card hidden">
       <div class="section-title">
         <div>
-          <span class="section-kicker">STEP 2 · GAME MODE</span>
-          <h2>เลือกโหมดเกม</h2>
+          <span class="section-kicker">โหมดเพิ่มเติม</span>
+          <h2>Official / PVP</h2>
         </div>
       </div>
       <div class="mode-card-grid two-col">
-        <button class="mode-choice selected" data-game-mode="classic">
-          <span class="mode-choice-icon">⌨️</span>
-          <strong>Classic Solo</strong>
-          <small>เล่นคนเดียว จับเวลา วัด WPM / Accuracy / Mistakes และคะแนน</small>
-          <div><span>Solo</span><span>Timer</span><span>3 Difficulties</span></div>
-        </button>
-        <button class="mode-choice official-mode" data-game-mode="official">
+<button class="mode-choice official-mode" data-game-mode="official">
           <span class="mode-choice-icon">📋</span>
           <strong>ทางการ</strong>
           <small>30 ด่านสำหรับงานครู คะแนนรวมเต็ม 40 คะแนน ต้องกดส่งงานเมื่อทำเสร็จ</small>
@@ -252,6 +275,37 @@
       </div>
     </section>
 
+
+
+    <section id="rankedConfig" class="card hidden ranked-config-card">
+      <div class="section-title">
+        <div>
+          <span class="section-kicker">RANKING CHALLENGE</span>
+          <h2>🏆 Ranking Run</h2>
+          <p class="muted-line">ทุก Stage มีเวลาจำกัด เล่นผ่านแล้วปลดล็อกด่านถัดไปอัตโนมัติ และรับ Token เพิ่มจากรางวัล Classic อีก 15 Token</p>
+        </div>
+      </div>
+      <div class="ranked-rule-grid">
+        <div><span>Stage ปัจจุบัน</span><strong id="rankedStageLabel">01</strong></div>
+        <div><span>ความยาก</span><strong id="rankedDifficultyLabel">Easy</strong></div>
+        <div><span>เวลาจำกัด</span><strong id="rankedTimeLimitLabel">--</strong></div>
+        <div><span>โบนัส</span><strong>+15 Token</strong></div>
+      </div>
+      <div class="ranked-score-rule">
+        <span>🏃 ความเร็ว 40%</span><span>🎯 ความถูกต้อง 40%</span><span>✅ ผิดน้อย 20%</span>
+      </div>
+      <div class="ranked-progress-box">
+        <div>
+          <small>RANKED PROGRESS</small>
+          <strong id="rankedProgressText">Stage 1 / 50</strong>
+        </div>
+        <div class="ranked-progress-track"><i id="rankedProgressBar"></i></div>
+      </div>
+      <div class="config-footer">
+        <div id="rankedLessonSummary" class="selected-summary">เลือกภาษาเพื่อเริ่ม Ranking</div>
+        <button id="startRankedButton" class="btn primary" type="button">เริ่ม Ranking Stage</button>
+      </div>
+    </section>
 
     <section id="officialConfig" class="card hidden">
       <div class="section-title">
@@ -524,7 +578,7 @@
 </main>
 
 <footer><div class="wrap">ระบบเกมพิมพ์ Code · วิทยาลัยเทคนิคนางรอง</div></footer>
-<script type="module" src="./app.js?v=4.7.3"></script>
+<script type="module" src="./app.js?v=4.7.6"></script>
 
   <div id="characterSetupModal" class="character-modal hidden">
     <div class="character-modal-card character-setup-card">
