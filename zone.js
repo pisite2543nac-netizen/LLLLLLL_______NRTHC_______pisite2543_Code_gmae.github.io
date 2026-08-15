@@ -4,13 +4,14 @@ import {
   getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot,
   serverTimestamp, query, orderBy, limit, Timestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.8.0";
-import { REWARD_ITEMS, RARITY_META } from "./reward-data.js?v=4.8.0";
-import { DEFAULT_CHARACTER } from "./character-system.js?v=4.8.0";
+import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.8.1";
+import { REWARD_ITEMS, RARITY_META } from "./reward-data.js?v=4.8.1";
+import { DEFAULT_CHARACTER } from "./character-system.js?v=4.8.1";
+import { ZONE_ART_DATA } from "./zone-assets.js?v=4.8.1";
 import {
   QUEST_CONFIG, DEFAULT_TEACHER_QUESTS, localDayKey, activeQuestLimit,
   canAccessQuest, clampQuestReward, questDifficultyName, questObjectiveLabel
-} from "./quest-system.js?v=4.8.0";
+} from "./quest-system.js?v=4.8.1";
 
 const firebaseApp=initializeApp(firebaseConfig);
 const auth=getAuth(firebaseApp);
@@ -37,7 +38,7 @@ const INTERACT_DISTANCE=210;
 
 const canvas=$("zoneCanvas"),ctx=canvas.getContext("2d",{alpha:false});
 
-// ===== V4.8.0 REAL ART ASSETS =====
+// ===== V4.8.1 REAL ART ASSETS =====
 const ZONE_ART_PATH={
   world:"./assets/zone/zone-world-day.png",
   maleIdle:"./assets/zone/male-idle-right.png",
@@ -47,11 +48,7 @@ const ZONE_ART_PATH={
   femaleWalk1:"./assets/zone/female-walk-right-1.png",
   femaleWalk2:"./assets/zone/female-walk-right-2.png",
   wizardIdle:"./assets/zone/wizard-idle-right.png",
-  wizardWalk1:"./assets/zone/wizard-walk-right-1.png",
-  wizardWalk2:"./assets/zone/wizard-walk-right-2.png",
   merchantIdle:"./assets/zone/merchant-idle-right.png",
-  merchantWalk1:"./assets/zone/merchant-walk-right-1.png",
-  merchantWalk2:"./assets/zone/merchant-walk-right-2.png",
   token:"./assets/zone/item-token.png",
   gem:"./assets/zone/item-gem.png",
   chest:"./assets/zone/item-chest.png",
@@ -60,19 +57,56 @@ const ZONE_ART_PATH={
   potionBlue:"./assets/zone/item-potion-blue.png",
   potionGreen:"./assets/zone/item-potion-green.png"
 };
+const REQUIRED_ZONE_ART=["world","maleIdle","femaleIdle","wizardIdle","merchantIdle"];
+
 const zoneArt={};
-function loadZoneImage(key,src){
+const zoneArtStatus={loaded:0,failed:0,embedded:0,external:0};
+
+function loadZoneImageSource(key,src,sourceType){
   return new Promise(resolve=>{
     const img=new Image();
     img.decoding="async";
-    img.onload=()=>{zoneArt[key]=img;resolve(true)};
-    img.onerror=()=>{console.warn("Zone art load failed",key,src);resolve(false)};
+    img.onload=()=>{
+      zoneArt[key]=img;
+      zoneArtStatus.loaded++;
+      zoneArtStatus[sourceType]++;
+      resolve(true);
+    };
+    img.onerror=()=>resolve(false);
     img.src=src;
   });
 }
+
+async function loadZoneImage(key,externalSrc){
+  // 1) Embedded Data URI is the primary source.
+  const embedded=ZONE_ART_DATA[key];
+  if(embedded){
+    const ok=await loadZoneImageSource(key,embedded,"embedded");
+    if(ok)return true;
+  }
+
+  // 2) Normal file path is retained as a backup.
+  const externalOk=await loadZoneImageSource(key,externalSrc,"external");
+  if(!externalOk){
+    zoneArtStatus.failed++;
+    console.error("Zone art failed from both embedded and external sources:",key,externalSrc);
+  }
+  return externalOk;
+}
+
 async function loadZoneArt(){
-  const rows=await Promise.all(Object.entries(ZONE_ART_PATH).map(([k,v])=>loadZoneImage(k,v)));
-  return rows.some(Boolean);
+  const rows=await Promise.all(
+    Object.entries(ZONE_ART_PATH).map(([k,v])=>loadZoneImage(k,v))
+  );
+  const missing=REQUIRED_ZONE_ART.filter(k=>!zoneArt[k]?.naturalWidth);
+  console.info("ZONE ART V4.8.1",{
+    loaded:zoneArtStatus.loaded,
+    embedded:zoneArtStatus.embedded,
+    external:zoneArtStatus.external,
+    failed:zoneArtStatus.failed,
+    missing
+  });
+  return {ok:missing.length===0,missing};
 }
 function shopArtForItem(item){
   if(item?.slot==="back")return ZONE_ART_PATH.chest;
@@ -136,7 +170,7 @@ async function checkModeration(){
     if(s.banned){showGate("ถูกระงับการเข้า 2D Zone",`แบนถึง ${s.bannedUntil.toLocaleString("th-TH")}`);return false}
     if(s.kicked){showGate("ถูก GM เตะออกจาก 2D Zone",`กลับเข้าได้หลัง ${s.kickedUntil.toLocaleTimeString("th-TH")}`);return false}
     return true;
-  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.8.0");return false}
+  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.8.1");return false}
 }
 function listenModeration(){
   if(isGM())return;
@@ -317,7 +351,7 @@ async function acceptQuest(id){
 function startQuest(id){
   const q=teacherQuests.find(x=>x.id===id)||DEFAULT_TEACHER_QUESTS.find(x=>x.id===id);if(!q)return;
   if(isTouchOnly()){alert("รับภารกิจแล้ว กรุณาเปิดบัญชีนี้บนคอมพิวเตอร์เพื่อทำภารกิจ");return}
-  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.8.0`;
+  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.8.1`;
 }
 $("openWizardQuests").onclick=async()=>{await loadQuestProgress();renderQuestModal();$("zoneQuestModal").classList.remove("hidden")};
 $("closeWizardQuests").onclick=()=>$("zoneQuestModal").classList.add("hidden");
@@ -486,9 +520,9 @@ function drawWorld(now){
   if(zoneArt.world?.complete&&zoneArt.world.naturalWidth){
     ctx.drawImage(zoneArt.world,0,0,WORLD.width,WORLD.height);
   }else{
-    const bg=ctx.createLinearGradient(0,0,0,WORLD.height);
-    bg.addColorStop(0,day?"#80c9ec":"#082638");bg.addColorStop(.6,day?"#cae9e6":"#174457");bg.addColorStop(1,day?"#659951":"#284532");
-    ctx.fillStyle=bg;ctx.fillRect(0,0,WORLD.width,WORLD.height);
+    // V4.8.1 intentionally does not draw the old primitive scene.
+    ctx.fillStyle="#102c3d";
+    ctx.fillRect(0,0,WORLD.width,WORLD.height);
   }
   if(!day){
     ctx.fillStyle="rgba(5,20,45,.48)";ctx.fillRect(0,0,WORLD.width,WORLD.height);
@@ -537,8 +571,8 @@ function drawCharacter(c,p,x,y,now){
   const img=playerArtImage(p,now),flip=p.direction==="left";
   const w=gm?145:132,h=gm?164:149;
   if(!drawArtSprite(c,img,0,0,w,h,flip,1)){
-    // Emergency fallback only when an image file failed to load.
-    c.fillStyle=gm?"#56345f":"#315b82";rr(c,-25,-100,50,100,12);c.fill();
+    // Production art should always be available in V4.8.1.
+    c.fillStyle="#d84f4f";c.font="700 18px system-ui";c.textAlign="center";c.fillText("ART?",0,-55);
   }
   drawName(c,p,gm);c.restore();
 }
@@ -587,8 +621,18 @@ window.onresize=resizeCanvas;window.addEventListener("pagehide",leaveZone);$("le
 onAuthStateChanged(auth,async user=>{
   if(!user){showGate("กรุณา Login ก่อน","2D Zone ใช้บัญชีที่ลงทะเบียนแล้ว");return}
   uid=user.uid;if(!(await loadProfile()))return;if(!(await checkModeration()))return;
-  await loadZoneArt();
-  hideGate();$("zoneMyStudentId").textContent=isGM()?"GM":profile.studentId;$("zoneChatIdentity").textContent=isGM()?"GM":profile.studentId;
+  const artResult=await loadZoneArt();
+  if(!artResult.ok){
+    showGate(
+      "โหลดภาพ 2D Zone ไม่ครบ",
+      `ไม่พบ Asset สำคัญ: ${artResult.missing.join(", ")}`,
+      "V4.8.1 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
+    );
+    return;
+  }
+  hideGate();
+  $("zoneMyStudentId").textContent=isGM()?"GM":profile.studentId;
+  $("zoneChatIdentity").textContent=isGM()?"GM":profile.studentId;
   $("zoneMyShield").innerHTML=rankShieldHTML(isGM()?GM_RANK:profile.rank);$("zoneTokenBalance").textContent=isGM()?"∞":Number(profile.tokenBalance||0).toLocaleString();
   if(isGM()){$("openAdminPanel").classList.remove("hidden");$("leaveZoneButton").href="./admin.html";$("zoneChatInput").placeholder="GM พิมพ์ข้อความหรือประกาศ..."}
   resizeCanvas();updateClock();clockTimer=setInterval(updateClock,1000);await loadQuestProgress();
