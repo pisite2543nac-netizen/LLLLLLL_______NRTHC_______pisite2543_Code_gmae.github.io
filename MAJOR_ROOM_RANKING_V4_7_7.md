@@ -1,4 +1,4 @@
-# V4.7.7 — Ranking สาขาวิชา + ชั้น/ห้อง
+# V4.7.8 — Ranking สาขาวิชา + ชั้น/ห้อง
 
 Firebase Project:
 `nr-game-code`

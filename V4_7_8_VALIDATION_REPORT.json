@@ -1,0 +1,23 @@
+{
+  "syntax:app.js": true,
+  "syntax:admin.js": true,
+  "syntax:zone.js": true,
+  "syntax:ranking-system.js": true,
+  "syntax:quest-system.js": true,
+  "syntax:economy-system.js": true,
+  "syntax:reward-data.js": true,
+  "syntax:character-system.js": true,
+  "syntax:firebase-config.js": true,
+  "nr_game_code": true,
+  "daily_card": true,
+  "fullscreen_request": true,
+  "active_only": true,
+  "60_minutes": true,
+  "reward_15": true,
+  "daily_once": true,
+  "daily_subcollection": true,
+  "rules_3600": true,
+  "rules_reward_15": true,
+  "admin_uid": true,
+  "all_passed": true
+}

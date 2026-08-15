@@ -76,6 +76,41 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    match /users/{uid}/daily_checkins/{dayId} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+
+      // User บันทึกเวลา Fullscreen ของตัวเองได้ แต่ห้ามเปลี่ยน uid / studentId เป็นคนอื่น
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.studentId == get(/databases/$(database)/documents/users/$(uid)).data.studentId
+        && request.resource.data.fullscreenSeconds is number
+        && request.resource.data.fullscreenSeconds >= 0
+        && request.resource.data.fullscreenSeconds <= 3600
+        && request.resource.data.rewarded == false;
+
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.studentId == resource.data.studentId
+        && request.resource.data.fullscreenSeconds is number
+        && request.resource.data.fullscreenSeconds >= resource.data.fullscreenSeconds
+        && request.resource.data.fullscreenSeconds <= 3600
+        && (
+          (resource.data.rewarded == false && request.resource.data.rewarded == false)
+          ||
+          (
+            resource.data.rewarded == false
+            && request.resource.data.rewarded == true
+            && request.resource.data.fullscreenSeconds == 3600
+            && request.resource.data.rewardToken == 15
+          )
+        );
+
+      allow delete: if isAdmin();
+      allow read, write: if isAdmin();
+    }
+
     match /public_profiles/{uid} {
       allow read: if signedIn();
       allow create, update, delete: if signedIn() && request.auth.uid == uid;

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
   <title>ระบบเกมพิมพ์ Code | วิทยาลัยเทคนิคนางรอง</title>
-  <link rel="stylesheet" href="./style.css?v=4.7.7">
+  <link rel="stylesheet" href="./style.css?v=4.7.8">
 </head>
 <body>
 <header class="site-header">
@@ -178,6 +178,27 @@
       </div>
       <small>บน 2D Zone: Admin แสดงชื่อเหนือหัวเป็น GM และผู้เล่นทั่วไปแสดงเป็นรหัสนักศึกษา</small>
     </section>
+
+
+      <section id="dailyFullscreenQuestCard" class="panel daily-fullscreen-card">
+        <div class="daily-fullscreen-head">
+          <div>
+            <span class="section-kicker">DAILY QUEST</span>
+            <h2>🖥️ Fullscreen 60 นาที</h2>
+            <p>อยู่ในโหมดเต็มหน้าจอสะสมให้ครบ 1 ชั่วโมงภายในวันนี้ รับ <strong>15 Token</strong></p>
+          </div>
+          <span id="dailyFullscreenStatus" class="daily-quest-status">0 / 60 นาที</span>
+        </div>
+        <div class="daily-fullscreen-progress"><i id="dailyFullscreenBar"></i></div>
+        <div class="daily-fullscreen-meta">
+          <span id="dailyFullscreenTimer">00:00:00 / 01:00:00</span>
+          <span id="dailyFullscreenActiveState">รอเข้า Fullscreen</span>
+        </div>
+        <div class="daily-fullscreen-actions">
+          <button id="enterDailyFullscreen" class="btn secondary" type="button">เปิด Fullscreen</button>
+          <span id="dailyFullscreenRewardText">🎁 รางวัลวันนี้: 15 Token</span>
+        </div>
+      </section>
 
     <section id="languageSection" class="card">
       <div class="section-title">
@@ -583,7 +604,7 @@
 </main>
 
 <footer><div class="wrap">ระบบเกมพิมพ์ Code · วิทยาลัยเทคนิคนางรอง</div></footer>
-<script type="module" src="./app.js?v=4.7.7"></script>
+<script type="module" src="./app.js?v=4.7.8"></script>
 
   <div id="characterSetupModal" class="character-modal hidden">
     <div class="character-modal-card character-setup-card">

@@ -7,14 +7,14 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, limit, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=4.7.7";
-import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.7.7";
-import { REWARD_ITEMS, RARITY_META } from "./reward-data.js?v=4.7.7";
-import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.7.7";
-import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.7.7";
-import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.7.7";
-import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.7.7";
-import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.7.7";
+import { firebaseConfig } from "./firebase-config.js?v=4.7.8";
+import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.7.8";
+import { REWARD_ITEMS, RARITY_META } from "./reward-data.js?v=4.7.8";
+import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.7.8";
+import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.7.8";
+import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.7.8";
+import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.7.8";
+import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.7.8";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -36,6 +36,7 @@ const state = {
   pvpAggregate:{typedChars:0,keys:0,mistakes:0,seconds:0},pvpPayoutClaimed:false,pvpWasActive:false,pvpTargetCode:"",pvpTurnSignature:null,pvpRecordedSignature:null,
   pvpCountdownTimer:null,pvpCountdownEndMs:0,rankSettingsUnsub:null,rankResetTimer:null,rankSettings:{},rankResetAppliedVersion:null,
   activeQuest:null,questLaunchHandled:false,
+  dailyFullscreen:{dayId:"",seconds:0,rewarded:false,lastTickMs:0,syncTimer:null,uiTimer:null,claiming:false},
   playStyle:null,rankedTimeLimit:0,rankedTimedOut:false,rankedStage:1
 };
 
@@ -54,6 +55,132 @@ function showScreen(id){
 function difficultyName(id){ return DIFFICULTIES.find(x=>x.id===id)?.name || id; }
 function difficultyIcon(id){ return DIFFICULTIES.find(x=>x.id===id)?.icon || "●"; }
 function languageLessons(){ return LESSONS.filter(x => x.language === state.language?.id).sort((a,b)=>a.stage-b.stage); }
+
+function localDayId(){
+  const d=new Date();
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function fmtDuration(totalSeconds){
+  const s=Math.max(0,Math.floor(Number(totalSeconds||0)));
+  const h=String(Math.floor(s/3600)).padStart(2,"0");
+  const m=String(Math.floor((s%3600)/60)).padStart(2,"0");
+  const sec=String(s%60).padStart(2,"0");
+  return `${h}:${m}:${sec}`;
+}
+function isDailyFullscreenActive(){
+  return !!document.fullscreenElement && document.visibilityState==="visible" && !!state.player?.uid;
+}
+function renderDailyFullscreenQuest(){
+  const q=state.dailyFullscreen;
+  if(!$("dailyFullscreenQuestCard"))return;
+  const seconds=Math.min(3600,Math.max(0,Number(q.seconds||0)));
+  const pct=Math.min(100,seconds/3600*100);
+  $("dailyFullscreenBar").style.width=`${pct}%`;
+  $("dailyFullscreenTimer").textContent=`${fmtDuration(seconds)} / 01:00:00`;
+  $("dailyFullscreenStatus").textContent=q.rewarded?"รับรางวัลแล้ว":`${Math.floor(seconds/60)} / 60 นาที`;
+  $("dailyFullscreenActiveState").textContent=q.rewarded
+    ?"✅ Daily Quest สำเร็จ"
+    :isDailyFullscreenActive()?"🟢 กำลังนับเวลา Fullscreen":"⏸️ หยุดนับ · ต้องอยู่ Fullscreen และเปิดแท็บนี้";
+  $("dailyFullscreenRewardText").textContent=q.rewarded?"🎁 รับ 15 Token วันนี้แล้ว":"🎁 รางวัลวันนี้: 15 Token";
+  $("enterDailyFullscreen").disabled=q.rewarded||!!document.fullscreenElement;
+}
+async function loadDailyFullscreenQuest(){
+  if(!state.player?.uid)return;
+  const dayId=localDayId(),ref=doc(db,"users",state.player.uid,"daily_checkins",dayId);
+  const snap=await getDoc(ref);
+  const data=snap.exists()?snap.data():{};
+  state.dailyFullscreen.dayId=dayId;
+  state.dailyFullscreen.seconds=Math.min(3600,Math.max(0,Number(data.fullscreenSeconds||0)));
+  state.dailyFullscreen.rewarded=!!data.rewarded;
+  state.dailyFullscreen.lastTickMs=performance.now();
+  renderDailyFullscreenQuest();
+}
+async function syncDailyFullscreenProgress(force=false){
+  const q=state.dailyFullscreen;
+  if(!state.player?.uid||!q.dayId||q.rewarded)return;
+  const ref=doc(db,"users",state.player.uid,"daily_checkins",q.dayId);
+  await setDoc(ref,{
+    uid:state.player.uid,
+    studentId:state.player.studentId||"",
+    dayId:q.dayId,
+    fullscreenSeconds:Math.min(3600,Math.floor(q.seconds)),
+    rewarded:false,
+    updatedAt:serverTimestamp()
+  },{merge:true});
+}
+async function claimDailyFullscreenReward(){
+  const q=state.dailyFullscreen;
+  if(!state.player?.uid||q.rewarded||q.claiming||q.seconds<3600)return;
+  q.claiming=true;
+  try{
+    const userRef=doc(db,"users",state.player.uid);
+    const checkinRef=doc(db,"users",state.player.uid,"daily_checkins",q.dayId);
+    await runTransaction(db,async tx=>{
+      const [userSnap,checkSnap]=await Promise.all([tx.get(userRef),tx.get(checkinRef)]);
+      if(!userSnap.exists())throw new Error("USER_PROFILE_NOT_FOUND");
+      const check=checkSnap.exists()?checkSnap.data():{};
+      if(check.rewarded===true)return;
+      const savedSeconds=Math.max(Number(check.fullscreenSeconds||0),Math.floor(q.seconds));
+      if(savedSeconds<3600)throw new Error("FULLSCREEN_NOT_COMPLETE");
+      const user=userSnap.data();
+      tx.set(checkinRef,{
+        uid:state.player.uid,studentId:state.player.studentId||"",dayId:q.dayId,
+        fullscreenSeconds:3600,rewarded:true,rewardToken:15,rewardedAt:serverTimestamp(),updatedAt:serverTimestamp()
+      },{merge:true});
+      tx.update(userRef,{
+        tokenBalance:Number(user.tokenBalance||0)+15,
+        tokenLifetime:Number(user.tokenLifetime||0)+15,
+        updatedAt:serverTimestamp()
+      });
+    });
+    q.rewarded=true;q.seconds=3600;
+    await loadPlayer();
+    renderDailyFullscreenQuest();
+    if(typeof showToast==="function")showToast("Daily Quest สำเร็จ","ครบ Fullscreen 60 นาที รับ +15 Token");
+  }catch(error){
+    console.warn("daily fullscreen reward:",error);
+  }finally{q.claiming=false}
+}
+function dailyFullscreenTick(){
+  const q=state.dailyFullscreen;
+  if(!state.player?.uid||q.rewarded)return renderDailyFullscreenQuest();
+  const now=performance.now();
+  if(!q.lastTickMs)q.lastTickMs=now;
+  const delta=Math.min(2,Math.max(0,(now-q.lastTickMs)/1000));
+  q.lastTickMs=now;
+  if(isDailyFullscreenActive())q.seconds=Math.min(3600,q.seconds+delta);
+  renderDailyFullscreenQuest();
+  if(q.seconds>=3600)claimDailyFullscreenReward();
+}
+function startDailyFullscreenQuest(){
+  stopDailyFullscreenQuest();
+  loadDailyFullscreenQuest().catch(console.warn);
+  state.dailyFullscreen.uiTimer=setInterval(dailyFullscreenTick,1000);
+  state.dailyFullscreen.syncTimer=setInterval(()=>syncDailyFullscreenProgress().catch(console.warn),30000);
+}
+function stopDailyFullscreenQuest(){
+  const q=state.dailyFullscreen;
+  if(q.uiTimer)clearInterval(q.uiTimer);
+  if(q.syncTimer)clearInterval(q.syncTimer);
+  q.uiTimer=null;q.syncTimer=null;
+}
+async function enterDailyFullscreenMode(){
+  try{
+    if(!document.fullscreenElement)await document.documentElement.requestFullscreen();
+  }catch(error){console.warn("fullscreen:",error)}
+  state.dailyFullscreen.lastTickMs=performance.now();
+  renderDailyFullscreenQuest();
+}
+document.addEventListener("fullscreenchange",()=>{
+  state.dailyFullscreen.lastTickMs=performance.now();
+  renderDailyFullscreenQuest();
+});
+document.addEventListener("visibilitychange",()=>{
+  state.dailyFullscreen.lastTickMs=performance.now();
+  renderDailyFullscreenQuest();
+});
+
 function maxUnlocked(languageId){
   return Number(state.player?.progress?.[languageId]?.maxUnlockedStage || 1);
 }
@@ -191,6 +318,8 @@ $("registerForm").addEventListener("submit",async e=>{
     };
     await setDoc(doc(db,"users",state.uid),p);
     await routeAuthenticatedStudent();
+    startDailyFullscreenQuest();
+    setTimeout(()=>enterDailyFullscreenMode(),250);
   }catch(err){
     $("registerMessage").textContent = err.code==="auth/email-already-in-use" ? "เลขนักศึกษานี้ลงทะเบียนแล้ว" : "ลงทะเบียนไม่สำเร็จ: "+err.message;
   }
@@ -225,7 +354,7 @@ async function routeAuthenticatedStudent(){
     }catch(error){
       console.warn("mobile route sync skipped:", error);
     }
-    location.replace("./zone.html?v=4.7.7");
+    location.replace("./zone.html?v=4.7.8");
     return;
   }
 
@@ -490,7 +619,7 @@ async function maybeLaunchQuestFromUrl(){
   if(!id||state.questLaunchHandled||!state.uid||!state.player)return false;
   state.questLaunchHandled=true;
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.7.7");
+    location.replace("./zone.html?v=4.7.8");
     return true;
   }
   const quest=await resolveTeacherQuest(id);
@@ -843,7 +972,7 @@ $("nextLevelButton").onclick=async()=>{
   if(state.gameMode==="ranked"){state.rankedStage=next.stage;state.rankedTimeLimit=rankedTimeLimitForLesson(next);}
   prepareClassic();showScreen("gameScreen");await requestRealFullscreen();setTimeout(()=>$("typingInput").focus({preventScroll:true}),100);
 };
-$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.7.7"};
+$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.7.8"};
 $("portalButton").onclick=async()=>{state.activeQuest=null;history.replaceState(null,"",location.pathname);await ensureProfileDefaults();await enterPortal()};
 
 function renderRewardShop(){
@@ -1108,7 +1237,7 @@ async function saveCharacterGender(gender){
 
   // มือถือ/แท็บเล็ตใช้เฉพาะ 2D Zone หลังเลือกตัวละครเสร็จ
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.7.7");
+    location.replace("./zone.html?v=4.7.8");
   }
 }
 
@@ -1387,7 +1516,7 @@ function startSocialHub(){
 window.addEventListener('pagehide',()=>markOffline());
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')writePresence(document.body.classList.contains('game-active')?'game':'portal')});
 
-/* ===== V4.7.7 PVP MULTI ROOM · 1/3/5 SHOT · 1V1/2V2 RELAY · TOKEN WAGER ===== */
+/* ===== V4.7.8 PVP MULTI ROOM · 1/3/5 SHOT · 1V1/2V2 RELAY · TOKEN WAGER ===== */
 const PVP_ROOM_STALE_MS=20*60*1000;
 const PVP_CREATE_FEE=6;
 const PVP_COUNTDOWN_MS=3000;
@@ -1717,7 +1846,7 @@ updateDeviceUX();
 
 onAuthStateChanged(auth,async user=>{
   if(!user){state.uid=null;state.player=null;showScreen("authScreen");return;}
-  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.7.7");return;}
+  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.7.8");return;}
   state.uid=user.uid;
   try{
     await routeAuthenticatedStudent();
