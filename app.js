@@ -7,17 +7,18 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, limit, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=4.9.2";
-import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.9.2";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.9.2";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.9.2";
-import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.9.2";
-import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.9.2";
-import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.9.2";
-import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.9.2";
-import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.9.2";
-import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.9.2";
-import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.9.2";
+import { firebaseConfig } from "./firebase-config.js?v=4.9.3";
+import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.9.3";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.9.3";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.9.3";
+import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.9.3";
+import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.9.3";
+import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.9.3";
+import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.9.3";
+import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.9.3";
+import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.9.3";
+import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.9.3";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.9.3";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -366,7 +367,7 @@ async function routeAuthenticatedStudent(){
     }catch(error){
       console.warn("mobile route sync skipped:", error);
     }
-    location.replace("./zone.html?v=4.9.2");
+    location.replace("./zone.html?v=4.9.3");
     return;
   }
 
@@ -383,6 +384,7 @@ async function enterPortal(){
   renderRewardShop();
   listenHistory();
   startSocialHub();
+  startUsageTracker(db,state.player,"portal");
   setupCharacterUi();
 
   if(!["male","female"].includes(state.player?.character?.gender)){
@@ -405,6 +407,7 @@ async function enterPortal(){
 }
 
 $("logoutUserButton").onclick=async()=>{
+  await stopUsageTracker({flush:true});
   await markOffline();
   if(state.historyUnsub) state.historyUnsub();
   if(state.presenceUnsub) state.presenceUnsub();
@@ -631,7 +634,7 @@ async function maybeLaunchQuestFromUrl(){
   if(!id||state.questLaunchHandled||!state.uid||!state.player)return false;
   state.questLaunchHandled=true;
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.9.2");
+    location.replace("./zone.html?v=4.9.3");
     return true;
   }
   const quest=await resolveTeacherQuest(id);
@@ -984,7 +987,7 @@ $("nextLevelButton").onclick=async()=>{
   if(state.gameMode==="ranked"){state.rankedStage=next.stage;state.rankedTimeLimit=rankedTimeLimitForLesson(next);}
   prepareClassic();showScreen("gameScreen");await requestRealFullscreen();setTimeout(()=>$("typingInput").focus({preventScroll:true}),100);
 };
-$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.9.2"};
+$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.9.3"};
 $("portalButton").onclick=async()=>{state.activeQuest=null;history.replaceState(null,"",location.pathname);await ensureProfileDefaults();await enterPortal()};
 
 function itemStatsMarkup(item,compact=false){
@@ -1284,7 +1287,7 @@ async function saveCharacterGender(gender){
 
   // มือถือ/แท็บเล็ตใช้เฉพาะ 2D Zone หลังเลือกตัวละครเสร็จ
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.9.2");
+    location.replace("./zone.html?v=4.9.3");
   }
 }
 
@@ -1779,7 +1782,7 @@ async function savePvpRankedResult(room,result){
 }
 
 
-/* ===== V4.9.2 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
+/* ===== V4.9.3 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
 const PVP_ROOM_STALE_MS=20*60*1000;
 const PVP_CREATE_FEE=6;
 const PVP_COUNTDOWN_MS=3000;
@@ -2108,8 +2111,8 @@ if ($("mobileExitButton")) {
 updateDeviceUX();
 
 onAuthStateChanged(auth,async user=>{
-  if(!user){state.uid=null;state.player=null;showScreen("authScreen");return;}
-  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.9.2");return;}
+  if(!user){stopUsageTracker({flush:true});state.uid=null;state.player=null;showScreen("authScreen");return;}
+  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.9.3");return;}
   state.uid=user.uid;
   try{
     await routeAuthenticatedStudent();

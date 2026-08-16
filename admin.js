@@ -4,18 +4,19 @@ import {
   getFirestore, collection, doc, getDocs, setDoc, deleteDoc, updateDoc,
   writeBatch, serverTimestamp, onSnapshot, Timestamp, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_UID } from "./firebase-config.js?v=4.9.2";
-import { DEFAULT_MODES, DEFAULT_LEVELS } from "./default-data.js?v=4.9.2";
-import { seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey } from "./ranking-system.js?v=4.9.2";
-import { DEFAULT_TEACHER_QUESTS, clampQuestReward, questDifficultyName, questObjectiveLabel, defaultMinRankForDifficulty, rewardRange } from "./quest-system.js?v=4.9.2";
-import { buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.9.2";
+import { firebaseConfig, ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_UID } from "./firebase-config.js?v=4.9.3";
+import { DEFAULT_MODES, DEFAULT_LEVELS } from "./default-data.js?v=4.9.3";
+import { seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey } from "./ranking-system.js?v=4.9.3";
+import { DEFAULT_TEACHER_QUESTS, clampQuestReward, questDifficultyName, questObjectiveLabel, defaultMinRankForDifficulty, rewardRange } from "./quest-system.js?v=4.9.3";
+import { buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.9.3";
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),$=id=>document.getElementById(id);
-let cache={users:[],attempts:[],levels:[],modes:[],official:[],zonePositions:[],zoneModeration:[],zoneMessages:[],zoneArchive:[],rankingSettings:{},teacherQuests:[],pvpResults:[]},unsubs=[];
+let cache={users:[],attempts:[],levels:[],modes:[],official:[],zonePositions:[],zoneModeration:[],zoneMessages:[],zoneArchive:[],rankingSettings:{},teacherQuests:[],pvpResults:[],usageDaily:[],usageSessions:[]},unsubs=[];
 let knownUserIds=null;
 let selectedAdminClass="";
 let adminClassSearchTerm="";
 let adminRankClock=null;
+let selectedUsageUid="";
 
 const isAdmin=user=>!!user&&user.uid===ADMIN_UID;
 const dateValue=v=>{try{return v?.toDate?.()?.getTime?.()||0}catch{return 0}};
@@ -59,6 +60,8 @@ function startRealtime(){
   unsubs.push(onSnapshot(collection(db,"game_modes"),snap=>{cache.modes=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>Number(a.sortOrder||0)-Number(b.sortOrder||0));renderAll()}));
   unsubs.push(onSnapshot(collection(db,"official_submissions"),snap=>{cache.official=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>dateValue(b.submittedAt)-dateValue(a.submittedAt));renderAll()}));
   unsubs.push(onSnapshot(collection(db,"pvp_results"),snap=>{cache.pvpResults=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()},error=>console.warn("pvp results:",error)));
+  unsubs.push(onSnapshot(query(collection(db,"usage_daily"),orderBy("dayId","desc"),limit(5000)),snap=>{cache.usageDaily=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()},error=>console.warn("usage daily:",error)));
+  unsubs.push(onSnapshot(query(collection(db,"usage_sessions"),orderBy("lastSeenAt","desc"),limit(5000)),snap=>{cache.usageSessions=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()},error=>console.warn("usage sessions:",error)));
   unsubs.push(onSnapshot(collection(db,"zone_positions"),snap=>{cache.zonePositions=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()}));
   unsubs.push(onSnapshot(collection(db,"zone_moderation"),snap=>{cache.zoneModeration=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()}));
   unsubs.push(onSnapshot(collection(db,"teacher_quests"),snap=>{cache.teacherQuests=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()},error=>console.warn("teacher quests:",error)));
@@ -68,7 +71,125 @@ function startRealtime(){
   const archiveQuery=query(collection(db,"zone_chat_archive"),orderBy("createdAt","desc"),limit(1000));
   unsubs.push(onSnapshot(archiveQuery,snap=>{cache.zoneArchive=snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.zoneId===ACTIVE_ZONE_ID);renderAll()},error=>{cache.zoneArchive=[];console.warn("zone archive:",error)}));
 }
-function renderAll(){renderMetrics();renderResults();renderUsers();renderClassrooms();renderAcademicDirectory();renderLevels();renderOfficial();renderRanking();renderPvpRanking();renderRankingSchedule();renderTeacherQuests();renderZoneControl();renderZoneChatLog()}
+function renderAll(){renderUsageDashboard();renderMetrics();renderResults();renderUsers();renderClassrooms();renderAcademicDirectory();renderLevels();renderOfficial();renderRanking();renderPvpRanking();renderRankingSchedule();renderTeacherQuests();renderZoneControl();renderZoneChatLog()}
+
+function usageTodayId(){
+  const d=new Date(),y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function usageDayMs(dayId){
+  const [y,m,d]=String(dayId||"").split("-").map(Number);
+  return y&&m&&d?new Date(y,m-1,d).getTime():0;
+}
+function usageCutoff(days){
+  const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-(Number(days)-1));return d.getTime();
+}
+function usageSecondsText(seconds){
+  const s=Math.max(0,Math.round(Number(seconds||0))),h=Math.floor(s/3600),m=Math.floor((s%3600)/60);
+  return h>0?`${h} ชม. ${m} นาที`:`${m} นาที`;
+}
+function usageHoursShort(seconds){return `${(Number(seconds||0)/3600).toFixed(Number(seconds||0)>=36000?1:2)} ชม.`;}
+function usageRowsForWindow(windowValue){
+  if(windowValue==="all")return [...cache.usageDaily];
+  const cutoff=usageCutoff(Number(windowValue||30));
+  return cache.usageDaily.filter(x=>usageDayMs(x.dayId)>=cutoff);
+}
+function usageSessionsFor(uid,dayId=null){
+  return cache.usageSessions.filter(s=>s.uid===uid&&(!dayId||s.dayId===dayId));
+}
+function usageUserMap(rows){
+  const map=new Map();
+  rows.forEach(r=>{
+    if(!r.uid)return;
+    if(!map.has(r.uid))map.set(r.uid,{uid:r.uid,seconds:0,days:new Set(),lastDay:"",rows:[]});
+    const x=map.get(r.uid);x.seconds+=Number(r.activeSeconds||0);x.days.add(r.dayId);x.rows.push(r);
+    if(String(r.dayId||"")>String(x.lastDay||""))x.lastDay=r.dayId;
+  });
+  return map;
+}
+function renderUsageDashboard(){
+  if(!$("usageKpiUsers"))return;
+  const today=usageTodayId(),all=cache.usageDaily||[],todayRows=all.filter(x=>x.dayId===today);
+  const rows7=usageRowsForWindow("7"),rows30=usageRowsForWindow("30");
+  const sum=rows=>rows.reduce((s,x)=>s+Number(x.activeSeconds||0),0);
+  const usersToday=new Set(todayRows.map(x=>x.uid)).size,users7=new Set(rows7.map(x=>x.uid)).size,users30=new Set(rows30.map(x=>x.uid)).size;
+  const totalUsers=cache.users.length,sessionSeconds=(cache.usageSessions||[]).reduce((s,x)=>s+Number(x.activeSeconds||0),0);
+
+  $("usageKpiUsers").textContent=totalUsers;
+  $("usageKpiActiveToday").textContent=usersToday;
+  $("usageKpiActiveRate").textContent=`${totalUsers?Math.round(usersToday/totalUsers*100):0}% ของสมาชิก`;
+  $("usageKpiTodayHours").textContent=usageHoursShort(sum(todayRows));
+  $("usageKpi7Hours").textContent=usageHoursShort(sum(rows7));$("usageKpi7Users").textContent=`${users7} User`;
+  $("usageKpi30Hours").textContent=usageHoursShort(sum(rows30));$("usageKpi30Users").textContent=`${users30} User`;
+  $("usageKpiSessions").textContent=(cache.usageSessions||[]).length;
+  $("usageKpiAvgSession").textContent=`เฉลี่ย ${Math.round((cache.usageSessions||[]).length?sessionSeconds/cache.usageSessions.length/60:0)} นาที`;
+
+  const last14=[];for(let i=13;i>=0;i--){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);const id=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;last14.push({id,date:d});}
+  const daily=last14.map(day=>{const rows=all.filter(x=>x.dayId===day.id);return {...day,seconds:sum(rows),users:new Set(rows.map(x=>x.uid)).size}});
+  const max=Math.max(1,...daily.map(x=>x.seconds));
+  $("usage14DayTotal").textContent=usageHoursShort(daily.reduce((s,x)=>s+x.seconds,0));
+  $("usageDailyBars").innerHTML=daily.map(x=>`<div class="usage-day-bar" title="${x.id} · ${usageSecondsText(x.seconds)} · ${x.users} User">
+    <div class="usage-bar-track"><i style="height:${Math.max(x.seconds?6:0,x.seconds/max*100)}%"></i></div>
+    <strong>${x.date.getDate()}</strong><small>${x.users}U</small>
+  </div>`).join("");
+
+  const userMap=usageUserMap(rows30);
+  const top=[...userMap.values()].sort((a,b)=>b.seconds-a.seconds).slice(0,10);
+  $("usageTopUsers").innerHTML=top.map((x,i)=>{
+    const u=cache.users.find(u=>u.id===x.uid)||x.rows[0]||{};
+    const pct=top[0]?.seconds?x.seconds/top[0].seconds*100:0;
+    return `<button type="button" class="usage-top-row" data-usage-user="${esc(x.uid)}">
+      <b>${i+1}</b><div><strong>${esc(u.studentId||"-")} · ${esc(u.fullName||"-")}</strong><span><i style="width:${pct}%"></i></span></div><em>${usageHoursShort(x.seconds)}</em>
+    </button>`;
+  }).join("")||`<div class="empty">ยังไม่มีข้อมูลการใช้งาน</div>`;
+
+  renderUsageUsers();
+  document.querySelectorAll("[data-usage-user]").forEach(b=>b.onclick=()=>{selectedUsageUid=b.dataset.usageUser;renderUsageUsers();renderUsageUserDetail();});
+  if(selectedUsageUid)renderUsageUserDetail();
+}
+function renderUsageUsers(){
+  if(!$("usageUsersBody"))return;
+  const windowValue=$("usageWindowFilter")?.value||"30",rows=usageRowsForWindow(windowValue),map=usageUserMap(rows);
+  const q=String($("usageUserSearch")?.value||"").trim().toLowerCase();
+  const list=cache.users.map(u=>{
+    const x=map.get(u.id)||{seconds:0,days:new Set(),lastDay:""};
+    return {u,...x};
+  }).filter(x=>!q||[x.u.studentId,x.u.fullName,x.u.educationLevel,x.u.classroom,x.u.department,x.u.major].some(v=>String(v||"").toLowerCase().includes(q)))
+    .sort((a,b)=>b.seconds-a.seconds||compareStudentId(a.u,b.u));
+
+  $("usageUsersBody").innerHTML=list.map((x,i)=>`<tr class="${selectedUsageUid===x.u.id?"usage-selected":""}">
+    <td>${i+1}</td><td><strong>${esc(x.u.studentId||"-")}</strong></td><td>${esc(x.u.fullName||"-")}</td>
+    <td>${esc(x.u.educationLevel||"-")}${esc(x.u.classroom||"")}</td><td>${esc(x.u.major||"-")}</td>
+    <td>${x.days.size}</td><td><strong>${usageSecondsText(x.seconds)}</strong></td>
+    <td>${x.days.size?usageSecondsText(x.seconds/x.days.size):"-"}</td><td>${esc(x.lastDay||"-")}</td>
+    <td><button class="btn ghost btn-small" data-usage-detail="${x.u.id}">รายละเอียด</button></td>
+  </tr>`).join("")||`<tr><td colspan="10" class="empty">ไม่พบข้อมูล</td></tr>`;
+  document.querySelectorAll("[data-usage-detail]").forEach(b=>b.onclick=()=>{selectedUsageUid=b.dataset.usageDetail;renderUsageUsers();renderUsageUserDetail();});
+}
+function renderUsageUserDetail(){
+  if(!$("usageDetailBody"))return;
+  const u=cache.users.find(x=>x.id===selectedUsageUid);
+  const rows=cache.usageDaily.filter(x=>x.uid===selectedUsageUid).sort((a,b)=>String(b.dayId).localeCompare(String(a.dayId)));
+  if(!u&&!rows.length){$("usageDetailTitle").textContent="เลือก User เพื่อดูรายละเอียดรายวัน";$("usageDetailTotal").textContent="-";$("usageDetailBody").innerHTML=`<tr><td colspan="6" class="empty">ยังไม่ได้เลือก User</td></tr>`;return;}
+  const p=u||rows[0],total=rows.reduce((s,x)=>s+Number(x.activeSeconds||0),0);
+  $("usageDetailTitle").textContent=`${p.studentId||"-"} · ${p.fullName||"-"}`;
+  $("usageDetailTotal").textContent=usageSecondsText(total);
+  const sessions=usageSessionsFor(selectedUsageUid);
+  const activeDays=rows.length,avg=activeDays?total/activeDays:0;
+  $("usageDetailSummary").innerHTML=`
+    <div><span>ชั้น/ห้อง</span><strong>${esc(p.educationLevel||"-")}${esc(p.classroom||"")}</strong></div>
+    <div><span>สาขาวิชา</span><strong>${esc(p.major||"-")}</strong></div>
+    <div><span>วันที่ใช้งาน</span><strong>${activeDays} วัน</strong></div>
+    <div><span>Session</span><strong>${sessions.length}</strong></div>
+    <div><span>เฉลี่ย/วันที่ใช้งาน</span><strong>${usageSecondsText(avg)}</strong></div>
+  `;
+  $("usageDetailBody").innerHTML=rows.map(r=>{
+    const ss=usageSessionsFor(selectedUsageUid,r.dayId),pages=[...new Set(ss.map(x=>x.page).filter(Boolean))];
+    return `<tr><td><strong>${esc(r.dayId)}</strong></td><td>${usageSecondsText(r.activeSeconds)}</td><td>${ss.length}</td>
+      <td>${formatDate(r.firstSeenAt)}</td><td>${formatDate(r.lastSeenAt)}</td><td>${esc(pages.join(", ")||"-")}</td></tr>`;
+  }).join("")||`<tr><td colspan="6" class="empty">User นี้ยังไม่มีข้อมูล Usage</td></tr>`;
+}
+
 function renderMetrics(){
   const completed=cache.attempts.filter(x=>x.status==="completed");
   const avg=completed.length?Math.round(completed.reduce((s,x)=>s+Number(x.score||0),0)/completed.length):0;
@@ -712,3 +833,6 @@ $("importJson").addEventListener("change",async e=>{const f=e.target.files[0];if
   official_submissions:data.official_submissions||[],zone_moderation:data.zone_moderation||[],zone_chat_archive:data.zone_chat_archive||[],teacher_quests:data.teacher_quests||[]
 })){for(const row of rows){const id=row.id||doc(collection(db,name)).id,copy={...row};delete copy.id;await setDoc(doc(db,name,id),copy,{merge:true})}}alert("นำเข้าสำเร็จ")});
 document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".admin-tab-panel").forEach(x=>x.classList.add("hidden"));btn.classList.add("active");$(btn.dataset.tab).classList.remove("hidden")});
+
+if($("usageUserSearch"))$("usageUserSearch").oninput=renderUsageUsers;
+if($("usageWindowFilter"))$("usageWindowFilter").onchange=renderUsageUsers;

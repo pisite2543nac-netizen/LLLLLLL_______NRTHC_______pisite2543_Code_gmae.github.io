@@ -17,14 +17,89 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/zone_moderation/$(request.auth.uid)).data.kickedUntil > request.time;
     }
     function zoneAccessAllowed() { return signedIn() && !activeZoneBan() && !activeZoneKick(); }
+    function noGmExclusiveGear(data) {
+      return !('character' in data)
+        || !('equipped' in data.character)
+        || (
+          (!('hand' in data.character.equipped) || data.character.equipped.hand != "gm_excalibur")
+          && (!('pet' in data.character.equipped) || data.character.equipped.pet != "gm_little_ghost")
+        );
+    }
 
     match /game_modes/{modeId} { allow read: if signedIn(); allow write: if isAdmin(); }
     match /levels/{levelId} { allow read: if signedIn(); allow write: if isAdmin(); }
 
     match /users/{uid} {
-      allow create: if signedIn() && request.auth.uid == uid;
-      allow read, update: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid && noGmExclusiveGear(request.resource.data);
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow update: if signedIn() && request.auth.uid == uid && noGmExclusiveGear(request.resource.data);
       allow read, write: if isAdmin();
+    }
+
+    match /gm_profiles/{uid} {
+      allow read, create, update, delete: if isAdmin() && request.auth.uid == uid;
+    }
+
+    match /usage_daily/{usageId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.studentId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.studentId
+        && request.resource.data.dayId is string
+        && request.resource.data.activeSeconds is number
+        && request.resource.data.activeSeconds >= 0
+        && request.resource.data.activeSeconds <= 120
+        && request.resource.data.firstSeenAt == request.time
+        && request.resource.data.lastSeenAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.studentId == resource.data.studentId
+        && request.resource.data.dayId == resource.data.dayId
+        && request.resource.data.firstSeenAt == resource.data.firstSeenAt
+        && request.resource.data.activeSeconds is number
+        && request.resource.data.activeSeconds >= resource.data.activeSeconds
+        && request.resource.data.activeSeconds <= resource.data.activeSeconds + 120
+        && request.resource.data.lastSeenAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if isAdmin();
+    }
+
+    match /usage_sessions/{sessionId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.studentId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.studentId
+        && request.resource.data.sessionId == sessionId
+        && request.resource.data.dayId is string
+        && request.resource.data.page is string
+        && request.resource.data.activeSeconds is number
+        && request.resource.data.activeSeconds >= 0
+        && request.resource.data.activeSeconds <= 120
+        && request.resource.data.startedAt == request.time
+        && request.resource.data.lastSeenAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.studentId == resource.data.studentId
+        && request.resource.data.sessionId == resource.data.sessionId
+        && request.resource.data.dayId == resource.data.dayId
+        && request.resource.data.page == resource.data.page
+        && request.resource.data.startedAt == resource.data.startedAt
+        && request.resource.data.activeSeconds is number
+        && request.resource.data.activeSeconds >= resource.data.activeSeconds
+        && request.resource.data.activeSeconds <= resource.data.activeSeconds + 120
+        && request.resource.data.lastSeenAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if isAdmin();
     }
 
     match /pvp_rooms/{roomCode} {

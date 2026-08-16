@@ -40,7 +40,14 @@ export const LEGACY_REWARD_ITEMS = [
   {id:"set2_storm_aura",name:"Storm Code Aura (Legacy)",icon:"⚡",baseCost:12500,cost:16250,type:"wearable",slot:"aura",rarity:"rare",visual:"storm_aura",description:"ไอเท็มจากเวอร์ชันก่อน ยังคงสวมและขายคืนได้",stats:{atk:38,crit:22,spd:18},power:127},
 ];
 
-export const ALL_REWARD_ITEMS = [...REWARD_ITEMS,...LEGACY_REWARD_ITEMS];
+
+export const GM_EXCLUSIVE_ITEMS = [
+  {id:"gm_excalibur",name:"ดาบ Excalibur · GM",icon:"⚔️",cost:0,slot:"hand",rarity:"gm",visual:"gm_excalibur",description:"ดาบศักดิ์สิทธิ์ประจำ GM ไม่มีขายใน Token Shop",type:"wearable",stats:{atk:120,acc:30,crit:50},power:345,gmOnly:true},
+  {id:"gm_little_ghost",name:"ผีน้อย GM",icon:"👻",cost:0,slot:"pet",rarity:"gm",visual:"gm_little_ghost",description:"สัตว์เลี้ยงผีน้อยพิเศษสำหรับ GM เท่านั้น",type:"wearable",stats:{hp:800,spd:25,luck:50},power:155,gmOnly:true}
+];
+export const GM_DEFAULT_INVENTORY = GM_EXCLUSIVE_ITEMS.map(x=>x.id);
+
+export const ALL_REWARD_ITEMS = [...REWARD_ITEMS,...LEGACY_REWARD_ITEMS,...GM_EXCLUSIVE_ITEMS];
 export function rewardItemById(id){ return ALL_REWARD_ITEMS.find(x=>x.id===id)||null; }
 
 export const INVENTORY_LIMIT = 18;
@@ -50,7 +57,8 @@ export function sellBackValue(item){ return Math.max(1,Math.floor(Number(item?.c
 export const RARITY_META = {
   easy:{name:"หาง่าย",short:"EASY",order:1,color:"#4f9b70"},
   medium:{name:"ระดับกลาง",short:"MEDIUM",order:2,color:"#477fb4"},
-  rare:{name:"หายาก",short:"RARE",order:3,color:"#9a62c9"}
+  rare:{name:"หายาก",short:"RARE",order:3,color:"#9a62c9"},
+  gm:{name:"GM พิเศษ",short:"GM EXCLUSIVE",order:99,color:"#7250b5"}
 };
 
 export const ITEM_STAT_KEYS = ["hp","atk","def","acc","spd","crit","luck"];
