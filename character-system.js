@@ -7,6 +7,7 @@ export const DEFAULT_CHARACTER = {
     face: null,
     top: null,
     bottom: null,
+    outfit: null,
     shoes: null,
     back: null,
     hand: null,

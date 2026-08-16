@@ -29,6 +29,16 @@ export const REWARD_ITEMS = [
   {id:"phoenix_pet",name:"สัตว์เลี้ยง Phoenix",icon:"🔥",cost:12500,slot:"pet",rarity:"rare",visual:"phoenix_pet",description:"Phoenix ไฟบินตามตัวละคร",type:"wearable",stats:{hp:500,atk:35,spd:20},power:140},
   {id:"golden_dragon_pet",name:"สัตว์เลี้ยงมังกรทอง",icon:"🐲",cost:15000,slot:"pet",rarity:"rare",visual:"golden_dragon_pet",description:"มังกรทองระดับสูงสุดของสัตว์เลี้ยง",type:"wearable",stats:{hp:600,atk:40,crit:25},power:178},
   {id:"throne_effect",name:"บัลลังก์ Code Emperor",icon:"🏆",cost:18000,slot:"aura",rarity:"rare",visual:"throne",description:"เอฟเฟกต์บัลลังก์สำหรับผู้เล่นระดับสูงสุด",type:"wearable",stats:{hp:650,def:60,acc:20,luck:20},power:195},
+  {id:"outfit_campus_blue",name:"ชุดเต็ม Coder Academy",icon:"🎓",cost:1600,slot:"outfit",rarity:"easy",visual:"outfit_campus_blue",description:"ชุดนักเรียน Coder แบบเต็มตัว ครอบเสื้อและรองเท้าเดิม",type:"wearable",stats:{hp:180,def:18,acc:5},power:50},
+  {id:"outfit_street_green",name:"ชุดเต็ม Street Coder",icon:"🟢",cost:1800,slot:"outfit",rarity:"easy",visual:"outfit_street_green",description:"ชุด Street Coder สีเขียวสำหรับเดิน Zone แบบเต็มตัว",type:"wearable",stats:{hp:160,def:15,spd:12},power:51},
+  {id:"outfit_lab_white",name:"ชุดเต็ม Tech Lab",icon:"🥼",cost:2000,slot:"outfit",rarity:"easy",visual:"outfit_lab_white",description:"ชุดห้อง Lab สีขาวฟ้าสำหรับสายเทคนิค",type:"wearable",stats:{hp:190,def:20,acc:10},power:59},
+  {id:"outfit_retro_arcade",name:"ชุดเต็ม Retro Arcade",icon:"🕹️",cost:2100,slot:"outfit",rarity:"easy",visual:"outfit_retro_arcade",description:"ชุด Retro Arcade เต็มตัวสไตล์เกมคลาสสิก",type:"wearable",stats:{hp:170,atk:10,spd:10,luck:8},power:55},
+  {id:"outfit_cyber_guard",name:"ชุดเต็ม Cyber Guard",icon:"🛡️",cost:6200,slot:"outfit",rarity:"medium",visual:"outfit_cyber_guard",description:"ชุดเกราะ Cyber Guard เต็มตัว ปิดทับชุดพื้นฐาน",type:"wearable",stats:{hp:320,def:38,atk:18},power:125},
+  {id:"outfit_arcane_scholar",name:"ชุดเต็ม Arcane Scholar",icon:"🔮",cost:6800,slot:"outfit",rarity:"medium",visual:"outfit_arcane_scholar",description:"ชุดนักเวทนักวิชาการเต็มตัวสำหรับสายคาถา",type:"wearable",stats:{hp:280,atk:30,acc:15,luck:12},power:115},
+  {id:"outfit_shadow_ninja",name:"ชุดเต็ม Shadow Ninja",icon:"🥷",cost:7400,slot:"outfit",rarity:"medium",visual:"outfit_shadow_ninja",description:"ชุด Ninja เต็มตัว เน้นความเร็วและ Critical",type:"wearable",stats:{hp:240,atk:36,spd:20,crit:14},power:137},
+  {id:"outfit_dragon_emperor",name:"ชุดเต็ม Dragon Emperor",icon:"🐉",cost:16000,slot:"outfit",rarity:"rare",visual:"outfit_dragon_emperor",description:"ชุดจักรพรรดิมังกรเต็มตัวระดับหายาก",type:"wearable",stats:{hp:650,atk:50,def:55,crit:20},power:278},
+  {id:"outfit_celestial_knight",name:"ชุดเต็ม Celestial Knight",icon:"⚜️",cost:17500,slot:"outfit",rarity:"rare",visual:"outfit_celestial_knight",description:"ชุดอัศวินสวรรค์เต็มตัว เกราะทองขาว",type:"wearable",stats:{hp:700,atk:45,def:65,acc:20},power:278},
+  {id:"outfit_void_archmage",name:"ชุดเต็ม Void Archmage",icon:"🟣",cost:19500,slot:"outfit",rarity:"rare",visual:"outfit_void_archmage",description:"ชุดจอมเวท Void เต็มตัวระดับสูงสุด",type:"wearable",stats:{hp:600,atk:60,def:40,crit:35,luck:20},power:313},
 ];
 
 export const LEGACY_REWARD_ITEMS = [
@@ -74,7 +84,10 @@ export function itemPower(item){
 }
 export function equipmentStats(character){
   const total={hp:0,atk:0,def:0,acc:0,spd:0,crit:0,luck:0,power:0};
-  for(const id of Object.values(character?.equipped||{}).filter(Boolean)){
+  const eq=character?.equipped||{},hasOutfit=!!eq.outfit;
+  for(const [slot,id] of Object.entries(eq)){
+    if(!id)continue;
+    if(hasOutfit&&["top","bottom","shoes"].includes(slot))continue;
     const item=rewardItemById(id);if(!item)continue;
     const s=itemStats(item);
     for(const k of ITEM_STAT_KEYS)total[k]+=s[k];
@@ -85,7 +98,7 @@ export function equipmentStats(character){
 
 
 export const SHOP_GRADE_ORDER = ["easy","medium","rare"];
-export const SHOP_EXPECTED_COUNTS = {easy:10,medium:10,rare:10,total:30};
+export const SHOP_EXPECTED_COUNTS = {easy:14,medium:13,rare:13,total:40};
 export function shopCatalogSummary(){
   const byGrade=Object.fromEntries(SHOP_GRADE_ORDER.map(g=>[
     g,REWARD_ITEMS.filter(item=>item.rarity===g).length

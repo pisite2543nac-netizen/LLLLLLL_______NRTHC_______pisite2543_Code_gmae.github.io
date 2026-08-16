@@ -7,18 +7,20 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, limit, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=4.9.5";
-import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.9.5";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.9.5";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.9.5";
-import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.9.5";
-import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.9.5";
-import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.9.5";
-import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.9.5";
-import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.9.5";
-import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.9.5";
-import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.9.5";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.9.5";
+import { firebaseConfig } from "./firebase-config.js?v=4.10.0";
+import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.10.0";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.10.0";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.10.0";
+import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.10.0";
+import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.10.0";
+import { equipLayerSrc } from "./equip-layer-assets.js?v=4.10.0";
+import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.10.0";
+import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.10.0";
+import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.10.0";
+import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.10.0";
+import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.10.0";
+import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.10.0";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.10.0";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -506,7 +508,7 @@ async function routeAuthenticatedStudent(){
   if(!state.player) throw new Error("ไม่พบข้อมูลผู้ใช้");
 
   const requestedQuest=new URLSearchParams(location.search).get("quest");
-  // V4.9.5: ทุก User อยู่ใต้ Fullscreen document เดียว
+  // V4.10.0: ทุก User อยู่ใต้ Fullscreen document เดียว
   // Mobile/Tablet ยังเป็น Zone-only แต่ Zone เปิดเป็น iframe เต็มพื้นที่
   // เพื่อไม่ให้ Browser ยกเลิก Fullscreen จากการเปลี่ยนหน้า HTML.
   await enterPortal();
@@ -1462,7 +1464,7 @@ function applyCharacterVisual(){
 
   el.className=`game-character ${state.player?.character?.gender||"male"}`;
 
-  ["head","face","top","bottom","back","hand","pet"].forEach(slot=>{
+  ["head","face","top","bottom","outfit","back","hand","pet"].forEach(slot=>{
     const node=el.querySelector(`.char-${slot}-item`);
     const item=characterEquippedItem(slot);
     if(node){
@@ -1533,8 +1535,10 @@ async function toggleEquipItem(itemId){
   const item=rewardItemById(itemId);
   if(!item||!(state.player.inventory||[]).includes(itemId))return;
 
-  const equipped={...DEFAULT_CHARACTER.equipped,...(state.player.character?.equipped||{})};
-  equipped[item.slot]=equipped[item.slot]===item.id?null:item.id;
+  const equipped=toggleEquipment(
+    {...DEFAULT_CHARACTER.equipped,...(state.player.character?.equipped||{})},
+    item
+  );
 
   const character={...DEFAULT_CHARACTER,...state.player.character,equipped};
   await updateDoc(doc(db,"users",state.uid),{character,updatedAt:serverTimestamp()});
@@ -1765,9 +1769,9 @@ function pvpRankForUid(uid,results=[]){
   return row||calculatePvpProfile([],uid);
 }
 function pvpCharacterSnapshot(character){
-  const eq=character?.equipped||{},gear=equipmentStats(character);
+  const eq=normalizeEquipment(character?.equipped||{}),gear=equipmentStats({...character,equipped:eq});
   return {gender:character?.gender==="female"?"female":"male",equipped:{
-    head:eq.head||null,face:eq.face||null,top:eq.top||null,bottom:eq.bottom||null,
+    head:eq.head||null,face:eq.face||null,top:eq.top||null,bottom:eq.bottom||null,outfit:eq.outfit||null,
     shoes:eq.shoes||null,back:eq.back||null,hand:eq.hand||null,aura:eq.aura||null,pet:eq.pet||null
   },stats:gear,gearPower:Number(gear.power||0)};
 }
@@ -1784,12 +1788,14 @@ function pvpFighterHtml(player,side){
   const ch=pvpCharacterSnapshot(player.character||{});
   const base=ch.gender==="female"?PVP_CHARACTER_ART.femaleIdle:PVP_CHARACTER_ART.maleIdle;
   const eq=ch.equipped;
-  const layer=(slot,cls)=>eq[slot]?`<img class="pvp-equip ${cls}" src="${itemArtSrc(eq[slot])}" alt="">`:"";
+  const layer=(slot,depth)=>eq[slot]?`<img class="pvp-equip-layer ${depth}" src="${equipLayerSrc(eq[slot])}" alt="">`:"";
+  const body=eq.outfit
+    ?layer("outfit","front")
+    :`${layer("top","front")}${layer("bottom","front")}${layer("shoes","front")}`;
   return `<div class="pvp-avatar-stack">
-    ${layer("aura","eq-aura")}${layer("back","eq-back")}
+    ${layer("aura","behind")}${layer("back","behind")}
     <img class="pvp-base-avatar" src="${base}" alt="">
-    ${layer("top","eq-top")}${layer("shoes","eq-shoes")}${layer("head","eq-head")}
-    ${layer("face","eq-face")}${layer("hand","eq-hand")}${layer("pet","eq-pet")}
+    ${body}${layer("head","front")}${layer("face","front")}${layer("hand","front")}${layer("pet","front")}
   </div>`;
 }
 function activeBattlePlayer(room,team){return room?.players?.[activeUidForTeam(room,team)]||teamMembers(room,team)[0]||null;}
@@ -1942,7 +1948,7 @@ async function savePvpRankedResult(room,result){
 }
 
 
-/* ===== V4.9.5 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
+/* ===== V4.10.0 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
 const PVP_ROOM_STALE_MS=20*60*1000;
 const PVP_CREATE_FEE=6;
 const PVP_COUNTDOWN_MS=3000;
@@ -2278,7 +2284,7 @@ onAuthStateChanged(auth,async user=>{
     studentFullscreenGateVisible(false);
     state.uid=null;state.player=null;showScreen("authScreen");return;
   }
-  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.9.5");return;}
+  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.10.0");return;}
   state.uid=user.uid;
   try{
     await routeAuthenticatedStudent();
