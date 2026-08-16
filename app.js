@@ -7,20 +7,20 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, limit, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=4.10.0";
-import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.10.0";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.10.0";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.10.0";
-import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.10.0";
-import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.10.0";
-import { equipLayerSrc } from "./equip-layer-assets.js?v=4.10.0";
-import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.10.0";
-import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.10.0";
-import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.10.0";
-import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.10.0";
-import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.10.0";
-import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.10.0";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.10.0";
+import { firebaseConfig } from "./firebase-config.js?v=4.11.0";
+import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.11.0";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, CATEGORY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, sanitizeInventory, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, SHOP_CATEGORY_COUNTS, shopCatalogSummary, shopCategorySummary, shopCatalogComplete } from "./reward-data.js?v=4.11.0";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.11.0";
+import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.11.0";
+import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.11.0";
+import { equipLayerSrc } from "./equip-layer-assets.js?v=4.11.0";
+import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.11.0";
+import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.11.0";
+import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.11.0";
+import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.11.0";
+import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.11.0";
+import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.11.0";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.11.0";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -248,7 +248,10 @@ async function ensureProfileDefaults(){
   if(typeof d.tokenLifetime !== "number") {
     patch.tokenLifetime = typeof d.pointsLifetime === "number" ? d.pointsLifetime : 0;
   }
-  if(!Array.isArray(d.inventory)) patch.inventory = [];
+  const cleanInventory=sanitizeInventory(d.inventory||[]);
+  if(!Array.isArray(d.inventory)||cleanInventory.length!==d.inventory.length||cleanInventory.some((id,i)=>id!==d.inventory[i])) {
+    patch.inventory=cleanInventory;
+  }
   if(!d.progress) patch.progress = {html:{maxUnlockedStage:1},python:{maxUnlockedStage:1}};
   if(!d.rankedProgress) patch.rankedProgress = {html:{maxUnlockedStage:1},python:{maxUnlockedStage:1}};
   else {
@@ -264,7 +267,7 @@ async function ensureProfileDefaults(){
       ...DEFAULT_CHARACTER,
       ...d.character,
       displayName:d.character.displayName||d.fullName||"",
-      equipped:{...DEFAULT_CHARACTER.equipped,...(d.character.equipped||{})}
+      equipped:normalizeEquipment({...DEFAULT_CHARACTER.equipped,...(d.character.equipped||{})})
     };
   }
   if(!d.classKey && d.educationLevel && d.classroom) patch.classKey=classKey(d.educationLevel,d.classroom);
@@ -508,7 +511,7 @@ async function routeAuthenticatedStudent(){
   if(!state.player) throw new Error("ไม่พบข้อมูลผู้ใช้");
 
   const requestedQuest=new URLSearchParams(location.search).get("quest");
-  // V4.10.0: ทุก User อยู่ใต้ Fullscreen document เดียว
+  // V4.11.0: ทุก User อยู่ใต้ Fullscreen document เดียว
   // Mobile/Tablet ยังเป็น Zone-only แต่ Zone เปิดเป็น iframe เต็มพื้นที่
   // เพื่อไม่ให้ Browser ยกเลิก Fullscreen จากการเปลี่ยนหน้า HTML.
   await enterPortal();
@@ -1160,7 +1163,7 @@ function itemStatsMarkup(item,compact=false){
 function rewardShopCard(item,owned,balance,capacity){
   const own=owned.has(item.id),sell=sellBackValue(item);
   return `<article class="reward-card rarity-${item.rarity} ${own?'owned':''}" data-reward-catalog-id="${esc(item.id)}">
-    <div class="reward-rarity">${RARITY_META[item.rarity]?.name||item.rarity}</div>
+    <div class="reward-rarity">${RARITY_META[item.rarity]?.name||item.rarity} · ${CATEGORY_META[item.category]?.name||item.category}</div>
     <div class="reward-icon reward-real-art"><img src="${itemArtSrc(item.id)}" alt="${esc(item.name)}" loading="lazy"><span>${item.icon}</span></div>
     <h3>${esc(item.name)}</h3><p>${esc(item.description)}</p>
     <div class="reward-slot">SLOT · ${item.slot.toUpperCase()}</div>
@@ -1203,7 +1206,7 @@ async function redeemReward(id){
       const snap=await tx.get(ref);
       const d=snap.data();
       const balance=Number(d.tokenBalance||0);
-      const inv=Array.isArray(d.inventory)?d.inventory:[];
+      const inv=sanitizeInventory(d.inventory||[]);
       if(inv.includes(id))throw new Error("มีไอเทมแล้ว");
       if(inv.length>=INVENTORY_LIMIT)throw new Error(`กระเป๋าเต็ม ${INVENTORY_LIMIT} ไอเท็ม`);
       if(balance<item.cost)throw new Error("แต้มไม่พอ");
@@ -1493,11 +1496,11 @@ function renderCharacterProfile(){
   $("characterProfileStudentId").textContent=state.player.studentId||"-";
   $("characterTokenBalance").textContent=Number(state.player.tokenBalance||0).toLocaleString();
   $("characterRankName").textContent=state.player.rank?.tierName||"Bronze";
-  $("characterOwnedCount").textContent=`${(state.player.inventory||[]).length}/${INVENTORY_LIMIT}`;
+  $("characterOwnedCount").textContent=`${sanitizeInventory(state.player.inventory||[]).length}/${INVENTORY_LIMIT}`;
 
   applyCharacterVisual();
 
-  const owned=new Set(state.player.inventory||[]);
+  const owned=new Set(sanitizeInventory(state.player.inventory||[]));
   const equippedIds=new Set(Object.values(state.player.character?.equipped||{}).filter(Boolean));
 
   const items=ALL_REWARD_ITEMS
@@ -1948,7 +1951,7 @@ async function savePvpRankedResult(room,result){
 }
 
 
-/* ===== V4.10.0 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
+/* ===== V4.11.0 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
 const PVP_ROOM_STALE_MS=20*60*1000;
 const PVP_CREATE_FEE=6;
 const PVP_COUNTDOWN_MS=3000;
@@ -2284,7 +2287,7 @@ onAuthStateChanged(auth,async user=>{
     studentFullscreenGateVisible(false);
     state.uid=null;state.player=null;showScreen("authScreen");return;
   }
-  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.10.0");return;}
+  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.11.0");return;}
   state.uid=user.uid;
   try{
     await routeAuthenticatedStudent();
