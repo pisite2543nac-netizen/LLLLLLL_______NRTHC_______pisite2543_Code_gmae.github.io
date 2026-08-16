@@ -1,4 +1,4 @@
-# V4.9.3 — Usage Dashboard + Normal GM
+# V4.9.4 — Usage Dashboard + Normal GM
 
 Firebase Project: `nr-game-code`
 
@@ -25,7 +25,7 @@ Firebase Project: `nr-game-code`
 - User มี interaction ล่าสุดไม่เกิน 5 นาที
 - ซ่อนแท็บจะหยุดนับ
 - Sync ประมาณทุก 30 วินาที
-- ข้อมูล Usage จะเริ่มสะสมหลัง Deploy V4.9.3
+- ข้อมูล Usage จะเริ่มสะสมหลัง Deploy V4.9.4
 
 Collections:
 - `usage_daily`
@@ -53,7 +53,7 @@ GM Exclusive ในกระเป๋าเริ่มต้น:
 - อยู่ในกระเป๋า GM สำหรับสวม/ถอดเอง
 
 ## Deploy
-ต้อง Publish `firestore.rules` V4.9.3 เพราะเพิ่ม:
+ต้อง Publish `firestore.rules` V4.9.4 เพราะเพิ่ม:
 - `usage_daily`
 - `usage_sessions`
 - `gm_profiles`

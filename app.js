@@ -7,18 +7,18 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, limit, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=4.9.3";
-import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.9.3";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.9.3";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.9.3";
-import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.9.3";
-import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.9.3";
-import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.9.3";
-import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.9.3";
-import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.9.3";
-import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.9.3";
-import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.9.3";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.9.3";
+import { firebaseConfig } from "./firebase-config.js?v=4.9.4";
+import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.9.4";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.9.4";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.9.4";
+import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.9.4";
+import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.9.4";
+import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.9.4";
+import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.9.4";
+import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.9.4";
+import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.9.4";
+import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.9.4";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.9.4";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -288,6 +288,36 @@ function refreshMajorCodePreview(){
   if($("majorCodePreview"))$("majorCodePreview").textContent=code?`รหัสสาขา: (${code})`:"รหัสสาขา: -";
 }
 
+
+let authGestureFullscreenOwned=false;
+async function requestStudentFullscreenFromAuthGesture(){
+  // Browser Fullscreen API requires a direct user gesture.
+  // This function is called immediately from Student Login/Register submit.
+  if(document.fullscreenElement)return true;
+  const root=document.documentElement;
+  if(!root?.requestFullscreen){
+    document.body.classList.add("user-immersive-fallback");
+    return false;
+  }
+  try{
+    await root.requestFullscreen();
+    authGestureFullscreenOwned=true;
+    document.body.classList.add("student-fullscreen-session");
+    return true;
+  }catch(error){
+    console.warn("Student auto fullscreen blocked by browser:",error);
+    document.body.classList.add("user-immersive-fallback");
+    return false;
+  }
+}
+async function rollbackStudentFullscreenAfterAuthFailure(){
+  if(authGestureFullscreenOwned&&document.fullscreenElement){
+    try{await document.exitFullscreen()}catch{}
+  }
+  authGestureFullscreenOwned=false;
+  document.body.classList.remove("student-fullscreen-session","user-immersive-fallback");
+}
+
 function registerValid(){
   return /^\d{1,15}$/.test($("studentId").value.trim()) &&
     $("fullName").value.trim() && $("educationLevel").value && $("classroom").value &&
@@ -302,6 +332,7 @@ refreshMajorCodePreview();
 
 $("registerForm").addEventListener("submit",async e=>{
   e.preventDefault(); if(!registerValid()) return;
+  const fullscreenAttempt=requestStudentFullscreenFromAuthGesture();
   try{
     const sid=$("studentId").value.trim();
     const cred=await createUserWithEmailAndPassword(auth,studentEmail(sid),$("password").value);
@@ -323,10 +354,12 @@ $("registerForm").addEventListener("submit",async e=>{
       createdAt:serverTimestamp(),updatedAt:serverTimestamp()
     };
     await setDoc(doc(db,"users",state.uid),p);
+    await fullscreenAttempt;
     await routeAuthenticatedStudent();
     startDailyFullscreenQuest();
-    setTimeout(()=>enterDailyFullscreenMode(),250);
   }catch(err){
+    await fullscreenAttempt.catch(()=>false);
+    await rollbackStudentFullscreenAfterAuthFailure();
     $("registerMessage").textContent = err.code==="auth/email-already-in-use" ? "เลขนักศึกษานี้ลงทะเบียนแล้ว" : "ลงทะเบียนไม่สำเร็จ: "+err.message;
   }
 });
@@ -340,11 +373,20 @@ $("loginForm").addEventListener("submit",async e=>{
     return;
   }
   e.preventDefault();
+
+  // Fullscreen must be requested while this submit gesture is still active.
+  // This is Student-only; admin.html/admin.js never call this function.
+  const fullscreenAttempt=requestStudentFullscreenFromAuthGesture();
+
   try{
-    const cred=await signInWithEmailAndPassword(auth,studentEmail($("loginStudentId").value.trim()),$("loginPassword").value);
+    const cred=await signInWithEmailAndPassword(auth,studentEmail(sidValue),$("loginPassword").value);
     state.uid=cred.user.uid;
+    await fullscreenAttempt;
     await routeAuthenticatedStudent();
-  }catch{
+    startDailyFullscreenQuest();
+  }catch(error){
+    await fullscreenAttempt.catch(()=>false);
+    await rollbackStudentFullscreenAfterAuthFailure();
     $("loginMessage").textContent="เลขนักศึกษาหรือรหัสผ่านไม่ถูกต้อง";
   }
 });
@@ -367,7 +409,7 @@ async function routeAuthenticatedStudent(){
     }catch(error){
       console.warn("mobile route sync skipped:", error);
     }
-    location.replace("./zone.html?v=4.9.3");
+    location.replace("./zone.html?v=4.9.4");
     return;
   }
 
@@ -634,7 +676,7 @@ async function maybeLaunchQuestFromUrl(){
   if(!id||state.questLaunchHandled||!state.uid||!state.player)return false;
   state.questLaunchHandled=true;
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.9.3");
+    location.replace("./zone.html?v=4.9.4");
     return true;
   }
   const quest=await resolveTeacherQuest(id);
@@ -987,7 +1029,7 @@ $("nextLevelButton").onclick=async()=>{
   if(state.gameMode==="ranked"){state.rankedStage=next.stage;state.rankedTimeLimit=rankedTimeLimitForLesson(next);}
   prepareClassic();showScreen("gameScreen");await requestRealFullscreen();setTimeout(()=>$("typingInput").focus({preventScroll:true}),100);
 };
-$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.9.3"};
+$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.9.4"};
 $("portalButton").onclick=async()=>{state.activeQuest=null;history.replaceState(null,"",location.pathname);await ensureProfileDefaults();await enterPortal()};
 
 function itemStatsMarkup(item,compact=false){
@@ -1287,7 +1329,7 @@ async function saveCharacterGender(gender){
 
   // มือถือ/แท็บเล็ตใช้เฉพาะ 2D Zone หลังเลือกตัวละครเสร็จ
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.9.3");
+    location.replace("./zone.html?v=4.9.4");
   }
 }
 
@@ -1782,7 +1824,7 @@ async function savePvpRankedResult(room,result){
 }
 
 
-/* ===== V4.9.3 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
+/* ===== V4.9.4 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
 const PVP_ROOM_STALE_MS=20*60*1000;
 const PVP_CREATE_FEE=6;
 const PVP_COUNTDOWN_MS=3000;
@@ -2112,7 +2154,7 @@ updateDeviceUX();
 
 onAuthStateChanged(auth,async user=>{
   if(!user){stopUsageTracker({flush:true});state.uid=null;state.player=null;showScreen("authScreen");return;}
-  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.9.3");return;}
+  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.9.4");return;}
   state.uid=user.uid;
   try{
     await routeAuthenticatedStudent();

@@ -4,16 +4,16 @@ import {
   getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot,
   serverTimestamp, query, orderBy, limit, Timestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.9.3";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, GM_EXCLUSIVE_ITEMS, GM_DEFAULT_INVENTORY, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.9.3";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.9.3";
-import { DEFAULT_CHARACTER } from "./character-system.js?v=4.9.3";
-import { ZONE_ART_DATA } from "./zone-assets.js?v=4.9.3";
+import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.9.4";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, GM_EXCLUSIVE_ITEMS, GM_DEFAULT_INVENTORY, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.9.4";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.9.4";
+import { DEFAULT_CHARACTER } from "./character-system.js?v=4.9.4";
+import { ZONE_ART_DATA } from "./zone-assets.js?v=4.9.4";
 import {
   QUEST_CONFIG, DEFAULT_TEACHER_QUESTS, localDayKey, activeQuestLimit,
   canAccessQuest, clampQuestReward, questDifficultyName, questObjectiveLabel
-} from "./quest-system.js?v=4.9.3";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.9.3";
+} from "./quest-system.js?v=4.9.4";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.9.4";
 
 const firebaseApp=initializeApp(firebaseConfig);
 const auth=getAuth(firebaseApp);
@@ -40,7 +40,7 @@ const INTERACT_DISTANCE=210;
 
 const canvas=$("zoneCanvas"),ctx=canvas.getContext("2d",{alpha:false});
 
-// ===== V4.9.3 REAL ART ASSETS =====
+// ===== V4.9.4 REAL ART ASSETS =====
 const ZONE_ART_PATH={
   world:"./assets/zone/zone-world-day.png",
   maleIdle:"./assets/zone/male-idle-right.png",
@@ -101,7 +101,7 @@ async function loadZoneArt(){
     Object.entries(ZONE_ART_PATH).map(([k,v])=>loadZoneImage(k,v))
   );
   const missing=REQUIRED_ZONE_ART.filter(k=>!zoneArt[k]?.naturalWidth);
-  console.info("ZONE ART V4.9.3",{
+  console.info("ZONE ART V4.9.4",{
     loaded:zoneArtStatus.loaded,
     embedded:zoneArtStatus.embedded,
     external:zoneArtStatus.external,
@@ -113,15 +113,129 @@ async function loadZoneArt(){
 function shopArtForItem(item){ return itemArtSrc(item?.id); }
 
 const itemArtImages={};
+const itemArtBounds={};
+
+function detectMainArtBounds(img){
+  // Find real object pixels and ignore decorative sparkles / empty canvas.
+  // Returned values are normalized to the original image.
+  const S=160,cv=document.createElement("canvas");cv.width=S;cv.height=S;
+  const cx=cv.getContext("2d",{willReadFrequently:true});
+  cx.clearRect(0,0,S,S);cx.drawImage(img,0,0,S,S);
+  let data;
+  try{data=cx.getImageData(0,0,S,S).data}catch{return {x:0,y:0,w:1,h:1}}
+  const on=new Uint8Array(S*S);
+  for(let i=0;i<S*S;i++)on[i]=data[i*4+3]>=48?1:0;
+
+  const seen=new Uint8Array(S*S),components=[];
+  const dirs=[-1,1,-S,S,-S-1,-S+1,S-1,S+1];
+  for(let p=0;p<on.length;p++){
+    if(!on[p]||seen[p])continue;
+    const stack=[p];seen[p]=1;let area=0,minX=S,minY=S,maxX=0,maxY=0;
+    while(stack.length){
+      const q=stack.pop(),y=Math.floor(q/S),x=q-y*S;
+      area++;minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);
+      for(const d of dirs){
+        const n=q+d;if(n<0||n>=on.length||seen[n]||!on[n])continue;
+        const ny=Math.floor(n/S),nx=n-ny*S;
+        if(Math.abs(nx-x)>1||Math.abs(ny-y)>1)continue;
+        seen[n]=1;stack.push(n);
+      }
+    }
+    if(area>=5)components.push({area,minX,minY,maxX,maxY});
+  }
+  if(!components.length)return {x:0,y:0,w:1,h:1};
+  const maxArea=Math.max(...components.map(x=>x.area));
+  // Keep significant components (e.g. both wings / both shoes), drop tiny stars.
+  const keep=components.filter(x=>x.area>=Math.max(10,maxArea*.075));
+  let minX=S,minY=S,maxX=0,maxY=0;
+  keep.forEach(b=>{minX=Math.min(minX,b.minX);minY=Math.min(minY,b.minY);maxX=Math.max(maxX,b.maxX);maxY=Math.max(maxY,b.maxY)});
+  const pad=3;minX=Math.max(0,minX-pad);minY=Math.max(0,minY-pad);maxX=Math.min(S-1,maxX+pad);maxY=Math.min(S-1,maxY+pad);
+  return {x:minX/S,y:minY/S,w:(maxX-minX+1)/S,h:(maxY-minY+1)/S};
+}
+
 async function loadItemArtImages(){
   const jobs=ALL_REWARD_ITEMS.map(item=>new Promise(resolve=>{
-    const img=new Image();img.decoding='async';img.onload=()=>{itemArtImages[item.id]=img;resolve(true)};img.onerror=()=>resolve(false);img.src=itemArtSrc(item.id);
+    const img=new Image();img.decoding='async';
+    img.onload=()=>{
+      itemArtImages[item.id]=img;
+      itemArtBounds[item.id]=detectMainArtBounds(img);
+      resolve(true)
+    };
+    img.onerror=()=>resolve(false);
+    img.src=itemArtSrc(item.id);
   }));
   await Promise.all(jobs);
 }
-function drawEquippedArt(c,item,x,y,w,h,flip=false,alpha=1){
-  const img=itemArtImages[item?.id];if(!img?.naturalWidth)return false;return drawArtSprite(c,img,x,y,w,h,flip,alpha);
+
+function drawEquippedArt(c,item,x,y,w,h,flip=false,alpha=1,rotation=0){
+  const img=itemArtImages[item?.id];if(!img?.naturalWidth)return false;
+  const b=itemArtBounds[item.id]||{x:0,y:0,w:1,h:1};
+  const sx=b.x*img.naturalWidth,sy=b.y*img.naturalHeight,sw=b.w*img.naturalWidth,sh=b.h*img.naturalHeight;
+  c.save();c.globalAlpha=alpha;c.translate(x,y);if(flip)c.scale(-1,1);if(rotation)c.rotate(rotation);
+  c.drawImage(img,sx,sy,sw,sh,-w/2,-h,w,h);c.restore();return true;
 }
+
+// All sellable + legacy + GM exclusive items resolve to a body anchor.
+// x is mirrored automatically for direction-aware slots.
+const ITEM_EQUIP_ANCHORS={
+  cap_blue:{slot:"head",x:0,y:-116,w:57,h:43},
+  shirt_blue:{slot:"top",x:0,y:-35,w:61,h:78},
+  sneaker_white:{slot:"shoes",x:0,y:1,w:51,h:25},
+  thai_sash:{slot:"top",x:0,y:-36,w:62,h:77},
+  round_glasses:{slot:"face",x:0,y:-89,w:42,h:21},
+  student_bag:{slot:"back",x:-12,y:-31,w:62,h:76},
+  code_tablet:{slot:"hand",x:39,y:-35,w:48,h:57},
+  neon_headset:{slot:"head",x:0,y:-109,w:64,h:61},
+  set2_cat_pet:{slot:"pet",x:-69,y:1,w:60,h:59},
+  coder_jacket:{slot:"top",x:0,y:-34,w:66,h:80},
+
+  set2_katana:{slot:"hand",x:43,y:-15,w:48,h:112},
+  code_blade:{slot:"hand",x:43,y:-15,w:48,h:112},
+  set2_mystic_staff:{slot:"hand",x:45,y:-8,w:50,h:123},
+  spell_tome:{slot:"hand",x:40,y:-40,w:52,h:52},
+  gold_crown:{slot:"head",x:0,y:-119,w:58,h:47},
+  guardian_armor:{slot:"top",x:0,y:-33,w:69,h:82},
+  royal_cape:{slot:"back",x:0,y:-23,w:77,h:104},
+  monkey_pet:{slot:"pet",x:-70,y:1,w:62,h:61},
+  gold_aura:{slot:"aura",x:0,y:-60,w:118,h:142},
+  set2_wolf_pet:{slot:"pet",x:-72,y:1,w:67,h:64},
+
+  set2_cyber_spear:{slot:"hand",x:45,y:-5,w:50,h:128},
+  purple_sword:{slot:"hand",x:44,y:-12,w:49,h:116},
+  gold_sword:{slot:"hand",x:44,y:-12,w:49,h:116},
+  arcane_crown:{slot:"head",x:0,y:-120,w:61,h:49},
+  dragon_wings:{slot:"back",x:0,y:-17,w:112,h:116},
+  master_halo:{slot:"aura",x:0,y:-129,w:70,h:32},
+  set2_tiger_pet:{slot:"pet",x:-74,y:1,w:71,h:66},
+  phoenix_pet:{slot:"pet",x:-73,y:0,w:69,h:72},
+  golden_dragon_pet:{slot:"pet",x:-76,y:0,w:76,h:72},
+  throne_effect:{slot:"aura",x:0,y:5,w:122,h:137},
+
+  set2_samurai_armor:{slot:"top",x:0,y:-32,w:70,h:83},
+  set2_mage_robe:{slot:"top",x:0,y:-31,w:69,h:84},
+  set2_dragon_armor:{slot:"top",x:0,y:-31,w:72,h:85},
+  set2_mini_dragon:{slot:"pet",x:-74,y:0,w:72,h:69},
+  set2_spirit_wings:{slot:"back",x:0,y:-17,w:111,h:116},
+  set2_storm_aura:{slot:"aura",x:0,y:-59,w:119,h:143},
+
+  gm_excalibur:{slot:"hand",x:44,y:-12,w:50,h:119},
+  gm_little_ghost:{slot:"pet",x:-70,y:0,w:64,h:64}
+};
+
+function equipAnchor(item,direction="right"){
+  const base=ITEM_EQUIP_ANCHORS[item?.id]||{slot:item?.slot||"",x:0,y:-35,w:58,h:65};
+  const dir=direction==="left"?-1:1;
+  let x=Number(base.x||0);
+  if(["hand"].includes(base.slot))x=Math.abs(x)*dir;
+  if(["pet"].includes(base.slot))x=-Math.abs(x)*dir;
+  if(base.slot==="back"&&x)x=Math.abs(x)*(direction==="left"?1:-1);
+  return {...base,x,flip:direction==="left"};
+}
+function drawAnchoredEquipment(c,item,direction,alpha=1){
+  const a=equipAnchor(item,direction);
+  return drawEquippedArt(c,item,a.x,a.y,a.w,a.h,a.flip,alpha,a.rotation||0);
+}
+
 
 
 let cssW=1,cssH=1,dpr=1,zoom=1;
@@ -178,7 +292,7 @@ async function checkModeration(){
     if(s.banned){showGate("ถูกระงับการเข้า 2D Zone",`แบนถึง ${s.bannedUntil.toLocaleString("th-TH")}`);return false}
     if(s.kicked){showGate("ถูก GM เตะออกจาก 2D Zone",`กลับเข้าได้หลัง ${s.kickedUntil.toLocaleTimeString("th-TH")}`);return false}
     return true;
-  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.9.3");return false}
+  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.9.4");return false}
 }
 function listenModeration(){
   if(isGM())return;
@@ -382,7 +496,7 @@ async function acceptQuest(id){
 function startQuest(id){
   const q=teacherQuests.find(x=>x.id===id)||DEFAULT_TEACHER_QUESTS.find(x=>x.id===id);if(!q)return;
   if(isTouchOnly()){alert("รับภารกิจแล้ว กรุณาเปิดบัญชีนี้บนคอมพิวเตอร์เพื่อทำภารกิจ");return}
-  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.9.3`;
+  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.9.4`;
 }
 $("openWizardQuests").onclick=async()=>{await loadQuestProgress();renderQuestModal();$("zoneQuestModal").classList.remove("hidden")};
 $("closeWizardQuests").onclick=()=>$("zoneQuestModal").classList.add("hidden");
@@ -694,7 +808,7 @@ function drawWorld(now){
   if(zoneArt.world?.complete&&zoneArt.world.naturalWidth){
     ctx.drawImage(zoneArt.world,0,0,WORLD.width,WORLD.height);
   }else{
-    // V4.9.3 intentionally does not draw the old primitive scene.
+    // V4.9.4 intentionally does not draw the old primitive scene.
     ctx.fillStyle="#102c3d";
     ctx.fillRect(0,0,WORLD.width,WORLD.height);
   }
@@ -725,18 +839,39 @@ function drawBubble(c,p,barY=-188){
 }
 function drawEquipmentBehind(c,p,now){
   const eq=equipped(p.character||{}),aura=itemById(eq.aura),back=itemById(eq.back);
-  if(aura){c.save();c.globalAlpha=.55;c.strokeStyle=itemColor(aura);c.lineWidth=6;c.beginPath();c.ellipse(0,-65,58,88,0,0,Math.PI*2);c.stroke();c.restore();drawEquippedArt(c,aura,0,-65,62,62,false,.28);}
-  if(back)drawEquippedArt(c,back,-38,-53,58,66,p.direction==='left',.9);
+
+  // Aura items are effects/scene attachments, not floating shop icons.
+  if(aura){
+    if(aura.id==="gold_aura"){
+      c.save();c.globalAlpha=.34;c.strokeStyle="#f2bd36";c.shadowColor="#ffd75b";c.shadowBlur=13;c.lineWidth=5;
+      c.beginPath();c.ellipse(0,-61,55,84,0,0,Math.PI*2);c.stroke();c.restore();
+    }else if(aura.id==="set2_storm_aura"){
+      c.save();c.globalAlpha=.55;c.strokeStyle="#6fd9ff";c.shadowColor="#61cfff";c.shadowBlur=10;c.lineWidth=3;
+      for(let i=0;i<3;i++){const x=-42+i*42;c.beginPath();c.moveTo(x,-118);c.lineTo(x+12,-87);c.lineTo(x-2,-61);c.lineTo(x+13,-30);c.stroke()}
+      c.restore();
+    }else if(aura.id==="throne_effect"){
+      drawAnchoredEquipment(c,aura,p.direction,.82);
+    }else if(aura.id==="master_halo"){
+      drawAnchoredEquipment(c,aura,p.direction,.94);
+    }else{
+      drawAnchoredEquipment(c,aura,p.direction,.72);
+    }
+  }
+  if(back)drawAnchoredEquipment(c,back,p.direction,.94);
 }
 function drawEquipmentFront(c,p,now){
   const eq=equipped(p.character||{});
   const head=itemById(eq.head),face=itemById(eq.face),top=itemById(eq.top),shoes=itemById(eq.shoes),hand=itemById(eq.hand),pet=itemById(eq.pet);
-  if(top)drawEquippedArt(c,top,0,-55,58,64,false,.92);
-  if(head)drawEquippedArt(c,head,0,-116,52,52,false,.96);
-  if(face)drawEquippedArt(c,face,0,-91,42,27,false,.98);
-  if(shoes)drawEquippedArt(c,shoes,0,-5,50,28,false,.96);
-  if(hand)drawEquippedArt(c,hand,p.direction==='left'?-44:44,-43,46,46,p.direction==='left',.97);
-  if(pet)drawEquippedArt(c,pet,p.direction==='left'?68:-68,-13+Math.sin(now/260)*4,58,58,p.direction!=='left',.98);
+
+  // Body-worn equipment is locked to its body anchor.
+  if(top)drawAnchoredEquipment(c,top,p.direction,.96);
+  if(head)drawAnchoredEquipment(c,head,p.direction,.98);
+  if(face)drawAnchoredEquipment(c,face,p.direction,1);
+  if(shoes)drawAnchoredEquipment(c,shoes,p.direction,.98);
+  if(hand)drawAnchoredEquipment(c,hand,p.direction,1);
+
+  // Pets stand/follow at ground level. No bobbing "floating item" behavior.
+  if(pet)drawAnchoredEquipment(c,pet,p.direction,1);
 }
 function playerArtImage(p,now){
   const gender=p?.character?.gender==="female"?"female":"male";
@@ -812,7 +947,7 @@ onAuthStateChanged(auth,async user=>{
     showGate(
       "โหลดภาพ 2D Zone ไม่ครบ",
       `ไม่พบ Asset สำคัญ: ${artResult.missing.join(", ")}`,
-      "V4.9.3 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
+      "V4.9.4 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
     );
     return;
   }
