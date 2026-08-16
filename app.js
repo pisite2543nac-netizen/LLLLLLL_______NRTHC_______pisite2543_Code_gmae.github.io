@@ -7,21 +7,21 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, limit, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=4.12.0";
-import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.12.0";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, CATEGORY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, sanitizeInventory, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, SHOP_CATEGORY_ORDER, SHOP_CATEGORY_COUNTS, shopCatalogSummary, shopCategorySummary, shopCatalogComplete } from "./reward-data.js?v=4.12.0";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.12.0";
-import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.12.0";
-import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.12.0";
-import { equipLayerSrc } from "./equip-layer-assets.js?v=4.12.0";
-import { bodySkinSrc } from "./body-skin-assets.js?v=4.12.0";
-import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.12.0";
-import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.12.0";
-import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.12.0";
-import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.12.0";
-import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.12.0";
-import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.12.0";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.12.0";
+import { firebaseConfig } from "./firebase-config.js?v=4.13.0";
+import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.13.0";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, CATEGORY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, sanitizeInventory, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, SHOP_CATEGORY_ORDER, SHOP_CATEGORY_COUNTS, shopCatalogSummary, shopCategorySummary, shopCatalogComplete } from "./reward-data.js?v=4.13.0";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.13.0";
+import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.13.0";
+import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.13.0";
+import { equipLayerSrc } from "./equip-layer-assets.js?v=4.13.0";
+import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.13.0";
+import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.13.0";
+import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.13.0";
+import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.13.0";
+import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.13.0";
+import { animatedSkinSrc } from "./animated-skin-assets.js?v=4.13.0";
+import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.13.0";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.13.0";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -512,7 +512,7 @@ async function routeAuthenticatedStudent(){
   if(!state.player) throw new Error("ไม่พบข้อมูลผู้ใช้");
 
   const requestedQuest=new URLSearchParams(location.search).get("quest");
-  // V4.12.0: ทุก User อยู่ใต้ Fullscreen document เดียว
+  // V4.13.0: ทุก User อยู่ใต้ Fullscreen document เดียว
   // Mobile/Tablet ยังเป็น Zone-only แต่ Zone เปิดเป็น iframe เต็มพื้นที่
   // เพื่อไม่ให้ Browser ยกเลิก Fullscreen จากการเปลี่ยนหน้า HTML.
   await enterPortal();
@@ -1452,10 +1452,18 @@ function characterEquippedItem(slot){
 
 function applyCharacterVisual(){
   const el=$("profileCharacter");if(!el)return;
-  el.className=`game-character ${state.player?.character?.gender||"male"}`;
-  const outfit=characterEquippedItem("outfit");el.classList.toggle("has-body-skin",!!outfit);
-  const bodyImg=el.querySelector(".char-body-skin-image");if(bodyImg){bodyImg.src=outfit?bodySkinSrc(outfit.id):"";bodyImg.classList.toggle("hidden",!outfit);bodyImg.title=outfit?.name||"";}
-  for(const slot of ["back","hand","pet"]){const node=el.querySelector(`.char-${slot}-item`),item=characterEquippedItem(slot);if(node){node.style.backgroundImage=item?`url("${equipLayerSrc(item.id)}")`:"";node.dataset.visual=item?.visual||"";node.title=item?.name||"";}}
+  const gender=state.player?.character?.gender==="female"?"female":"male";
+  el.className=`game-character ${gender}`;
+  const outfit=characterEquippedItem("outfit");el.classList.toggle("has-animated-skin",!!outfit);
+  const skinImg=el.querySelector(".char-animated-skin-image");
+  if(skinImg){
+    skinImg.src=outfit?animatedSkinSrc(outfit.id,gender,"idle"):"";
+    skinImg.classList.toggle("hidden",!outfit);skinImg.title=outfit?.name||"";
+  }
+  for(const slot of ["back","hand","pet"]){
+    const node=el.querySelector(`.char-${slot}-item`),item=characterEquippedItem(slot);
+    if(node){node.style.backgroundImage=item?`url("${equipLayerSrc(item.id)}")`:"";node.dataset.visual=item?.visual||"";node.title=item?.name||"";}
+  }
 }
 
 function renderCharacterProfile(){
@@ -1756,9 +1764,12 @@ function pvpTeamGear(players,team){
 function pvpTeamMaxHp(players,team){return Math.round(Math.min(180,100+Number(pvpTeamGear(players,team).hp||0)/10));}
 function pvpFighterHtml(player,side){
   if(!player)return `<div class="pvp-empty-fighter">WAITING</div>`;
-  const ch=pvpCharacterSnapshot(player.character||{});
-  const base=ch.gender==="female"?PVP_CHARACTER_ART.femaleIdle:PVP_CHARACTER_ART.maleIdle;
-  const eq=ch.equipped;const layer=(slot,depth)=>eq[slot]?`<img class="pvp-equip-layer ${depth}" src="${equipLayerSrc(eq[slot])}" alt="">`:"";const outfit=eq.outfit?`<img class="pvp-body-skin" src="${bodySkinSrc(eq.outfit)}" alt="">`:"";return `<div class="pvp-avatar-stack ${eq.outfit?"has-body-skin":""}">${layer("back","behind")}${outfit}<img class="pvp-base-avatar ${eq.outfit?"head-only":""}" src="${base}" alt="">${layer("hand","front")}${layer("pet","front")}</div>`;
+  const ch=pvpCharacterSnapshot(player.character||{}),eq=ch.equipped;
+  const base=eq.outfit
+    ?animatedSkinSrc(eq.outfit,ch.gender,"idle")
+    :(ch.gender==="female"?PVP_CHARACTER_ART.femaleIdle:PVP_CHARACTER_ART.maleIdle);
+  const layer=(slot,depth)=>eq[slot]?`<img class="pvp-equip-layer ${depth}" src="${equipLayerSrc(eq[slot])}" alt="">`:"";
+  return `<div class="pvp-avatar-stack">${layer("back","behind")}<img class="pvp-base-avatar" src="${base}" alt="">${layer("hand","front")}${layer("pet","front")}</div>`;
 }
 function activeBattlePlayer(room,team){return room?.players?.[activeUidForTeam(room,team)]||teamMembers(room,team)[0]||null;}
 function resetLocalPvpBattle(){
@@ -1910,7 +1921,7 @@ async function savePvpRankedResult(room,result){
 }
 
 
-/* ===== V4.12.0 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
+/* ===== V4.13.0 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
 const PVP_ROOM_STALE_MS=20*60*1000;
 const PVP_CREATE_FEE=6;
 const PVP_COUNTDOWN_MS=3000;
@@ -2246,7 +2257,7 @@ onAuthStateChanged(auth,async user=>{
     studentFullscreenGateVisible(false);
     state.uid=null;state.player=null;showScreen("authScreen");return;
   }
-  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.12.0");return;}
+  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.13.0");return;}
   state.uid=user.uid;
   try{
     await routeAuthenticatedStudent();
