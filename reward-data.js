@@ -74,3 +74,19 @@ export function equipmentStats(character){
   }
   return total;
 }
+
+
+export const SHOP_GRADE_ORDER = ["easy","medium","rare"];
+export const SHOP_EXPECTED_COUNTS = {easy:10,medium:10,rare:10,total:30};
+export function shopCatalogSummary(){
+  const byGrade=Object.fromEntries(SHOP_GRADE_ORDER.map(g=>[
+    g,REWARD_ITEMS.filter(item=>item.rarity===g).length
+  ]));
+  return {...byGrade,total:REWARD_ITEMS.length};
+}
+export function shopCatalogComplete(){
+  const c=shopCatalogSummary();
+  return c.total===SHOP_EXPECTED_COUNTS.total
+    && SHOP_GRADE_ORDER.every(g=>c[g]===SHOP_EXPECTED_COUNTS[g])
+    && REWARD_ITEMS.every(item=>item.id&&item.name&&item.slot&&item.cost>0&&item.stats&&item.power>0);
+}

@@ -7,17 +7,17 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, limit, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=4.9.1";
-import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.9.1";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats } from "./reward-data.js?v=4.9.1";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.9.1";
-import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.9.1";
-import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.9.1";
-import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.9.1";
-import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.9.1";
-import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.9.1";
-import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.9.1";
-import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.9.1";
+import { firebaseConfig } from "./firebase-config.js?v=4.9.2";
+import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.9.2";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.9.2";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.9.2";
+import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.9.2";
+import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.9.2";
+import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.9.2";
+import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.9.2";
+import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.9.2";
+import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.9.2";
+import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.9.2";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -366,7 +366,7 @@ async function routeAuthenticatedStudent(){
     }catch(error){
       console.warn("mobile route sync skipped:", error);
     }
-    location.replace("./zone.html?v=4.9.1");
+    location.replace("./zone.html?v=4.9.2");
     return;
   }
 
@@ -631,7 +631,7 @@ async function maybeLaunchQuestFromUrl(){
   if(!id||state.questLaunchHandled||!state.uid||!state.player)return false;
   state.questLaunchHandled=true;
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.9.1");
+    location.replace("./zone.html?v=4.9.2");
     return true;
   }
   const quest=await resolveTeacherQuest(id);
@@ -984,7 +984,7 @@ $("nextLevelButton").onclick=async()=>{
   if(state.gameMode==="ranked"){state.rankedStage=next.stage;state.rankedTimeLimit=rankedTimeLimitForLesson(next);}
   prepareClassic();showScreen("gameScreen");await requestRealFullscreen();setTimeout(()=>$("typingInput").focus({preventScroll:true}),100);
 };
-$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.9.1"};
+$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.9.2"};
 $("portalButton").onclick=async()=>{state.activeQuest=null;history.replaceState(null,"",location.pathname);await ensureProfileDefaults();await enterPortal()};
 
 function itemStatsMarkup(item,compact=false){
@@ -992,28 +992,40 @@ function itemStatsMarkup(item,compact=false){
   const chips=ITEM_STAT_KEYS.filter(k=>s[k]>0).map(k=>`<span><b>+${s[k]}</b> ${ITEM_STAT_LABELS[k]}</span>`).join("");
   return `<div class="${compact?"item-stat-chips compact":"item-stat-chips"}">${chips}</div><div class="item-power-line"><span>GEAR POWER</span><strong>${itemPower(item)}</strong></div>`;
 }
+function rewardShopCard(item,owned,balance,capacity){
+  const own=owned.has(item.id),sell=sellBackValue(item);
+  return `<article class="reward-card rarity-${item.rarity} ${own?'owned':''}" data-reward-catalog-id="${esc(item.id)}">
+    <div class="reward-rarity">${RARITY_META[item.rarity]?.name||item.rarity}</div>
+    <div class="reward-icon reward-real-art"><img src="${itemArtSrc(item.id)}" alt="${esc(item.name)}" loading="lazy"><span>${item.icon}</span></div>
+    <h3>${esc(item.name)}</h3><p>${esc(item.description)}</p>
+    <div class="reward-slot">SLOT · ${item.slot.toUpperCase()}</div>
+    ${itemStatsMarkup(item)}
+    <div class="reward-cost">${item.cost.toLocaleString()} Token</div>
+    <small class="reward-capacity">กระเป๋า ${capacity} · ขายคืน ${sell.toLocaleString()} Token</small>
+    <div class="reward-actions">
+      <button class="btn ${own?'ghost':'secondary'}" data-redeem="${item.id}" ${own||balance<item.cost||owned.size>=INVENTORY_LIMIT?'disabled':''}>${own?'มีแล้ว':owned.size>=INVENTORY_LIMIT?'กระเป๋าเต็ม':balance<item.cost?'Token ไม่พอ':'แลกไอเท็ม'}</button>
+      ${own?`<button class="btn danger-soft" data-sell-reward="${item.id}" type="button">ขายคืน 30%</button>`:''}
+    </div>
+  </article>`;
+}
 function renderRewardShop(){
   if(!$('rewardShop'))return;
   const balance=Number(state.player?.tokenBalance||0);
   const owned=new Set(state.player?.inventory||[]);
   const capacity=`${owned.size}/${INVENTORY_LIMIT}`;
-  const items=[...REWARD_ITEMS].sort((a,b)=>(RARITY_META[a.rarity]?.order||0)-(RARITY_META[b.rarity]?.order||0)||a.cost-b.cost);
-  $('rewardShop').innerHTML=items.map(item=>{
-    const own=owned.has(item.id),sell=sellBackValue(item);
-    return `<article class="reward-card rarity-${item.rarity} ${own?'owned':''}">
-      <div class="reward-rarity">${RARITY_META[item.rarity]?.name||item.rarity}</div>
-      <div class="reward-icon reward-real-art"><img src="${itemArtSrc(item.id)}" alt="${esc(item.name)}"><span>${item.icon}</span></div>
-      <h3>${esc(item.name)}</h3><p>${esc(item.description)}</p>
-      <div class="reward-slot">SLOT · ${item.slot.toUpperCase()}</div>
-      ${itemStatsMarkup(item)}
-      <div class="reward-cost">${item.cost.toLocaleString()} Token</div>
-      <small class="reward-capacity">กระเป๋า ${capacity} · ขายคืน ${sell.toLocaleString()} Token</small>
-      <div class="reward-actions">
-        <button class="btn ${own?'ghost':'secondary'}" data-redeem="${item.id}" ${own||balance<item.cost||owned.size>=INVENTORY_LIMIT?'disabled':''}>${own?'มีแล้ว':owned.size>=INVENTORY_LIMIT?'กระเป๋าเต็ม':balance<item.cost?'Token ไม่พอ':'แลกไอเท็ม'}</button>
-        ${own?`<button class="btn danger-soft" data-sell-reward="${item.id}" type="button">ขายคืน 30%</button>`:''}
-      </div>
-    </article>`;
-  }).join('');
+  const sorted=[...REWARD_ITEMS].sort((a,b)=>
+    (RARITY_META[a.rarity]?.order||0)-(RARITY_META[b.rarity]?.order||0)||a.cost-b.cost
+  );
+  const summary=shopCatalogSummary();
+  const sections=SHOP_GRADE_ORDER.map(grade=>{
+    const group=sorted.filter(item=>item.rarity===grade);
+    const meta=RARITY_META[grade];
+    return `<section class="reward-grade-section rarity-${grade}">
+      <div class="reward-grade-head"><div><span>${meta?.short||grade.toUpperCase()}</span><strong>${meta?.name||grade}</strong></div><b>${group.length}/${SHOP_EXPECTED_COUNTS[grade]}</b></div>
+      <div class="reward-grade-grid">${group.map(item=>rewardShopCard(item,owned,balance,capacity)).join("")}</div>
+    </section>`;
+  }).join("");
+  $('rewardShop').innerHTML=`<div class="reward-catalog-complete ${shopCatalogComplete()?'ok':'bad'}">CATALOG ${summary.total}/${SHOP_EXPECTED_COUNTS.total}</div>${sections}`;
   document.querySelectorAll('[data-redeem]:not([disabled])').forEach(b=>b.onclick=()=>redeemReward(b.dataset.redeem));
   document.querySelectorAll('[data-sell-reward]').forEach(b=>b.onclick=()=>sellOwnedItem(b.dataset.sellReward));
 }
@@ -1272,7 +1284,7 @@ async function saveCharacterGender(gender){
 
   // มือถือ/แท็บเล็ตใช้เฉพาะ 2D Zone หลังเลือกตัวละครเสร็จ
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.9.1");
+    location.replace("./zone.html?v=4.9.2");
   }
 }
 
@@ -1767,7 +1779,7 @@ async function savePvpRankedResult(room,result){
 }
 
 
-/* ===== V4.9.1 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
+/* ===== V4.9.2 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
 const PVP_ROOM_STALE_MS=20*60*1000;
 const PVP_CREATE_FEE=6;
 const PVP_COUNTDOWN_MS=3000;
@@ -2097,7 +2109,7 @@ updateDeviceUX();
 
 onAuthStateChanged(auth,async user=>{
   if(!user){state.uid=null;state.player=null;showScreen("authScreen");return;}
-  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.9.1");return;}
+  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.9.2");return;}
   state.uid=user.uid;
   try{
     await routeAuthenticatedStudent();
