@@ -1,4 +1,4 @@
-# V4.8.2 — Complete Item Art / nr-game-code
+# V4.8.3 — Complete Item Art / nr-game-code
 
 ครบ 36 ไอเท็ม พร้อมภาพจริงใน Token Shop, Profile/Inventory และ 2D Zone
 
@@ -30,4 +30,4 @@
 1. อัป ZIP ทั้งหมดไป GitHub Root
 2. ตรวจว่ามี `item-assets.js` ที่ Root
 3. รอ GitHub Pages Success
-4. เปิด `zone.html?v=4.8.2` แล้ว Ctrl+F5
+4. เปิด `zone.html?v=4.8.3` แล้ว Ctrl+F5

@@ -36,7 +36,7 @@ export const REWARD_ITEMS = [
   {id:"set2_mini_dragon",name:"สัตว์เลี้ยง Mini Dragon",icon:"🐲",baseCost:11000,cost:14300,type:"wearable",slot:"pet",rarity:"mythic",set:"set2",visual:"mini_dragon",description:"มังกรจิ๋วบินข้างตัวละคร ชุด 2 ราคา +30%"},
 
   {id:"set2_spirit_wings",name:"ปีก Spirit Guardian",icon:"🪽",baseCost:9500,cost:12350,type:"wearable",slot:"back",rarity:"mythic",set:"set2",visual:"spirit_wings",description:"ปีกวิญญาณสีฟ้าขนาดใหญ่ ชุด 2 ราคา +30%"},
-  {id:"set2_storm_aura",name:"Storm Code Aura",icon:"⚡",baseCost:12500,cost:16250,type:"wearable",slot:"aura",rarity:"mythic",set:"set2",visual:"storm_aura",description:"สายฟ้าหมุนรอบตัวละคร ชุด 2 ราคา +30%"}
+  {id:"set2_storm_aura",name:"Storm Code Aura",icon:"⚡",baseCost:12500,cost:16250,type:"wearable",slot:"aura",rarity:"mythic",set:"set2",visual:"storm_aura",description:"สายฟ้าหมุนรอบตัวละคร ชุด 2 ราคา +30%"},
 
   // ===== REQUESTED ITEM EXPANSION =====
   {id:"code_blade",name:"ดาบ Code Blade",icon:"⚔️",cost:2600,type:"wearable",slot:"hand",rarity:"epic",set:"requested",visual:"code_blade",description:"ดาบพลังงานสำหรับสาย Coder"},
