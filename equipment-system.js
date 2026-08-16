@@ -1,4 +1,4 @@
-import { rewardItemById } from "./reward-data.js?v=4.12.0";
+import { rewardItemById } from "./reward-data.js?v=4.13.0";
 
 export const EQUIPMENT_SLOTS = ["head","face","top","bottom","outfit","shoes","back","hand","aura","pet"];
 
