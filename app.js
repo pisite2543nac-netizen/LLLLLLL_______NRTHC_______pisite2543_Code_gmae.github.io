@@ -7,20 +7,21 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, limit, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=4.11.0";
-import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.11.0";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, CATEGORY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, sanitizeInventory, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, SHOP_CATEGORY_COUNTS, shopCatalogSummary, shopCategorySummary, shopCatalogComplete } from "./reward-data.js?v=4.11.0";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.11.0";
-import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.11.0";
-import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.11.0";
-import { equipLayerSrc } from "./equip-layer-assets.js?v=4.11.0";
-import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.11.0";
-import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.11.0";
-import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.11.0";
-import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.11.0";
-import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.11.0";
-import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.11.0";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.11.0";
+import { firebaseConfig } from "./firebase-config.js?v=4.12.0";
+import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.12.0";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, CATEGORY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, sanitizeInventory, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, SHOP_CATEGORY_ORDER, SHOP_CATEGORY_COUNTS, shopCatalogSummary, shopCategorySummary, shopCatalogComplete } from "./reward-data.js?v=4.12.0";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.12.0";
+import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.12.0";
+import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.12.0";
+import { equipLayerSrc } from "./equip-layer-assets.js?v=4.12.0";
+import { bodySkinSrc } from "./body-skin-assets.js?v=4.12.0";
+import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.12.0";
+import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.12.0";
+import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.12.0";
+import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.12.0";
+import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.12.0";
+import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.12.0";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.12.0";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -511,7 +512,7 @@ async function routeAuthenticatedStudent(){
   if(!state.player) throw new Error("ไม่พบข้อมูลผู้ใช้");
 
   const requestedQuest=new URLSearchParams(location.search).get("quest");
-  // V4.11.0: ทุก User อยู่ใต้ Fullscreen document เดียว
+  // V4.12.0: ทุก User อยู่ใต้ Fullscreen document เดียว
   // Mobile/Tablet ยังเป็น Zone-only แต่ Zone เปิดเป็น iframe เต็มพื้นที่
   // เพื่อไม่ให้ Browser ยกเลิก Fullscreen จากการเปลี่ยนหน้า HTML.
   await enterPortal();
@@ -1178,24 +1179,12 @@ function rewardShopCard(item,owned,balance,capacity){
 }
 function renderRewardShop(){
   if(!$('rewardShop'))return;
-  const balance=Number(state.player?.tokenBalance||0);
-  const owned=new Set(state.player?.inventory||[]);
-  const capacity=`${owned.size}/${INVENTORY_LIMIT}`;
-  const sorted=[...REWARD_ITEMS].sort((a,b)=>
-    (RARITY_META[a.rarity]?.order||0)-(RARITY_META[b.rarity]?.order||0)||a.cost-b.cost
-  );
-  const summary=shopCatalogSummary();
-  const sections=SHOP_GRADE_ORDER.map(grade=>{
-    const group=sorted.filter(item=>item.rarity===grade);
-    const meta=RARITY_META[grade];
-    return `<section class="reward-grade-section rarity-${grade}">
-      <div class="reward-grade-head"><div><span>${meta?.short||grade.toUpperCase()}</span><strong>${meta?.name||grade}</strong></div><b>${group.length}/${SHOP_EXPECTED_COUNTS[grade]}</b></div>
-      <div class="reward-grade-grid">${group.map(item=>rewardShopCard(item,owned,balance,capacity)).join("")}</div>
-    </section>`;
-  }).join("");
-  $('rewardShop').innerHTML=`<div class="reward-catalog-complete ${shopCatalogComplete()?'ok':'bad'}">CATALOG ${summary.total}/${SHOP_EXPECTED_COUNTS.total}</div>${sections}`;
-  document.querySelectorAll('[data-redeem]:not([disabled])').forEach(b=>b.onclick=()=>redeemReward(b.dataset.redeem));
-  document.querySelectorAll('[data-sell-reward]').forEach(b=>b.onclick=()=>sellOwnedItem(b.dataset.sellReward));
+  const balance=Number(state.player?.tokenBalance||0),owned=new Set(sanitizeInventory(state.player?.inventory||[])),capacity=`${owned.size}/${INVENTORY_LIMIT}`;
+  const sorted=[...REWARD_ITEMS].sort((a,b)=>SHOP_CATEGORY_ORDER.indexOf(a.category)-SHOP_CATEGORY_ORDER.indexOf(b.category)||(RARITY_META[a.rarity]?.order||0)-(RARITY_META[b.rarity]?.order||0)||a.cost-b.cost);
+  const summary=shopCatalogSummary(),cats=shopCategorySummary();
+  const sections=SHOP_CATEGORY_ORDER.map(category=>{const group=sorted.filter(item=>item.category===category),meta=CATEGORY_META[category]||{name:category,short:category.toUpperCase()};return `<section class="reward-grade-section reward-category-${category}"><div class="reward-grade-head"><div><span>${meta.short}</span><strong>${meta.name}</strong></div><b>${group.length}/${SHOP_CATEGORY_COUNTS[category]}</b></div><div class="reward-grade-grid">${group.map(item=>rewardShopCard(item,owned,balance,capacity)).join("")}</div></section>`;}).join("");
+  $('rewardShop').innerHTML=`<div class="reward-catalog-complete ${shopCatalogComplete()?'ok':'bad'}">APPROVED CATALOG ${summary.total}/50 · Body Skin ${cats.outfit} · Sword ${cats.sword} · Wand ${cats.wand} · Shield ${cats.shield} · Wings ${cats.wing} · Pet ${cats.pet}</div>${sections}`;
+  document.querySelectorAll('[data-redeem]:not([disabled])').forEach(b=>b.onclick=()=>redeemReward(b.dataset.redeem));document.querySelectorAll('[data-sell-reward]').forEach(b=>b.onclick=()=>sellOwnedItem(b.dataset.sellReward));
 }
 async function redeemReward(id){
   const item=rewardItemById(id);
@@ -1462,32 +1451,11 @@ function characterEquippedItem(slot){
 }
 
 function applyCharacterVisual(){
-  const el=$("profileCharacter");
-  if(!el)return;
-
+  const el=$("profileCharacter");if(!el)return;
   el.className=`game-character ${state.player?.character?.gender||"male"}`;
-
-  ["head","face","top","bottom","outfit","back","hand","pet"].forEach(slot=>{
-    const node=el.querySelector(`.char-${slot}-item`);
-    const item=characterEquippedItem(slot);
-    if(node){
-      node.dataset.visual=item?.visual||"";
-      node.dataset.rarity=item?.rarity||"";
-      node.title=item?.name||"";
-    }
-  });
-
-  const aura=characterEquippedItem("aura");
-  const auraNode=el.querySelector(".char-aura");
-  if(auraNode){
-    auraNode.dataset.visual=aura?.visual||"";
-    auraNode.dataset.rarity=aura?.rarity||"";
-  }
-
-  const shoes=characterEquippedItem("shoes");
-  el.querySelectorAll(".char-shoe").forEach(node=>{
-    node.dataset.equipped=shoes?.visual||"";
-  });
+  const outfit=characterEquippedItem("outfit");el.classList.toggle("has-body-skin",!!outfit);
+  const bodyImg=el.querySelector(".char-body-skin-image");if(bodyImg){bodyImg.src=outfit?bodySkinSrc(outfit.id):"";bodyImg.classList.toggle("hidden",!outfit);bodyImg.title=outfit?.name||"";}
+  for(const slot of ["back","hand","pet"]){const node=el.querySelector(`.char-${slot}-item`),item=characterEquippedItem(slot);if(node){node.style.backgroundImage=item?`url("${equipLayerSrc(item.id)}")`:"";node.dataset.visual=item?.visual||"";node.title=item?.name||"";}}
 }
 
 function renderCharacterProfile(){
@@ -1790,16 +1758,7 @@ function pvpFighterHtml(player,side){
   if(!player)return `<div class="pvp-empty-fighter">WAITING</div>`;
   const ch=pvpCharacterSnapshot(player.character||{});
   const base=ch.gender==="female"?PVP_CHARACTER_ART.femaleIdle:PVP_CHARACTER_ART.maleIdle;
-  const eq=ch.equipped;
-  const layer=(slot,depth)=>eq[slot]?`<img class="pvp-equip-layer ${depth}" src="${equipLayerSrc(eq[slot])}" alt="">`:"";
-  const body=eq.outfit
-    ?layer("outfit","front")
-    :`${layer("top","front")}${layer("bottom","front")}${layer("shoes","front")}`;
-  return `<div class="pvp-avatar-stack">
-    ${layer("aura","behind")}${layer("back","behind")}
-    <img class="pvp-base-avatar" src="${base}" alt="">
-    ${body}${layer("head","front")}${layer("face","front")}${layer("hand","front")}${layer("pet","front")}
-  </div>`;
+  const eq=ch.equipped;const layer=(slot,depth)=>eq[slot]?`<img class="pvp-equip-layer ${depth}" src="${equipLayerSrc(eq[slot])}" alt="">`:"";const outfit=eq.outfit?`<img class="pvp-body-skin" src="${bodySkinSrc(eq.outfit)}" alt="">`:"";return `<div class="pvp-avatar-stack ${eq.outfit?"has-body-skin":""}">${layer("back","behind")}${outfit}<img class="pvp-base-avatar ${eq.outfit?"head-only":""}" src="${base}" alt="">${layer("hand","front")}${layer("pet","front")}</div>`;
 }
 function activeBattlePlayer(room,team){return room?.players?.[activeUidForTeam(room,team)]||teamMembers(room,team)[0]||null;}
 function resetLocalPvpBattle(){
@@ -1951,7 +1910,7 @@ async function savePvpRankedResult(room,result){
 }
 
 
-/* ===== V4.11.0 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
+/* ===== V4.12.0 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
 const PVP_ROOM_STALE_MS=20*60*1000;
 const PVP_CREATE_FEE=6;
 const PVP_COUNTDOWN_MS=3000;
@@ -2287,7 +2246,7 @@ onAuthStateChanged(auth,async user=>{
     studentFullscreenGateVisible(false);
     state.uid=null;state.player=null;showScreen("authScreen");return;
   }
-  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.11.0");return;}
+  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.12.0");return;}
   state.uid=user.uid;
   try{
     await routeAuthenticatedStudent();

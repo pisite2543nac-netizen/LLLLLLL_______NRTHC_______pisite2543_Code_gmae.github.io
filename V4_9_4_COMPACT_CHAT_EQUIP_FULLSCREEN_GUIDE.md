@@ -1,4 +1,4 @@
-# V4.11.0 — Compact Chat + Body Anchored Equipment + Auto User Fullscreen
+# V4.12.0 — Compact Chat + Body Anchored Equipment + Auto User Fullscreen
 
 Firebase Project: `nr-game-code`
 
@@ -14,7 +14,7 @@ Firebase Project: `nr-game-code`
 ## 2) Equipment Body Anchoring
 แก้ระบบเดิมที่นำรูปไอเท็มไปวางเป็นรูปเต็มจนดูเหมือนลอย
 
-V4.11.0:
+V4.12.0:
 - ตรวจขอบวัตถุจริงจาก Alpha ของภาพ
 - ตัดพื้นที่ว่าง/ประกายเล็ก ๆ ออกจากภาพตอนสวม
 - มี Anchor รายไอเท็ม
@@ -47,4 +47,4 @@ Daily Fullscreen Quest:
 3. ห้ามอัป ZIP เป็นไฟล์เดียว
 4. รอ Pages = Success
 5. Ctrl+F5
-6. firestore.rules ใช้ V4.9.3/V4.11.0 ชุดนี้ได้ (ระบบ Usage/GM เดิมยังอยู่)
+6. firestore.rules ใช้ V4.9.3/V4.12.0 ชุดนี้ได้ (ระบบ Usage/GM เดิมยังอยู่)

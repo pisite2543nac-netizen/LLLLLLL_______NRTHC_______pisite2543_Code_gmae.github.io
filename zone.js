@@ -4,18 +4,19 @@ import {
   getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot,
   serverTimestamp, query, orderBy, limit, Timestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.11.0";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, GM_EXCLUSIVE_ITEMS, GM_DEFAULT_INVENTORY, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, CATEGORY_META, INVENTORY_LIMIT, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, sanitizeInventory, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, SHOP_CATEGORY_COUNTS, shopCatalogSummary, shopCategorySummary, shopCatalogComplete } from "./reward-data.js?v=4.11.0";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.11.0";
-import { DEFAULT_CHARACTER } from "./character-system.js?v=4.11.0";
-import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.11.0";
-import { EQUIP_LAYER_DATA, equipLayerSrc } from "./equip-layer-assets.js?v=4.11.0";
-import { ZONE_ART_DATA } from "./zone-assets.js?v=4.11.0";
+import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.12.0";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, GM_EXCLUSIVE_ITEMS, GM_DEFAULT_INVENTORY, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, CATEGORY_META, INVENTORY_LIMIT, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, sanitizeInventory, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, SHOP_CATEGORY_ORDER, SHOP_CATEGORY_COUNTS, shopCatalogSummary, shopCategorySummary, shopCatalogComplete } from "./reward-data.js?v=4.12.0";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.12.0";
+import { DEFAULT_CHARACTER } from "./character-system.js?v=4.12.0";
+import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.12.0";
+import { EQUIP_LAYER_DATA, equipLayerSrc } from "./equip-layer-assets.js?v=4.12.0";
+import { BODY_SKIN_DATA, bodySkinSrc } from "./body-skin-assets.js?v=4.12.0";
+import { ZONE_ART_DATA } from "./zone-assets.js?v=4.12.0";
 import {
   QUEST_CONFIG, DEFAULT_TEACHER_QUESTS, localDayKey, activeQuestLimit,
   canAccessQuest, clampQuestReward, questDifficultyName, questObjectiveLabel
-} from "./quest-system.js?v=4.11.0";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.11.0";
+} from "./quest-system.js?v=4.12.0";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.12.0";
 
 const firebaseApp=initializeApp(firebaseConfig);
 const auth=getAuth(firebaseApp);
@@ -50,7 +51,7 @@ const INTERACT_DISTANCE=210;
 
 const canvas=$("zoneCanvas"),ctx=canvas.getContext("2d",{alpha:false});
 
-// ===== V4.11.0 REAL ART ASSETS =====
+// ===== V4.12.0 REAL ART ASSETS =====
 const ZONE_ART_PATH={
   world:"./assets/zone/zone-world-day.png",
   maleIdle:"./assets/zone/male-idle-right.png",
@@ -111,7 +112,7 @@ async function loadZoneArt(){
     Object.entries(ZONE_ART_PATH).map(([k,v])=>loadZoneImage(k,v))
   );
   const missing=REQUIRED_ZONE_ART.filter(k=>!zoneArt[k]?.naturalWidth);
-  console.info("ZONE ART V4.11.0",{
+  console.info("ZONE ART V4.12.0",{
     loaded:zoneArtStatus.loaded,
     embedded:zoneArtStatus.embedded,
     external:zoneArtStatus.external,
@@ -132,6 +133,29 @@ async function loadEquipLayerImages(){
     img.src=src;
   }));
   await Promise.all(jobs);
+}
+
+const bodySkinImages={};
+async function loadBodySkinImages(){
+  const jobs=Object.entries(BODY_SKIN_DATA).map(([id,src])=>new Promise(resolve=>{
+    const img=new Image();img.decoding="async";
+    img.onload=()=>{bodySkinImages[id]=img;resolve(true)};
+    img.onerror=()=>resolve(false);
+    img.src=src;
+  }));
+  await Promise.all(jobs);
+}
+function drawBodySkin(c,id,direction="right"){
+  if(!id)return false;
+  const img=bodySkinImages[id];if(!img?.naturalWidth)return false;
+  return drawArtSprite(c,img,0,0,220,160,direction==="left",1);
+}
+function drawPlayerHeadOnly(c,img,flip=false){
+  if(!img?.naturalWidth)return false;
+  const sw=img.naturalWidth,sh=Math.floor(img.naturalHeight*.43);
+  c.save();if(flip)c.scale(-1,1);
+  c.drawImage(img,0,0,sw,sh,-50,-150,100,65);
+  c.restore();return true;
 }
 
 function drawEquipmentLayer(c,id,direction="right",alpha=1){
@@ -155,6 +179,7 @@ const keys=new Set();
 const touch={left:false,right:false};
 let nearbyAction=null;
 let zoneShopGrade="all";
+let zoneShopCategory="all";
 
 const GM_RANK={tierId:"master",tierName:"GAME MASTER",rating:999999};
 const GM_ITEMS=GM_EXCLUSIVE_ITEMS;
@@ -196,7 +221,7 @@ async function checkModeration(){
     if(s.banned){showGate("ถูกระงับการเข้า 2D Zone",`แบนถึง ${s.bannedUntil.toLocaleString("th-TH")}`);return false}
     if(s.kicked){showGate("ถูก GM เตะออกจาก 2D Zone",`กลับเข้าได้หลัง ${s.kickedUntil.toLocaleTimeString("th-TH")}`);return false}
     return true;
-  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.11.0");return false}
+  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.12.0");return false}
 }
 function listenModeration(){
   if(isGM())return;
@@ -409,7 +434,7 @@ function startQuest(id){
   const q=teacherQuests.find(x=>x.id===id)||DEFAULT_TEACHER_QUESTS.find(x=>x.id===id);if(!q)return;
   if(isTouchOnly()){alert("รับภารกิจแล้ว กรุณาเปิดบัญชีนี้บนคอมพิวเตอร์เพื่อทำภารกิจ");return}
   if(postToStudentShell("NR_ZONE_QUEST",{questId:id}))return;
-  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.11.0`;
+  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.12.0`;
 }
 $("openWizardQuests").onclick=async()=>{await loadQuestProgress();renderQuestModal();$("zoneQuestModal").classList.remove("hidden")};
 $("closeWizardQuests").onclick=()=>$("zoneQuestModal").classList.add("hidden");
@@ -467,8 +492,10 @@ function renderShop(){
 
   const summary=shopCatalogSummary(),cats=shopCategorySummary();
   if($("zoneShopCatalogStatus")){
-    $("zoneShopCatalogStatus").dataset.categories=`OUTFIT ${cats.outfit} · WEAPON ${cats.weapon} · WINGS ${cats.wing} · PET ${cats.pet}`;
+    $("zoneShopCatalogStatus").dataset.categories=`BODY SKIN ${cats.outfit} · SWORD ${cats.sword} · WAND ${cats.wand} · SHIELD ${cats.shield} · WINGS ${cats.wing} · PET ${cats.pet}`;
   }
+  const catLabels={all:`ทั้งหมด ${summary.total}/50`,outfit:`ชุดเซต ${cats.outfit}/20`,sword:`ดาบ ${cats.sword}/8`,wand:`คฑา ${cats.wand}/6`,shield:`โล่ ${cats.shield}/6`,wing:`ปีก ${cats.wing}/5`,pet:`สัตว์เลี้ยง ${cats.pet}/5`};
+  document.querySelectorAll("[data-zone-category]").forEach(btn=>{const c=btn.dataset.zoneCategory||"all";if(catLabels[c])btn.textContent=catLabels[c];});
   const filterLabels={
     all:`🛍️ ทั้งหมด ${summary.total}/${SHOP_EXPECTED_COUNTS.total}`,
     easy:`🟢 หาง่าย ${summary.easy}/${SHOP_EXPECTED_COUNTS.easy}`,
@@ -490,20 +517,12 @@ function renderShop(){
     $("zoneShopCatalogStatus").classList.toggle("bad",!complete);
   }
 
-  const sorted=[...REWARD_ITEMS].sort((a,b)=>
-    (RARITY_META[a.rarity]?.order||0)-(RARITY_META[b.rarity]?.order||0)
-    || a.cost-b.cost
-    || String(a.name).localeCompare(String(b.name),"th")
-  );
-
+  const sorted=[...REWARD_ITEMS].filter(item=>zoneShopCategory==="all"||item.category===zoneShopCategory).sort((a,b)=>(RARITY_META[a.rarity]?.order||0)-(RARITY_META[b.rarity]?.order||0)||a.cost-b.cost||String(a.name).localeCompare(String(b.name),"th"));
   if(zoneShopGrade==="all"){
-    $("zoneShopGrid").innerHTML=SHOP_GRADE_ORDER.map(grade=>{
-      const group=sorted.filter(item=>item.rarity===grade);
-      return zoneShopGradeSection(grade,group,owned,wearing,balance);
-    }).join("");
+    $("zoneShopGrid").innerHTML=SHOP_GRADE_ORDER.map(grade=>{const group=sorted.filter(item=>item.rarity===grade);return group.length?zoneShopGradeSection(grade,group,owned,wearing,balance):"";}).join("");
   }else{
     const group=sorted.filter(item=>item.rarity===zoneShopGrade);
-    $("zoneShopGrid").innerHTML=zoneShopGradeSection(zoneShopGrade,group,owned,wearing,balance);
+    $("zoneShopGrid").innerHTML=group.length?zoneShopGradeSection(zoneShopGrade,group,owned,wearing,balance):`<div class="empty">ไม่มีไอเท็มในตัวกรองนี้</div>`;
   }
 
   document.querySelectorAll('[data-shop-item]:not([disabled])').forEach(btn=>btn.onclick=()=>handleShopItem(btn.dataset.shopItem));
@@ -602,6 +621,9 @@ document.querySelectorAll("[data-zone-grade]").forEach(btn=>{
     document.querySelectorAll("[data-zone-grade]").forEach(x=>x.classList.toggle("active",x===btn));
     renderShop();
   };
+});
+document.querySelectorAll("[data-zone-category]").forEach(btn=>{
+  btn.onclick=()=>{zoneShopCategory=btn.dataset.zoneCategory||"all";document.querySelectorAll("[data-zone-category]").forEach(x=>x.classList.toggle("active",x===btn));renderShop();};
 });
 $("openZoneBackpack").onclick=()=>{
   renderBackpack();$("zoneBackpackModal").classList.remove("hidden");
@@ -733,7 +755,7 @@ function drawWorld(now){
   if(zoneArt.world?.complete&&zoneArt.world.naturalWidth){
     ctx.drawImage(zoneArt.world,0,0,WORLD.width,WORLD.height);
   }else{
-    // V4.11.0 intentionally does not draw the old primitive scene.
+    // V4.12.0 intentionally does not draw the old primitive scene.
     ctx.fillStyle="#102c3d";
     ctx.fillRect(0,0,WORLD.width,WORLD.height);
   }
@@ -762,18 +784,8 @@ function drawBubble(c,p,barY=-188){
   const show=lines.slice(0,3),bw=Math.max(110,Math.min(245,Math.max(...show.map(x=>c.measureText(x).width))+25)),bh=17+show.length*20,by=barY-13-bh;
   c.fillStyle=p.isAdmin?"#fff3c9":"rgba(255,255,255,.97)";rr(c,-bw/2,by,bw,bh,12);c.fill();c.strokeStyle="rgba(35,55,68,.18)";c.stroke();c.fillStyle="#17364a";c.textAlign="center";show.forEach((ln,i)=>c.fillText(ln,0,by+23+i*20));
 }
-function drawEquipmentBehind(c,p,now){
-  const eq=equipped(p.character||{});
-  // Only Wings use the behind-body slot in the User catalog.
-  drawEquipmentLayer(c,eq.back,p.direction,1);
-}
-function drawEquipmentFront(c,p,now){
-  const eq=equipped(p.character||{});
-  drawEquipmentLayer(c,eq.outfit,p.direction,1);
-  drawEquipmentLayer(c,eq.hand,p.direction,1);
-  // Pets are authored with their feet on y=160, the same ground line as the player.
-  drawEquipmentLayer(c,eq.pet,p.direction,1);
-}
+function drawEquipmentBehind(c,p,now){const eq=equipped(p.character||{});drawEquipmentLayer(c,eq.back,p.direction,1);}
+function drawEquipmentFront(c,p,now){const eq=equipped(p.character||{});drawEquipmentLayer(c,eq.hand,p.direction,1);drawEquipmentLayer(c,eq.pet,p.direction,1);}
 function playerArtImage(p,now){
   const gender=p?.character?.gender==="female"?"female":"male";
   if(!p?.moving)return zoneArt[`${gender}Idle`];
@@ -782,12 +794,13 @@ function playerArtImage(p,now){
 function drawCharacter(c,p,x,y,now){
   const gm=isGMPlayer(p),moving=!!p.moving,bob=moving?Math.sin(now/85)*1.6:Math.sin(now/420)*.45;
   c.save();c.translate(x,y+bob);
-  drawEquipmentBehind(c,p,now);
+  const eq=equipped(p.character||{});drawEquipmentBehind(c,p,now);
   const img=playerArtImage(p,now),flip=p.direction==="left";
-  const spriteH=150,spriteW=100;
-  if(!drawArtSprite(c,img,0,0,spriteW,spriteH,flip,1)){
-    c.fillStyle="#d84f4f";c.font="700 18px system-ui";c.textAlign="center";c.fillText("ART?",0,-55);
-  }
+  if(eq.outfit){
+    // TRUE BODY SKIN: old User body is not drawn. Neck-to-feet skin + original User head only.
+    drawBodySkin(c,eq.outfit,p.direction);
+    if(!drawPlayerHeadOnly(c,img,flip)){c.fillStyle="#d84f4f";c.font="700 18px system-ui";c.textAlign="center";c.fillText("HEAD?",0,-95);}
+  }else if(!drawArtSprite(c,img,0,0,100,150,flip,1)){c.fillStyle="#d84f4f";c.font="700 18px system-ui";c.textAlign="center";c.fillText("ART?",0,-55);}
   drawEquipmentFront(c,p,now);drawName(c,p,gm);c.restore();
 }
 function drawFrame(now){
@@ -854,11 +867,12 @@ onAuthStateChanged(auth,async user=>{
   uid=user.uid;if(!(await loadProfile()))return;if(!(await checkModeration()))return;
   const artResult=await loadZoneArt();
   await loadEquipLayerImages();
+  await loadBodySkinImages();
   if(!artResult.ok){
     showGate(
       "โหลดภาพ 2D Zone ไม่ครบ",
       `ไม่พบ Asset สำคัญ: ${artResult.missing.join(", ")}`,
-      "V4.11.0 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
+      "V4.12.0 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
     );
     return;
   }
