@@ -64,6 +64,24 @@ service cloud.firestore {
         || (signedIn() && resource.data.hostUid == request.auth.uid);
     }
 
+
+    // PVP Ranked Battle results are separate from normal typing Ranking.
+    // One result document per room + user. Public read supports the PVP leaderboard.
+    match /pvp_results/{resultId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.roomCode is string
+        && request.resource.data.result in ["win", "loss"]
+        && exists(/databases/$(database)/documents/pvp_rooms/$(request.resource.data.roomCode))
+        && get(/databases/$(database)/documents/pvp_rooms/$(request.resource.data.roomCode)).data.status == "finished"
+        && request.auth.uid in get(/databases/$(database)/documents/pvp_rooms/$(request.resource.data.roomCode)).data.players;
+
+      allow update, delete: if false;
+      allow read, write: if isAdmin();
+    }
+
     match /official_submissions/{uid} {
       allow create, update: if signedIn() && request.auth.uid == uid;
       allow read: if signedIn() && request.auth.uid == uid;

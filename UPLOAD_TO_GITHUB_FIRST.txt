@@ -1,0 +1,24 @@
+V4.9.1 — GitHub Web Upload
+
+สำคัญมาก:
+1. ห้ามอัปไฟล์ ZIP นี้เข้า GitHub โดยตรง
+2. ให้แตก ZIP นี้บนเครื่องก่อน
+3. เข้า GitHub Repository > Add file > Upload files
+4. เลือก "ไฟล์ทั้งหมดที่อยู่ข้างในโฟลเดอร์นี้" แล้วอัปไปที่ Repository Root
+5. index.html ต้องอยู่ Root
+6. รอ Actions / Pages deployment เป็น Success
+7. เปิดเว็บแล้ว Ctrl+F5
+
+ชุด Web Upload นี้ตัด assets/ ออกโดยตั้งใจ:
+- zone-assets.js ฝังภาพ 2D Zone และ GM อยู่แล้ว
+- item-assets.js ฝังภาพไอเท็ม 30 ชิ้นอยู่แล้ว
+- pvp-assets.js ฝัง Base Character PVP อยู่แล้ว
+
+จึงไม่ต้องอัป assets/ เพื่อให้เว็บทำงานในชุดนี้
+
+Firebase:
+Project = nr-game-code
+
+ถ้า Firestore Rules ยังไม่ใช่ V4.9.1:
+Firebase Console > Firestore Database > Rules
+นำ firestore.rules ในชุดนี้ไปวางแล้ว Publish

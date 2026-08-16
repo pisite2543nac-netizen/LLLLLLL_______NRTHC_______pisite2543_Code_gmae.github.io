@@ -4,13 +4,14 @@ import {
   getFirestore, collection, doc, getDocs, setDoc, deleteDoc, updateDoc,
   writeBatch, serverTimestamp, onSnapshot, Timestamp, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_UID } from "./firebase-config.js?v=4.8.3";
-import { DEFAULT_MODES, DEFAULT_LEVELS } from "./default-data.js?v=4.8.3";
-import { seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey } from "./ranking-system.js?v=4.8.3";
-import { DEFAULT_TEACHER_QUESTS, clampQuestReward, questDifficultyName, questObjectiveLabel, defaultMinRankForDifficulty, rewardRange } from "./quest-system.js?v=4.8.3";
+import { firebaseConfig, ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_UID } from "./firebase-config.js?v=4.9.1";
+import { DEFAULT_MODES, DEFAULT_LEVELS } from "./default-data.js?v=4.9.1";
+import { seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey } from "./ranking-system.js?v=4.9.1";
+import { DEFAULT_TEACHER_QUESTS, clampQuestReward, questDifficultyName, questObjectiveLabel, defaultMinRankForDifficulty, rewardRange } from "./quest-system.js?v=4.9.1";
+import { buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.9.1";
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),$=id=>document.getElementById(id);
-let cache={users:[],attempts:[],levels:[],modes:[],official:[],zonePositions:[],zoneModeration:[],zoneMessages:[],zoneArchive:[],rankingSettings:{},teacherQuests:[]},unsubs=[];
+let cache={users:[],attempts:[],levels:[],modes:[],official:[],zonePositions:[],zoneModeration:[],zoneMessages:[],zoneArchive:[],rankingSettings:{},teacherQuests:[],pvpResults:[]},unsubs=[];
 let knownUserIds=null;
 let selectedAdminClass="";
 let adminClassSearchTerm="";
@@ -57,6 +58,7 @@ function startRealtime(){
   unsubs.push(onSnapshot(collection(db,"levels"),snap=>{cache.levels=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>Number(a.levelNo)-Number(b.levelNo));renderAll()}));
   unsubs.push(onSnapshot(collection(db,"game_modes"),snap=>{cache.modes=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>Number(a.sortOrder||0)-Number(b.sortOrder||0));renderAll()}));
   unsubs.push(onSnapshot(collection(db,"official_submissions"),snap=>{cache.official=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>dateValue(b.submittedAt)-dateValue(a.submittedAt));renderAll()}));
+  unsubs.push(onSnapshot(collection(db,"pvp_results"),snap=>{cache.pvpResults=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()},error=>console.warn("pvp results:",error)));
   unsubs.push(onSnapshot(collection(db,"zone_positions"),snap=>{cache.zonePositions=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()}));
   unsubs.push(onSnapshot(collection(db,"zone_moderation"),snap=>{cache.zoneModeration=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()}));
   unsubs.push(onSnapshot(collection(db,"teacher_quests"),snap=>{cache.teacherQuests=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()},error=>console.warn("teacher quests:",error)));
@@ -66,7 +68,7 @@ function startRealtime(){
   const archiveQuery=query(collection(db,"zone_chat_archive"),orderBy("createdAt","desc"),limit(1000));
   unsubs.push(onSnapshot(archiveQuery,snap=>{cache.zoneArchive=snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.zoneId===ACTIVE_ZONE_ID);renderAll()},error=>{cache.zoneArchive=[];console.warn("zone archive:",error)}));
 }
-function renderAll(){renderMetrics();renderResults();renderUsers();renderClassrooms();renderAcademicDirectory();renderLevels();renderOfficial();renderRanking();renderRankingSchedule();renderTeacherQuests();renderZoneControl();renderZoneChatLog()}
+function renderAll(){renderMetrics();renderResults();renderUsers();renderClassrooms();renderAcademicDirectory();renderLevels();renderOfficial();renderRanking();renderPvpRanking();renderRankingSchedule();renderTeacherQuests();renderZoneControl();renderZoneChatLog()}
 function renderMetrics(){
   const completed=cache.attempts.filter(x=>x.status==="completed");
   const avg=completed.length?Math.round(completed.reduce((s,x)=>s+Number(x.score||0),0)/completed.length):0;
@@ -289,6 +291,17 @@ function renderAcademicDirectory(){
 if($("academicStudentSearch"))$("academicStudentSearch").oninput=renderAcademicDirectory;
 ["adminRankingLevelFilter","adminRankingDepartmentFilter","adminRankingMajorFilter"].forEach(id=>$(id)&&($(id).onchange=renderRanking));
 
+function renderPvpRanking(){
+  if(!$("adminPvpRankingBody"))return;
+  const rows=buildPvpLeaderboard(cache.pvpResults||[]);
+  if($("adminPvpMatchCount"))$("adminPvpMatchCount").textContent=`${(cache.pvpResults||[]).length} MATCH`;
+  $("adminPvpRankingBody").innerHTML=rows.map((r,i)=>`<tr>
+    <td>${i+1}</td><td><strong>${esc(r.studentId||"-")}</strong></td><td>${esc(r.fullName||"-")}</td>
+    <td>${esc(r.tierIcon)} ${esc(r.tierName)}</td><td><strong>${r.rating}</strong></td>
+    <td>${r.wins}/${r.losses}</td><td>${r.winRate}%</td><td>${Number(r.totalDamage||0).toLocaleString()}</td>
+    <td>${r.maxCombo}</td><td>${r.avgAccuracy}%</td>
+  </tr>`).join("")||`<tr><td colspan="10" class="empty">ยังไม่มีผล PVP Ranked</td></tr>`;
+}
 function renderRanking(){
   if(!$("rankingBody"))return;
   syncAdminClassSelectors();
