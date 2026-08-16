@@ -4,16 +4,16 @@ import {
   getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot,
   serverTimestamp, query, orderBy, limit, Timestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.9.4";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, GM_EXCLUSIVE_ITEMS, GM_DEFAULT_INVENTORY, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.9.4";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.9.4";
-import { DEFAULT_CHARACTER } from "./character-system.js?v=4.9.4";
-import { ZONE_ART_DATA } from "./zone-assets.js?v=4.9.4";
+import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.9.5";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, GM_EXCLUSIVE_ITEMS, GM_DEFAULT_INVENTORY, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.9.5";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.9.5";
+import { DEFAULT_CHARACTER } from "./character-system.js?v=4.9.5";
+import { ZONE_ART_DATA } from "./zone-assets.js?v=4.9.5";
 import {
   QUEST_CONFIG, DEFAULT_TEACHER_QUESTS, localDayKey, activeQuestLimit,
   canAccessQuest, clampQuestReward, questDifficultyName, questObjectiveLabel
-} from "./quest-system.js?v=4.9.4";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.9.4";
+} from "./quest-system.js?v=4.9.5";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.9.5";
 
 const firebaseApp=initializeApp(firebaseConfig);
 const auth=getAuth(firebaseApp);
@@ -21,6 +21,14 @@ const db=getFirestore(firebaseApp);
 const $=id=>document.getElementById(id);
 
 const ZONE_ID="thai_social_zone_v4_1";
+
+const IS_EMBEDDED_ZONE=new URLSearchParams(location.search).get("embedded")==="1";
+function postToStudentShell(type,payload={}){
+  if(!IS_EMBEDDED_ZONE||window.parent===window)return false;
+  window.parent.postMessage({type,...payload},location.origin);
+  return true;
+}
+
 const WORLD={width:3000,height:1000};
 const WALK_Y=835;
 const WALK_LEFT=150;
@@ -40,7 +48,7 @@ const INTERACT_DISTANCE=210;
 
 const canvas=$("zoneCanvas"),ctx=canvas.getContext("2d",{alpha:false});
 
-// ===== V4.9.4 REAL ART ASSETS =====
+// ===== V4.9.5 REAL ART ASSETS =====
 const ZONE_ART_PATH={
   world:"./assets/zone/zone-world-day.png",
   maleIdle:"./assets/zone/male-idle-right.png",
@@ -101,7 +109,7 @@ async function loadZoneArt(){
     Object.entries(ZONE_ART_PATH).map(([k,v])=>loadZoneImage(k,v))
   );
   const missing=REQUIRED_ZONE_ART.filter(k=>!zoneArt[k]?.naturalWidth);
-  console.info("ZONE ART V4.9.4",{
+  console.info("ZONE ART V4.9.5",{
     loaded:zoneArtStatus.loaded,
     embedded:zoneArtStatus.embedded,
     external:zoneArtStatus.external,
@@ -292,7 +300,7 @@ async function checkModeration(){
     if(s.banned){showGate("ถูกระงับการเข้า 2D Zone",`แบนถึง ${s.bannedUntil.toLocaleString("th-TH")}`);return false}
     if(s.kicked){showGate("ถูก GM เตะออกจาก 2D Zone",`กลับเข้าได้หลัง ${s.kickedUntil.toLocaleTimeString("th-TH")}`);return false}
     return true;
-  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.9.4");return false}
+  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.9.5");return false}
 }
 function listenModeration(){
   if(isGM())return;
@@ -496,7 +504,8 @@ async function acceptQuest(id){
 function startQuest(id){
   const q=teacherQuests.find(x=>x.id===id)||DEFAULT_TEACHER_QUESTS.find(x=>x.id===id);if(!q)return;
   if(isTouchOnly()){alert("รับภารกิจแล้ว กรุณาเปิดบัญชีนี้บนคอมพิวเตอร์เพื่อทำภารกิจ");return}
-  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.9.4`;
+  if(postToStudentShell("NR_ZONE_QUEST",{questId:id}))return;
+  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.9.5`;
 }
 $("openWizardQuests").onclick=async()=>{await loadQuestProgress();renderQuestModal();$("zoneQuestModal").classList.remove("hidden")};
 $("closeWizardQuests").onclick=()=>$("zoneQuestModal").classList.add("hidden");
@@ -808,7 +817,7 @@ function drawWorld(now){
   if(zoneArt.world?.complete&&zoneArt.world.naturalWidth){
     ctx.drawImage(zoneArt.world,0,0,WORLD.width,WORLD.height);
   }else{
-    // V4.9.4 intentionally does not draw the old primitive scene.
+    // V4.9.5 intentionally does not draw the old primitive scene.
     ctx.fillStyle="#102c3d";
     ctx.fillRect(0,0,WORLD.width,WORLD.height);
   }
@@ -936,7 +945,17 @@ async function leaveZone(){
   }catch{}
 }
 function stopRealtime(){blocked=true;keys.clear();touch.left=false;touch.right=false;velocityX=0;clearInterval(heartbeat);positionsUnsub?.();messagesUnsub?.()}
-window.onresize=resizeCanvas;window.addEventListener("pagehide",leaveZone);$("leaveZoneButton").onclick=()=>leaveZone();
+window.onresize=resizeCanvas;
+window.addEventListener("pagehide",leaveZone);
+$("leaveZoneButton").onclick=async event=>{
+  if(IS_EMBEDDED_ZONE){
+    event.preventDefault();
+    await leaveZone();
+    postToStudentShell("NR_ZONE_EXIT");
+    return;
+  }
+  await leaveZone();
+};
 
 onAuthStateChanged(auth,async user=>{
   if(!user){showGate("กรุณา Login ก่อน","2D Zone ใช้บัญชีที่ลงทะเบียนแล้ว");return}
@@ -947,7 +966,7 @@ onAuthStateChanged(auth,async user=>{
     showGate(
       "โหลดภาพ 2D Zone ไม่ครบ",
       `ไม่พบ Asset สำคัญ: ${artResult.missing.join(", ")}`,
-      "V4.9.4 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
+      "V4.9.5 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
     );
     return;
   }
@@ -955,7 +974,14 @@ onAuthStateChanged(auth,async user=>{
   $("zoneMyStudentId").textContent=isGM()?"GM":profile.studentId;
   $("zoneChatIdentity").textContent=isGM()?"GM":profile.studentId;
   $("zoneMyShield").innerHTML=isGM()?`<span class="zone47-gm-normal-badge">GM</span>`:rankShieldHTML(profile.rank);$("zoneTokenBalance").textContent=isGM()?"∞":Number(profile.tokenBalance||0).toLocaleString();
-  if(isGM()){$("openAdminPanel").classList.remove("hidden");$("leaveZoneButton").href="./admin.html";$("zoneChatInput").placeholder="GM พิมพ์ข้อความหรือประกาศ..."}else startUsageTracker(db,profile,"2d-zone");
+  if(isGM()){
+    $("openAdminPanel").classList.remove("hidden");
+    $("leaveZoneButton").href="./admin.html";
+    $("zoneChatInput").placeholder="GM พิมพ์ข้อความหรือประกาศ...";
+  }else{
+    if(IS_EMBEDDED_ZONE)$("leaveZoneButton").removeAttribute("href");
+    startUsageTracker(db,profile,"2d-zone");
+  }
   resizeCanvas();updateClock();clockTimer=setInterval(updateClock,1000);await loadQuestProgress();
   listenModeration();listenPositions();listenMessages();listenTeacherQuests();listenRankingNotice();expiryTimer=setInterval(refreshMessages,60000);
   await syncPublicProfile();await publishPresence();await publishPosition(true);heartbeat=setInterval(async()=>{await publishPresence();await publishPosition(true)},PRESENCE_HEARTBEAT_MS);

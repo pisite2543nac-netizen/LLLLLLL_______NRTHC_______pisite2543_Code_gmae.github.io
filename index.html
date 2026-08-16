@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
   <title>ระบบเกมพิมพ์ Code | วิทยาลัยเทคนิคนางรอง</title>
-  <link rel="stylesheet" href="./style.css?v=4.9.4">
+  <link rel="stylesheet" href="./style.css?v=4.9.5">
 </head>
 <body>
 <header class="site-header">
@@ -661,7 +661,7 @@
 </main>
 
 <footer><div class="wrap">ระบบเกมพิมพ์ Code · วิทยาลัยเทคนิคนางรอง</div></footer>
-<script type="module" src="./app.js?v=4.9.4"></script>
+<script type="module" src="./app.js?v=4.9.5"></script>
 
   <div id="characterSetupModal" class="character-modal hidden">
     <div class="character-modal-card character-setup-card">
@@ -746,6 +746,28 @@
           <div id="characterInventoryList" class="character-inventory-list"></div>
         </section>
       </div>
+    </div>
+  </div>
+
+
+  <!-- V4.9.5 Student Fullscreen Session:
+       2D Zone stays inside this document so browser fullscreen does not end on navigation. -->
+  <div id="studentZoneShell" class="student-zone-shell hidden" aria-hidden="true">
+    <iframe id="studentZoneFrame"
+      class="student-zone-frame"
+      title="2D Social Zone"
+      allow="fullscreen"
+      referrerpolicy="same-origin"></iframe>
+  </div>
+
+  <div id="studentFullscreenGate" class="student-fullscreen-gate hidden" aria-hidden="true">
+    <div class="student-fullscreen-gate-card">
+      <div class="student-fullscreen-gate-icon">⛶</div>
+      <span class="section-kicker">STUDENT FULLSCREEN SESSION</span>
+      <h2>เข้าสู่โหมดเต็มหน้าจอ</h2>
+      <p>ระบบ User ใช้งานแบบ Fullscreen เพื่อให้พื้นที่เกมเต็มจอ และเริ่มนับ Daily Quest 60 นาทีต่อเนื่อง</p>
+      <button id="resumeStudentFullscreen" class="btn primary" type="button">เข้าสู่ Fullscreen และใช้งานต่อ</button>
+      <small>Admin ไม่ใช้โหมดนี้</small>
     </div>
   </div>
 

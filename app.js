@@ -7,18 +7,18 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, limit, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=4.9.4";
-import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.9.4";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.9.4";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.9.4";
-import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.9.4";
-import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.9.4";
-import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.9.4";
-import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.9.4";
-import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.9.4";
-import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.9.4";
-import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.9.4";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.9.4";
+import { firebaseConfig } from "./firebase-config.js?v=4.9.5";
+import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.9.5";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.9.5";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.9.5";
+import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.9.5";
+import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.9.5";
+import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.9.5";
+import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.9.5";
+import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.9.5";
+import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.9.5";
+import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.9.5";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.9.5";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -87,7 +87,7 @@ function renderDailyFullscreenQuest(){
   $("dailyFullscreenStatus").textContent=q.rewarded?"รับรางวัลแล้ว":`${Math.floor(seconds/60)} / 60 นาที`;
   $("dailyFullscreenActiveState").textContent=q.rewarded
     ?"✅ Daily Quest สำเร็จ"
-    :isDailyFullscreenActive()?"🟢 กำลังนับเวลา Fullscreen":"⏸️ หยุดนับ · ต้องอยู่ Fullscreen และเปิดแท็บนี้";
+    :isDailyFullscreenActive()?"🟢 กำลังนับอัตโนมัติหลัง Login":"⏸️ หยุดนับ · กลับเข้า Fullscreen เพื่อใช้งานต่อ";
   $("dailyFullscreenRewardText").textContent=q.rewarded?"🎁 รับ 15 Token วันนี้แล้ว":"🎁 รางวัลวันนี้: 15 Token";
   $("enterDailyFullscreen").disabled=q.rewarded||!!document.fullscreenElement;
 }
@@ -181,10 +181,18 @@ async function enterDailyFullscreenMode(){
 document.addEventListener("fullscreenchange",()=>{
   state.dailyFullscreen.lastTickMs=performance.now();
   renderDailyFullscreenQuest();
+  if(studentSessionAuthenticated){
+    const lost=!document.fullscreenElement;
+    studentFullscreenGateVisible(lost);
+    document.body.classList.toggle("student-fullscreen-session",!lost);
+  }
 });
 document.addEventListener("visibilitychange",()=>{
   state.dailyFullscreen.lastTickMs=performance.now();
   renderDailyFullscreenQuest();
+  if(document.visibilityState==="visible"&&studentNeedsFullscreenRecovery()){
+    studentFullscreenGateVisible(true);
+  }
 });
 
 function maxUnlocked(languageId){
@@ -290,6 +298,8 @@ function refreshMajorCodePreview(){
 
 
 let authGestureFullscreenOwned=false;
+let studentSessionAuthenticated=false;
+let studentZoneShellOpen=false;
 async function requestStudentFullscreenFromAuthGesture(){
   // Browser Fullscreen API requires a direct user gesture.
   // This function is called immediately from Student Login/Register submit.
@@ -317,6 +327,103 @@ async function rollbackStudentFullscreenAfterAuthFailure(){
   authGestureFullscreenOwned=false;
   document.body.classList.remove("student-fullscreen-session","user-immersive-fallback");
 }
+
+
+function studentFullscreenGateVisible(show){
+  const gate=$("studentFullscreenGate");
+  if(!gate)return;
+  gate.classList.toggle("hidden",!show);
+  gate.setAttribute("aria-hidden",show?"false":"true");
+}
+function studentNeedsFullscreenRecovery(){
+  return studentSessionAuthenticated
+    && !!state.player?.uid
+    && !document.fullscreenElement
+    && document.visibilityState==="visible";
+}
+async function ensureStudentFullscreenFromGesture(){
+  if(document.fullscreenElement){
+    studentFullscreenGateVisible(false);
+    state.dailyFullscreen.lastTickMs=performance.now();
+    return true;
+  }
+  try{
+    if(document.documentElement.requestFullscreen){
+      await document.documentElement.requestFullscreen();
+      authGestureFullscreenOwned=true;
+      document.body.classList.add("student-fullscreen-session");
+      document.body.classList.remove("user-immersive-fallback");
+      studentFullscreenGateVisible(false);
+      state.dailyFullscreen.lastTickMs=performance.now();
+      return true;
+    }
+  }catch(error){
+    console.warn("Student fullscreen recovery:",error);
+  }
+  document.body.classList.add("user-immersive-fallback");
+  studentFullscreenGateVisible(true);
+  return false;
+}
+
+async function openStudentZoneShell({questId=null}={}){
+  if(!state.player?.uid)return;
+  // Stop portal usage analytics while Zone iframe records its own usage.
+  await stopUsageTracker({flush:true});
+
+  const shell=$("studentZoneShell"),frame=$("studentZoneFrame");
+  if(!shell||!frame)return;
+
+  studentZoneShellOpen=true;
+  shell.classList.remove("hidden");
+  shell.setAttribute("aria-hidden","false");
+  document.body.classList.add("student-zone-shell-open");
+
+  const qs=new URLSearchParams({embedded:"1",v:"4.9.5"});
+  if(questId)qs.set("quest",questId);
+  const target=`./zone.html?${qs.toString()}`;
+  if(!frame.src||!frame.src.includes("zone.html"))frame.src=target;
+
+  // Daily fullscreen counter remains in the parent page and keeps running.
+  state.dailyFullscreen.lastTickMs=performance.now();
+  renderDailyFullscreenQuest();
+}
+
+async function closeStudentZoneShell(){
+  const shell=$("studentZoneShell"),frame=$("studentZoneFrame");
+  if(!shell||!frame)return;
+  studentZoneShellOpen=false;
+  shell.classList.add("hidden");
+  shell.setAttribute("aria-hidden","true");
+  document.body.classList.remove("student-zone-shell-open");
+  frame.src="about:blank";
+  if(state.player?.uid)startUsageTracker(db,state.player,"portal");
+  try{await writePresence("portal")}catch{}
+  state.dailyFullscreen.lastTickMs=performance.now();
+  renderDailyFullscreenQuest();
+}
+
+async function routeZoneLinkFromGesture(event){
+  const link=event.target.closest('a[href*="zone.html"]');
+  if(!link||!state.player?.uid)return;
+  event.preventDefault();
+  await ensureStudentFullscreenFromGesture();
+  await openStudentZoneShell();
+}
+document.addEventListener("click",routeZoneLinkFromGesture);
+
+window.addEventListener("message",async event=>{
+  if(event.origin!==location.origin||!event.data)return;
+  if(event.data.type==="NR_ZONE_EXIT"){
+    await closeStudentZoneShell();
+    return;
+  }
+  if(event.data.type==="NR_ZONE_QUEST"&&event.data.questId){
+    await closeStudentZoneShell();
+    state.questLaunchHandled=false;
+    history.replaceState(null,"",`${location.pathname}?quest=${encodeURIComponent(event.data.questId)}`);
+    await maybeLaunchQuestFromUrl();
+  }
+});
 
 function registerValid(){
   return /^\d{1,15}$/.test($("studentId").value.trim()) &&
@@ -356,7 +463,6 @@ $("registerForm").addEventListener("submit",async e=>{
     await setDoc(doc(db,"users",state.uid),p);
     await fullscreenAttempt;
     await routeAuthenticatedStudent();
-    startDailyFullscreenQuest();
   }catch(err){
     await fullscreenAttempt.catch(()=>false);
     await rollbackStudentFullscreenAfterAuthFailure();
@@ -383,7 +489,6 @@ $("loginForm").addEventListener("submit",async e=>{
     state.uid=cred.user.uid;
     await fullscreenAttempt;
     await routeAuthenticatedStudent();
-    startDailyFullscreenQuest();
   }catch(error){
     await fullscreenAttempt.catch(()=>false);
     await rollbackStudentFullscreenAfterAuthFailure();
@@ -401,19 +506,14 @@ async function routeAuthenticatedStudent(){
   if(!state.player) throw new Error("ไม่พบข้อมูลผู้ใช้");
 
   const requestedQuest=new URLSearchParams(location.search).get("quest");
-  // มือถือ/แท็บเล็ตยังเข้าได้เฉพาะ 2D Zone ตามกติกาเดิม
+  // V4.9.5: ทุก User อยู่ใต้ Fullscreen document เดียว
+  // Mobile/Tablet ยังเป็น Zone-only แต่ Zone เปิดเป็น iframe เต็มพื้นที่
+  // เพื่อไม่ให้ Browser ยกเลิก Fullscreen จากการเปลี่ยนหน้า HTML.
+  await enterPortal();
   if(isMobileOrTabletDevice() && ["male","female"].includes(state.player?.character?.gender)){
-    try{
-      await syncPublicProfile();
-      await writePresence("zone");
-    }catch(error){
-      console.warn("mobile route sync skipped:", error);
-    }
-    location.replace("./zone.html?v=4.9.4");
+    await openStudentZoneShell();
     return;
   }
-
-  await enterPortal();
 }
 
 async function enterPortal(){
@@ -427,6 +527,13 @@ async function enterPortal(){
   listenHistory();
   startSocialHub();
   startUsageTracker(db,state.player,"portal");
+
+  // Daily Fullscreen Quest starts immediately for every authenticated User.
+  // This also restores today's saved seconds when the page is reloaded.
+  studentSessionAuthenticated=true;
+  startDailyFullscreenQuest();
+  studentFullscreenGateVisible(studentNeedsFullscreenRecovery());
+
   setupCharacterUi();
 
   if(!["male","female"].includes(state.player?.character?.gender)){
@@ -449,6 +556,11 @@ async function enterPortal(){
 }
 
 $("logoutUserButton").onclick=async()=>{
+  try{await syncDailyFullscreenProgress(true)}catch{}
+  stopDailyFullscreenQuest();
+  studentSessionAuthenticated=false;
+  studentFullscreenGateVisible(false);
+  if(studentZoneShellOpen)await closeStudentZoneShell();
   await stopUsageTracker({flush:true});
   await markOffline();
   if(state.historyUnsub) state.historyUnsub();
@@ -649,6 +761,9 @@ async function leaveRealFullscreen(){
   try{if(document.fullscreenElement)await document.exitFullscreen()}catch{}
 }
 $("fullscreenButton").onclick=requestRealFullscreen;
+if($("resumeStudentFullscreen"))$("resumeStudentFullscreen").onclick=async()=>{
+  await ensureStudentFullscreenFromGesture();
+};
 
 function elapsed(){return state.started?(performance.now()-state.startTime)/1000:0}
 function accuracy(){return state.keystrokes?Math.max(0,(state.correctText.length/state.keystrokes)*100):100}
@@ -676,7 +791,7 @@ async function maybeLaunchQuestFromUrl(){
   if(!id||state.questLaunchHandled||!state.uid||!state.player)return false;
   state.questLaunchHandled=true;
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.9.4");
+    await openStudentZoneShell();
     return true;
   }
   const quest=await resolveTeacherQuest(id);
@@ -1029,7 +1144,10 @@ $("nextLevelButton").onclick=async()=>{
   if(state.gameMode==="ranked"){state.rankedStage=next.stage;state.rankedTimeLimit=rankedTimeLimitForLesson(next);}
   prepareClassic();showScreen("gameScreen");await requestRealFullscreen();setTimeout(()=>$("typingInput").focus({preventScroll:true}),100);
 };
-$("questZoneButton").onclick=()=>{location.href="./zone.html?v=4.9.4"};
+$("questZoneButton").onclick=async()=>{
+  await ensureStudentFullscreenFromGesture();
+  await openStudentZoneShell();
+};
 $("portalButton").onclick=async()=>{state.activeQuest=null;history.replaceState(null,"",location.pathname);await ensureProfileDefaults();await enterPortal()};
 
 function itemStatsMarkup(item,compact=false){
@@ -1327,9 +1445,9 @@ async function saveCharacterGender(gender){
   $("characterSetupModal").classList.add("hidden");
   await syncPublicProfile();
 
-  // มือถือ/แท็บเล็ตใช้เฉพาะ 2D Zone หลังเลือกตัวละครเสร็จ
+  // Mobile/Tablet: keep the parent Fullscreen session alive and show Zone inside it.
   if(isMobileOrTabletDevice()){
-    location.replace("./zone.html?v=4.9.4");
+    await openStudentZoneShell();
   }
 }
 
@@ -1824,7 +1942,7 @@ async function savePvpRankedResult(room,result){
 }
 
 
-/* ===== V4.9.4 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
+/* ===== V4.9.5 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
 const PVP_ROOM_STALE_MS=20*60*1000;
 const PVP_CREATE_FEE=6;
 const PVP_COUNTDOWN_MS=3000;
@@ -2153,8 +2271,14 @@ if ($("mobileExitButton")) {
 updateDeviceUX();
 
 onAuthStateChanged(auth,async user=>{
-  if(!user){stopUsageTracker({flush:true});state.uid=null;state.player=null;showScreen("authScreen");return;}
-  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.9.4");return;}
+  if(!user){
+    stopUsageTracker({flush:true});
+    stopDailyFullscreenQuest();
+    studentSessionAuthenticated=false;
+    studentFullscreenGateVisible(false);
+    state.uid=null;state.player=null;showScreen("authScreen");return;
+  }
+  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.9.5");return;}
   state.uid=user.uid;
   try{
     await routeAuthenticatedStudent();
