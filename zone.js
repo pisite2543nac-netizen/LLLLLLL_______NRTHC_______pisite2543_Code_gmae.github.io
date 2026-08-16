@@ -4,15 +4,15 @@ import {
   getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot,
   serverTimestamp, query, orderBy, limit, Timestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.8.3";
-import { REWARD_ITEMS, RARITY_META, INVENTORY_LIMIT, sellBackValue } from "./reward-data.js?v=4.8.3";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.8.3";
-import { DEFAULT_CHARACTER } from "./character-system.js?v=4.8.3";
-import { ZONE_ART_DATA } from "./zone-assets.js?v=4.8.3";
+import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.9.0";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, sellBackValue } from "./reward-data.js?v=4.9.0";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.9.0";
+import { DEFAULT_CHARACTER } from "./character-system.js?v=4.9.0";
+import { ZONE_ART_DATA } from "./zone-assets.js?v=4.9.0";
 import {
   QUEST_CONFIG, DEFAULT_TEACHER_QUESTS, localDayKey, activeQuestLimit,
   canAccessQuest, clampQuestReward, questDifficultyName, questObjectiveLabel
-} from "./quest-system.js?v=4.8.3";
+} from "./quest-system.js?v=4.9.0";
 
 const firebaseApp=initializeApp(firebaseConfig);
 const auth=getAuth(firebaseApp);
@@ -39,7 +39,7 @@ const INTERACT_DISTANCE=210;
 
 const canvas=$("zoneCanvas"),ctx=canvas.getContext("2d",{alpha:false});
 
-// ===== V4.8.3 REAL ART ASSETS =====
+// ===== V4.9.0 REAL ART ASSETS =====
 const ZONE_ART_PATH={
   world:"./assets/zone/zone-world-day.png",
   maleIdle:"./assets/zone/male-idle-right.png",
@@ -50,6 +50,7 @@ const ZONE_ART_PATH={
   femaleWalk2:"./assets/zone/female-walk-right-2.png",
   wizardIdle:"./assets/zone/wizard-idle-right.png",
   merchantIdle:"./assets/zone/merchant-idle-right.png",
+  gmSkeletonOverlord:"./assets/zone/gm-skeleton-overlord.png",
   token:"./assets/zone/item-token.png",
   gem:"./assets/zone/item-gem.png",
   chest:"./assets/zone/item-chest.png",
@@ -58,7 +59,7 @@ const ZONE_ART_PATH={
   potionBlue:"./assets/zone/item-potion-blue.png",
   potionGreen:"./assets/zone/item-potion-green.png"
 };
-const REQUIRED_ZONE_ART=["world","maleIdle","femaleIdle","wizardIdle","merchantIdle"];
+const REQUIRED_ZONE_ART=["world","maleIdle","femaleIdle","wizardIdle","merchantIdle","gmSkeletonOverlord"];
 
 const zoneArt={};
 const zoneArtStatus={loaded:0,failed:0,embedded:0,external:0};
@@ -100,7 +101,7 @@ async function loadZoneArt(){
     Object.entries(ZONE_ART_PATH).map(([k,v])=>loadZoneImage(k,v))
   );
   const missing=REQUIRED_ZONE_ART.filter(k=>!zoneArt[k]?.naturalWidth);
-  console.info("ZONE ART V4.8.3",{
+  console.info("ZONE ART V4.9.0",{
     loaded:zoneArtStatus.loaded,
     embedded:zoneArtStatus.embedded,
     external:zoneArtStatus.external,
@@ -113,7 +114,7 @@ function shopArtForItem(item){ return itemArtSrc(item?.id); }
 
 const itemArtImages={};
 async function loadItemArtImages(){
-  const jobs=REWARD_ITEMS.map(item=>new Promise(resolve=>{
+  const jobs=ALL_REWARD_ITEMS.map(item=>new Promise(resolve=>{
     const img=new Image();img.decoding='async';img.onload=()=>{itemArtImages[item.id]=img;resolve(true)};img.onerror=()=>resolve(false);img.src=itemArtSrc(item.id);
   }));
   await Promise.all(jobs);
@@ -135,16 +136,22 @@ const me={x:450,y:WALK_Y,direction:"right",moving:false};
 const keys=new Set();
 const touch={left:false,right:false};
 let nearbyAction=null;
+let zoneShopGrade="all";
 
 const GM_RANK={tierId:"master",tierName:"GAME MASTER",rating:999999};
-const GM_ITEMS=[{icon:"👑",name:"GM Crown"},{icon:"🪄",name:"GM Staff"},{icon:"🛡️",name:"Guardian Aura"}];
+const GM_ITEMS=[
+  {id:"gm_skeleton_overlord",icon:"💀",name:"Skeleton Overlord · GM Exclusive"},
+  {id:"gm_abyss_staff",icon:"🔱",name:"Abyss Skull Staff · GM Exclusive"},
+  {id:"gm_void_soul",icon:"🟣",name:"Void Soul Flame · GM Exclusive"},
+  {id:"gm_dark_mantle",icon:"🪽",name:"Dark Lich Mantle · GM Exclusive"}
+];
 
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
 function isGM(){return uid===ADMIN_UID}
 function isGMPlayer(p){return p?.uid===ADMIN_UID||p?.isAdmin===true}
 function isTouchOnly(){return window.matchMedia("(pointer: coarse)").matches&&window.innerWidth<=1180}
 function equipped(character){return {...DEFAULT_CHARACTER.equipped,...(character?.equipped||{})}}
-function itemById(id){return REWARD_ITEMS.find(x=>x.id===id)||null}
+function itemById(id){return rewardItemById(id)}
 function equippedItems(character){return Object.entries(equipped(character)).map(([slot,id])=>({slot,item:itemById(id)})).filter(x=>x.item)}
 function rankMeta(rank={}){
   const id=String(rank.tierId||"bronze").toLowerCase();
@@ -176,7 +183,7 @@ async function checkModeration(){
     if(s.banned){showGate("ถูกระงับการเข้า 2D Zone",`แบนถึง ${s.bannedUntil.toLocaleString("th-TH")}`);return false}
     if(s.kicked){showGate("ถูก GM เตะออกจาก 2D Zone",`กลับเข้าได้หลัง ${s.kickedUntil.toLocaleTimeString("th-TH")}`);return false}
     return true;
-  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.8.3");return false}
+  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.9.0");return false}
 }
 function listenModeration(){
   if(isGM())return;
@@ -357,7 +364,7 @@ async function acceptQuest(id){
 function startQuest(id){
   const q=teacherQuests.find(x=>x.id===id)||DEFAULT_TEACHER_QUESTS.find(x=>x.id===id);if(!q)return;
   if(isTouchOnly()){alert("รับภารกิจแล้ว กรุณาเปิดบัญชีนี้บนคอมพิวเตอร์เพื่อทำภารกิจ");return}
-  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.8.3`;
+  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.9.0`;
 }
 $("openWizardQuests").onclick=async()=>{await loadQuestProgress();renderQuestModal();$("zoneQuestModal").classList.remove("hidden")};
 $("closeWizardQuests").onclick=()=>$("zoneQuestModal").classList.add("hidden");
@@ -367,13 +374,18 @@ function renderShop(){
   const owned=new Set(profile.inventory||[]),eq=equipped(profile.character),wearing=new Set(Object.values(eq).filter(Boolean)),balance=Number(profile.tokenBalance||0);
   $('zoneTokenBalance').textContent=balance.toLocaleString();$('zoneShopBalance').textContent=balance.toLocaleString();
   if($('zoneShopInventory'))$('zoneShopInventory').textContent=`กระเป๋า ${owned.size}/${INVENTORY_LIMIT}`;
-  const items=[...REWARD_ITEMS].sort((a,b)=>(RARITY_META[a.rarity]?.order||0)-(RARITY_META[b.rarity]?.order||0)||a.cost-b.cost);
+  if($('zoneBackpackMini'))$('zoneBackpackMini').textContent=`${owned.size}/${INVENTORY_LIMIT}`;
+  const items=[...REWARD_ITEMS]
+    .filter(item=>zoneShopGrade==="all"||item.rarity===zoneShopGrade)
+    .sort((a,b)=>(RARITY_META[a.rarity]?.order||0)-(RARITY_META[b.rarity]?.order||0)||a.cost-b.cost);
   $('zoneShopGrid').innerHTML=items.map(item=>{
     const own=owned.has(item.id),on=wearing.has(item.id),sell=sellBackValue(item),full=!own&&owned.size>=INVENTORY_LIMIT;
     return `<article class="zone47-shop-item rarity-${esc(item.rarity)} ${on?'wearing':''}">
-      <div class="zone47-shop-rarity">${esc(RARITY_META[item.rarity]?.name||item.rarity)}${item.set==='requested'?' · NEW':''}</div>
+      <div class="zone47-shop-rarity">${esc(RARITY_META[item.rarity]?.name||item.rarity)} · ${esc(RARITY_META[item.rarity]?.short||"")}</div>
       <div class="zone47-shop-icon zone47-shop-real-art"><img src="${shopArtForItem(item)}" alt="${esc(item.name)}"><span>${item.icon}</span></div>
-      <strong>${esc(item.name)}</strong><small>${esc(item.description)}</small><em>${Number(item.cost).toLocaleString()} Token</em>
+      <strong>${esc(item.name)}</strong><small>${esc(item.description)}</small>
+      <div class="zone47-shop-slot">SLOT · ${esc(item.slot.toUpperCase())}</div>
+      <em>${Number(item.cost).toLocaleString()} Token</em>
       <div class="zone47-shop-actions">
         <button class="btn ${on?'ghost':own?'secondary':'primary'}" data-shop-item="${esc(item.id)}" ${!own&&(balance<item.cost||full)?'disabled':''}>${on?'ถอด':own?'สวมใส่':full?'กระเป๋าเต็ม':balance<item.cost?'Token ไม่พอ':'แลกไอเท็ม'}</button>
         ${own?`<button class="btn danger-soft" data-zone-sell-item="${esc(item.id)}" type="button">ขายคืน ${sell.toLocaleString()}</button>`:''}
@@ -382,6 +394,7 @@ function renderShop(){
   }).join('');
   document.querySelectorAll('[data-shop-item]:not([disabled])').forEach(btn=>btn.onclick=()=>handleShopItem(btn.dataset.shopItem));
   document.querySelectorAll('[data-zone-sell-item]').forEach(btn=>btn.onclick=()=>sellZoneItem(btn.dataset.zoneSellItem));
+  renderBackpack();
 }
 async function refreshProfile(){
   if(isGM())return;
@@ -419,6 +432,61 @@ async function sellZoneItem(id){
     });await refreshProfile();
   }catch(error){alert(error.message||String(error))}
 }
+
+
+function renderBackpack(){
+  if(!profile||isGM()||!$("zoneBackpackGrid"))return;
+  const inv=Array.isArray(profile.inventory)?profile.inventory:[];
+  const eq=equipped(profile.character),wearing=new Set(Object.values(eq).filter(Boolean));
+  const ownedItems=inv.map(id=>itemById(id)).filter(Boolean);
+  const over=inv.length>INVENTORY_LIMIT;
+
+  $("zoneBackpackCapacity").textContent=`${inv.length}/${INVENTORY_LIMIT}`;
+  $("zoneBackpackState").textContent=over
+    ?`เกินความจุจากข้อมูลเวอร์ชันเดิม ${inv.length-INVENTORY_LIMIT} ชิ้น · ขายออกก่อนซื้อเพิ่ม`
+    :inv.length>=INVENTORY_LIMIT?"กระเป๋าเต็ม":"เหลือ "+(INVENTORY_LIMIT-inv.length)+" ช่อง";
+  if($("zoneBackpackMini"))$("zoneBackpackMini").textContent=`${inv.length}/${INVENTORY_LIMIT}`;
+
+  const html=ownedItems.map((item,index)=>{
+    const on=wearing.has(item.id);
+    const legacy=LEGACY_REWARD_ITEMS.some(x=>x.id===item.id);
+    return `<article class="zone47-backpack-slot filled rarity-${esc(item.rarity)}">
+      <div class="zone47-backpack-no">${String(index+1).padStart(2,"0")}</div>
+      <div class="zone47-backpack-art"><img src="${shopArtForItem(item)}" alt="${esc(item.name)}"></div>
+      <div class="zone47-backpack-info">
+        <span>${legacy?"LEGACY · ":""}${esc(RARITY_META[item.rarity]?.name||item.rarity)} · ${esc(item.slot.toUpperCase())}</span>
+        <strong>${esc(item.name)}</strong>
+      </div>
+      <div class="zone47-backpack-actions">
+        <button class="btn ${on?'ghost':'secondary'}" data-bag-equip="${esc(item.id)}" type="button">${on?'ถอด':'สวมใส่'}</button>
+        <button class="btn danger-soft" data-bag-sell="${esc(item.id)}" type="button">ขาย ${sellBackValue(item).toLocaleString()}</button>
+      </div>
+      ${on?'<b class="zone47-wearing-badge">กำลังสวม</b>':''}
+    </article>`;
+  }).join("");
+
+  const emptyCount=Math.max(0,INVENTORY_LIMIT-inv.length);
+  const empties=Array.from({length:emptyCount},(_,i)=>`<article class="zone47-backpack-slot empty">
+    <div class="zone47-backpack-no">${String(inv.length+i+1).padStart(2,"0")}</div>
+    <div class="zone47-backpack-empty">＋<small>EMPTY SLOT</small></div>
+  </article>`).join("");
+
+  $("zoneBackpackGrid").innerHTML=html+empties;
+  document.querySelectorAll("[data-bag-equip]").forEach(btn=>btn.onclick=async()=>{await handleShopItem(btn.dataset.bagEquip);renderBackpack();});
+  document.querySelectorAll("[data-bag-sell]").forEach(btn=>btn.onclick=async()=>{await sellZoneItem(btn.dataset.bagSell);renderBackpack();});
+}
+document.querySelectorAll("[data-zone-grade]").forEach(btn=>{
+  btn.onclick=()=>{
+    zoneShopGrade=btn.dataset.zoneGrade||"all";
+    document.querySelectorAll("[data-zone-grade]").forEach(x=>x.classList.toggle("active",x===btn));
+    renderShop();
+  };
+});
+$("openZoneBackpack").onclick=()=>{
+  if(isGM()){alert("GM ไม่ใช้กระเป๋า User");return}
+  renderBackpack();$("zoneBackpackModal").classList.remove("hidden");
+};
+$("closeZoneBackpack").onclick=()=>$("zoneBackpackModal").classList.add("hidden");
 
 $("openZoneShop").onclick=()=>{if(isGM()){alert("GM ใช้ไอเท็มพิเศษเฉพาะ ไม่ซื้อจากร้าน");return}renderShop();$("zoneShopModal").classList.remove("hidden")};
 $("closeZoneShop").onclick=()=>$("zoneShopModal").classList.add("hidden");
@@ -545,7 +613,7 @@ function drawWorld(now){
   if(zoneArt.world?.complete&&zoneArt.world.naturalWidth){
     ctx.drawImage(zoneArt.world,0,0,WORLD.width,WORLD.height);
   }else{
-    // V4.8.3 intentionally does not draw the old primitive scene.
+    // V4.9.0 intentionally does not draw the old primitive scene.
     ctx.fillStyle="#102c3d";
     ctx.fillRect(0,0,WORLD.width,WORLD.height);
   }
@@ -562,7 +630,7 @@ function itemColor(item){const key=String(item?.visual||item?.id||"");let h=0;fo
 function drawRankShield(c,x,y,rank){const r=rankMeta(rank);c.save();c.translate(x,y);c.fillStyle=r.color;c.beginPath();c.moveTo(-10,-8);c.lineTo(10,-8);c.lineTo(8,7);c.lineTo(0,14);c.lineTo(-8,7);c.closePath();c.fill();c.fillStyle="#fff";c.font="900 9px system-ui";c.textAlign="center";c.fillText(r.letter,0,3);c.restore()}
 function drawName(c,p,gm){
   const label=gm?"GM":String(p.studentId||"USER");c.font="800 14px system-ui";const w=Math.max(gm?76:105,c.measureText(label).width+45);
-  const barY=-188;
+  const barY=gm?-270:-188;
   c.fillStyle=gm?"rgba(91,22,49,.95)":"rgba(9,28,39,.90)";rr(c,-w/2,barY,w,29,8);c.fill();c.strokeStyle=gm?"#ebc34e":"rgba(255,255,255,.16)";c.lineWidth=2;c.stroke();
   c.fillStyle="#fff";c.textAlign="center";c.fillText(label,0,barY+19);drawRankShield(c,-w/2+16,barY+13,gm?GM_RANK:p.rank);drawBubble(c,p,barY);
 }
@@ -590,25 +658,54 @@ function drawEquipmentFront(c,p,now){
   if(pet)drawEquippedArt(c,pet,p.direction==='left'?68:-68,-13+Math.sin(now/260)*4,58,58,p.direction!=='left',.98);
 }
 function playerArtImage(p,now){
-  if(isGMPlayer(p))return zoneArt.wizardIdle;
+  if(isGMPlayer(p))return zoneArt.gmSkeletonOverlord;
   const gender=p?.character?.gender==="female"?"female":"male";
   if(!p?.moving)return zoneArt[`${gender}Idle`];
   return (Math.floor(now/150)%2===0)?zoneArt[`${gender}Walk1`]:zoneArt[`${gender}Walk2`];
 }
 function drawCharacter(c,p,x,y,now){
-  const gm=isGMPlayer(p),moving=!!p.moving,bob=moving?Math.sin(now/80)*1.5:0;
+  const gm=isGMPlayer(p),moving=!!p.moving,bob=moving?Math.sin(now/85)*2.0:Math.sin(now/420)*.7;
   c.save();c.translate(x,y+bob);
+
   if(gm){
-    c.save();c.globalAlpha=.55;c.strokeStyle="#ffd55b";c.lineWidth=6;c.beginPath();c.ellipse(0,-70,61,92,0,0,Math.PI*2);c.stroke();c.restore();
+    // GM EXCLUSIVE: purple-black lich aura, never sold in Token Shop.
+    const pulse=.55+Math.sin(now/260)*.10;
+    c.save();
+    c.globalAlpha=pulse;
+    c.strokeStyle="#8f39ff";
+    c.shadowColor="#6e16d7";
+    c.shadowBlur=24;
+    c.lineWidth=7;
+    c.beginPath();c.ellipse(0,-92,77,118,0,0,Math.PI*2);c.stroke();
+    c.globalAlpha=.34;
+    c.strokeStyle="#e34cff";
+    c.lineWidth=3;
+    c.beginPath();c.ellipse(0,-86,91,132,0,0,Math.PI*2);c.stroke();
+    c.restore();
+
+    // Ground void sigil
+    c.save();
+    c.globalAlpha=.42;
+    c.strokeStyle="#7c24db";
+    c.lineWidth=4;
+    c.beginPath();c.ellipse(0,-3,76,16,0,0,Math.PI*2);c.stroke();
+    c.globalAlpha=.22;
+    c.fillStyle="#6b16b8";
+    c.beginPath();c.ellipse(0,-3,66,12,0,0,Math.PI*2);c.fill();
+    c.restore();
   }
+
   drawEquipmentBehind(c,p,now);
   const img=playerArtImage(p,now),flip=p.direction==="left";
-  const w=gm?145:132,h=gm?164:149;
-  if(!drawArtSprite(c,img,0,0,w,h,flip,1)){
+  const spriteW=gm?176:132,spriteH=gm?235:149;
+
+  if(!drawArtSprite(c,img,0,0,spriteW,spriteH,flip,1)){
     c.fillStyle="#d84f4f";c.font="700 18px system-ui";c.textAlign="center";c.fillText("ART?",0,-55);
   }
+
   drawEquipmentFront(c,p,now);
-  drawName(c,p,gm);c.restore();
+  drawName(c,p,gm);
+  c.restore();
 }
 function drawFrame(now){
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle="#102c3d";ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -630,7 +727,19 @@ function openPlayerCard(p){
   $("zonePlayerCardRank").textContent=gm?"GAME MASTER":`${p.rank?.tierName||"Bronze"} · ${Number(p.rank?.rating||0)} Rating`;
   $("zonePlayerCardItemTitle").textContent=gm?"GM EXCLUSIVE":"ไอเท็มที่กำลังสวม";
   const list=gm?GM_ITEMS:equippedItems(p.character).map(x=>x.item);
-  $("zonePlayerCardItems").innerHTML=list.length?list.map(i=>`<div><img class="zone47-card-item-art" src="${itemArtSrc(i.id)}" alt=""><small>${esc(i.name||"Item")}</small></div>`).join(""):`<div class="empty">ยังไม่ได้สวมไอเท็ม</div>`;
+  if(gm){
+    $("zonePlayerCardItems").innerHTML=`
+      <div class="zone47-gm-exclusive-card">
+        <img class="zone47-gm-skin-preview" src="${ZONE_ART_DATA.gmSkeletonOverlord}" alt="GM Skeleton Overlord">
+        <small>💀 Skeleton Overlord · GM EXCLUSIVE</small>
+      </div>
+      ${list.slice(1).map(i=>`<div class="zone47-gm-exclusive-item"><b>${esc(i.icon||"✦")}</b><small>${esc(i.name)}</small></div>`).join("")}
+    `;
+  }else{
+    $("zonePlayerCardItems").innerHTML=list.length
+      ?list.map(i=>`<div><img class="zone47-card-item-art" src="${itemArtSrc(i.id)}" alt=""><small>${esc(i.name||"Item")}</small></div>`).join("")
+      :`<div class="empty">ยังไม่ได้สวมไอเท็ม</div>`;
+  }
   $("zonePlayerCard").classList.remove("hidden");
 }
 $("closeZonePlayerCard").onclick=()=>$("zonePlayerCard").classList.add("hidden");
@@ -661,7 +770,7 @@ onAuthStateChanged(auth,async user=>{
     showGate(
       "โหลดภาพ 2D Zone ไม่ครบ",
       `ไม่พบ Asset สำคัญ: ${artResult.missing.join(", ")}`,
-      "V4.8.3 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
+      "V4.9.0 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
     );
     return;
   }
