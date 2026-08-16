@@ -1,4 +1,4 @@
-V4.12.0 — GitHub Web Upload
+V4.13.0 — GitHub Web Upload
 
 1) แตก ZIP ก่อน
 2) อัปไฟล์ทั้งหมดข้างในไป Repository Root
@@ -6,10 +6,10 @@ V4.12.0 — GitHub Web Upload
 4) รอ GitHub Pages / Actions = Success
 5) Ctrl+F5
 
-สำคัญ: ต้อง Publish firestore.rules V4.12.0 ใน Firebase Console
+สำคัญ: ต้อง Publish firestore.rules V4.13.0 ใน Firebase Console
 เพราะมี collection ใหม่:
 - usage_daily
 - usage_sessions
 - gm_profiles
 
-ข้อมูล Usage จะเริ่มสะสมตั้งแต่หลัง Deploy V4.12.0
+ข้อมูล Usage จะเริ่มสะสมตั้งแต่หลัง Deploy V4.13.0

@@ -1,4 +1,4 @@
-# V4.12.0 — Approved Art Integration
+# V4.13.0 — Approved Art Integration
 
 Firebase Project: `nr-game-code`
 

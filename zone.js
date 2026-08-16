@@ -4,19 +4,19 @@ import {
   getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot,
   serverTimestamp, query, orderBy, limit, Timestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.12.0";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, GM_EXCLUSIVE_ITEMS, GM_DEFAULT_INVENTORY, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, CATEGORY_META, INVENTORY_LIMIT, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, sanitizeInventory, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, SHOP_CATEGORY_ORDER, SHOP_CATEGORY_COUNTS, shopCatalogSummary, shopCategorySummary, shopCatalogComplete } from "./reward-data.js?v=4.12.0";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.12.0";
-import { DEFAULT_CHARACTER } from "./character-system.js?v=4.12.0";
-import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.12.0";
-import { EQUIP_LAYER_DATA, equipLayerSrc } from "./equip-layer-assets.js?v=4.12.0";
-import { BODY_SKIN_DATA, bodySkinSrc } from "./body-skin-assets.js?v=4.12.0";
-import { ZONE_ART_DATA } from "./zone-assets.js?v=4.12.0";
+import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.13.0";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, GM_EXCLUSIVE_ITEMS, GM_DEFAULT_INVENTORY, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, CATEGORY_META, INVENTORY_LIMIT, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, sanitizeInventory, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, SHOP_CATEGORY_ORDER, SHOP_CATEGORY_COUNTS, shopCatalogSummary, shopCategorySummary, shopCatalogComplete } from "./reward-data.js?v=4.13.0";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.13.0";
+import { DEFAULT_CHARACTER } from "./character-system.js?v=4.13.0";
+import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.13.0";
+import { EQUIP_LAYER_DATA, equipLayerSrc } from "./equip-layer-assets.js?v=4.13.0";
+import { ZONE_ART_DATA } from "./zone-assets.js?v=4.13.0";
+import { ANIMATED_SKIN_DATA, animatedSkinSrc } from "./animated-skin-assets.js?v=4.13.0";
 import {
   QUEST_CONFIG, DEFAULT_TEACHER_QUESTS, localDayKey, activeQuestLimit,
   canAccessQuest, clampQuestReward, questDifficultyName, questObjectiveLabel
-} from "./quest-system.js?v=4.12.0";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.12.0";
+} from "./quest-system.js?v=4.13.0";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.13.0";
 
 const firebaseApp=initializeApp(firebaseConfig);
 const auth=getAuth(firebaseApp);
@@ -51,7 +51,7 @@ const INTERACT_DISTANCE=210;
 
 const canvas=$("zoneCanvas"),ctx=canvas.getContext("2d",{alpha:false});
 
-// ===== V4.12.0 REAL ART ASSETS =====
+// ===== V4.13.0 REAL ART ASSETS =====
 const ZONE_ART_PATH={
   world:"./assets/zone/zone-world-day.png",
   maleIdle:"./assets/zone/male-idle-right.png",
@@ -112,7 +112,7 @@ async function loadZoneArt(){
     Object.entries(ZONE_ART_PATH).map(([k,v])=>loadZoneImage(k,v))
   );
   const missing=REQUIRED_ZONE_ART.filter(k=>!zoneArt[k]?.naturalWidth);
-  console.info("ZONE ART V4.12.0",{
+  console.info("ZONE ART V4.13.0",{
     loaded:zoneArtStatus.loaded,
     embedded:zoneArtStatus.embedded,
     external:zoneArtStatus.external,
@@ -135,35 +135,33 @@ async function loadEquipLayerImages(){
   await Promise.all(jobs);
 }
 
-const bodySkinImages={};
-async function loadBodySkinImages(){
-  const jobs=Object.entries(BODY_SKIN_DATA).map(([id,src])=>new Promise(resolve=>{
-    const img=new Image();img.decoding="async";
-    img.onload=()=>{bodySkinImages[id]=img;resolve(true)};
-    img.onerror=()=>resolve(false);
-    img.src=src;
-  }));
-  await Promise.all(jobs);
+
+const animatedSkinImages={};
+function animatedSkinImage(id,gender,pose){
+  if(!id)return null;
+  const key=`${id}:${gender}:${pose}`;
+  if(animatedSkinImages[key])return animatedSkinImages[key];
+  const src=animatedSkinSrc(id,gender,pose);if(!src)return null;
+  const img=new Image();img.decoding="async";img.src=src;animatedSkinImages[key]=img;return img;
 }
-function drawBodySkin(c,id,direction="right"){
-  if(!id)return false;
-  const img=bodySkinImages[id];if(!img?.naturalWidth)return false;
-  return drawArtSprite(c,img,0,0,220,160,direction==="left",1);
-}
-function drawPlayerHeadOnly(c,img,flip=false){
-  if(!img?.naturalWidth)return false;
-  const sw=img.naturalWidth,sh=Math.floor(img.naturalHeight*.43);
-  c.save();if(flip)c.scale(-1,1);
-  c.drawImage(img,0,0,sw,sh,-50,-150,100,65);
-  c.restore();return true;
+function playerPoseKey(p,now){
+  if(!p?.moving)return "idle";
+  return (Math.floor(now/150)%2===0)?"walk1":"walk2";
 }
 
-function drawEquipmentLayer(c,id,direction="right",alpha=1){
+function drawEquipmentLayer(c,id,direction="right",alpha=1,pose="idle",gender="male"){
   if(!id)return false;
   const img=equipLayerImages[id];if(!img?.naturalWidth)return false;
-  // Every wearable is authored in the same 220×160 coordinate space.
-  // Base character is centered in the same coordinate system, so it cannot drift.
-  return drawArtSprite(c,img,0,0,220,160,direction==="left",alpha);
+  const item=itemById(id),hand=item?.slot==="hand";
+  const offsets={
+    male:{idle:[0,0],walk1:[-4,-1],walk2:[2,0]},
+    female:{idle:[0,0],walk1:[-3,-1],walk2:[2,0]}
+  };
+  const [ox,oy]=(offsets[gender]?.[pose]||[0,0]);
+  const dx=hand?(direction==="left"?-ox:ox):0,dy=hand?oy:0;
+  c.save();c.translate(dx,dy);
+  const ok=drawArtSprite(c,img,0,0,220,160,direction==="left",alpha);
+  c.restore();return ok;
 }
 
 let cssW=1,cssH=1,dpr=1,zoom=1;
@@ -221,7 +219,7 @@ async function checkModeration(){
     if(s.banned){showGate("ถูกระงับการเข้า 2D Zone",`แบนถึง ${s.bannedUntil.toLocaleString("th-TH")}`);return false}
     if(s.kicked){showGate("ถูก GM เตะออกจาก 2D Zone",`กลับเข้าได้หลัง ${s.kickedUntil.toLocaleTimeString("th-TH")}`);return false}
     return true;
-  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.12.0");return false}
+  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.13.0");return false}
 }
 function listenModeration(){
   if(isGM())return;
@@ -434,7 +432,7 @@ function startQuest(id){
   const q=teacherQuests.find(x=>x.id===id)||DEFAULT_TEACHER_QUESTS.find(x=>x.id===id);if(!q)return;
   if(isTouchOnly()){alert("รับภารกิจแล้ว กรุณาเปิดบัญชีนี้บนคอมพิวเตอร์เพื่อทำภารกิจ");return}
   if(postToStudentShell("NR_ZONE_QUEST",{questId:id}))return;
-  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.12.0`;
+  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.13.0`;
 }
 $("openWizardQuests").onclick=async()=>{await loadQuestProgress();renderQuestModal();$("zoneQuestModal").classList.remove("hidden")};
 $("closeWizardQuests").onclick=()=>$("zoneQuestModal").classList.add("hidden");
@@ -755,7 +753,7 @@ function drawWorld(now){
   if(zoneArt.world?.complete&&zoneArt.world.naturalWidth){
     ctx.drawImage(zoneArt.world,0,0,WORLD.width,WORLD.height);
   }else{
-    // V4.12.0 intentionally does not draw the old primitive scene.
+    // V4.13.0 intentionally does not draw the old primitive scene.
     ctx.fillStyle="#102c3d";
     ctx.fillRect(0,0,WORLD.width,WORLD.height);
   }
@@ -784,24 +782,39 @@ function drawBubble(c,p,barY=-188){
   const show=lines.slice(0,3),bw=Math.max(110,Math.min(245,Math.max(...show.map(x=>c.measureText(x).width))+25)),bh=17+show.length*20,by=barY-13-bh;
   c.fillStyle=p.isAdmin?"#fff3c9":"rgba(255,255,255,.97)";rr(c,-bw/2,by,bw,bh,12);c.fill();c.strokeStyle="rgba(35,55,68,.18)";c.stroke();c.fillStyle="#17364a";c.textAlign="center";show.forEach((ln,i)=>c.fillText(ln,0,by+23+i*20));
 }
-function drawEquipmentBehind(c,p,now){const eq=equipped(p.character||{});drawEquipmentLayer(c,eq.back,p.direction,1);}
-function drawEquipmentFront(c,p,now){const eq=equipped(p.character||{});drawEquipmentLayer(c,eq.hand,p.direction,1);drawEquipmentLayer(c,eq.pet,p.direction,1);}
+function drawEquipmentBehind(c,p,now,pose){
+  const eq=equipped(p.character||{}),gender=p?.character?.gender==="female"?"female":"male";
+  drawEquipmentLayer(c,eq.back,p.direction,1,pose,gender);
+}
+function drawEquipmentFront(c,p,now,pose){
+  const eq=equipped(p.character||{}),gender=p?.character?.gender==="female"?"female":"male";
+  drawEquipmentLayer(c,eq.hand,p.direction,1,pose,gender);
+  drawEquipmentLayer(c,eq.pet,p.direction,1,pose,gender);
+}
 function playerArtImage(p,now){
-  const gender=p?.character?.gender==="female"?"female":"male";
-  if(!p?.moving)return zoneArt[`${gender}Idle`];
-  return (Math.floor(now/150)%2===0)?zoneArt[`${gender}Walk1`]:zoneArt[`${gender}Walk2`];
+  const gender=p?.character?.gender==="female"?"female":"male",pose=playerPoseKey(p,now);
+  return zoneArt[`${gender}${pose==="idle"?"Idle":pose==="walk1"?"Walk1":"Walk2"}`];
 }
 function drawCharacter(c,p,x,y,now){
   const gm=isGMPlayer(p),moving=!!p.moving,bob=moving?Math.sin(now/85)*1.6:Math.sin(now/420)*.45;
   c.save();c.translate(x,y+bob);
-  const eq=equipped(p.character||{});drawEquipmentBehind(c,p,now);
-  const img=playerArtImage(p,now),flip=p.direction==="left";
+  const eq=equipped(p.character||{}),gender=p?.character?.gender==="female"?"female":"male",pose=playerPoseKey(p,now);
+  drawEquipmentBehind(c,p,now,pose);
+  const flip=p.direction==="left";
+
+  // V4.13.0: Outfit is a true animated character skin.
+  // The skin frame is generated from the SAME original idle/walk pose, so the
+  // arms/legs are not a pasted static body and move exactly with the player.
+  let img=null;
   if(eq.outfit){
-    // TRUE BODY SKIN: old User body is not drawn. Neck-to-feet skin + original User head only.
-    drawBodySkin(c,eq.outfit,p.direction);
-    if(!drawPlayerHeadOnly(c,img,flip)){c.fillStyle="#d84f4f";c.font="700 18px system-ui";c.textAlign="center";c.fillText("HEAD?",0,-95);}
-  }else if(!drawArtSprite(c,img,0,0,100,150,flip,1)){c.fillStyle="#d84f4f";c.font="700 18px system-ui";c.textAlign="center";c.fillText("ART?",0,-55);}
-  drawEquipmentFront(c,p,now);drawName(c,p,gm);c.restore();
+    const skin=animatedSkinImage(eq.outfit,gender,pose);
+    if(skin?.complete&&skin.naturalWidth)img=skin;
+  }
+  if(!img)img=playerArtImage(p,now);
+  if(!drawArtSprite(c,img,0,0,100,150,flip,1)){
+    c.fillStyle="#d84f4f";c.font="700 18px system-ui";c.textAlign="center";c.fillText("ART?",0,-55);
+  }
+  drawEquipmentFront(c,p,now,pose);drawName(c,p,gm);c.restore();
 }
 function drawFrame(now){
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle="#102c3d";ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -867,12 +880,11 @@ onAuthStateChanged(auth,async user=>{
   uid=user.uid;if(!(await loadProfile()))return;if(!(await checkModeration()))return;
   const artResult=await loadZoneArt();
   await loadEquipLayerImages();
-  await loadBodySkinImages();
   if(!artResult.ok){
     showGate(
       "โหลดภาพ 2D Zone ไม่ครบ",
       `ไม่พบ Asset สำคัญ: ${artResult.missing.join(", ")}`,
-      "V4.12.0 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
+      "V4.13.0 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
     );
     return;
   }
