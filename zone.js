@@ -4,18 +4,18 @@ import {
   getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot,
   serverTimestamp, query, orderBy, limit, Timestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.10.0";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, GM_EXCLUSIVE_ITEMS, GM_DEFAULT_INVENTORY, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.10.0";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.10.0";
-import { DEFAULT_CHARACTER } from "./character-system.js?v=4.10.0";
-import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.10.0";
-import { EQUIP_LAYER_DATA, equipLayerSrc } from "./equip-layer-assets.js?v=4.10.0";
-import { ZONE_ART_DATA } from "./zone-assets.js?v=4.10.0";
+import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.11.0";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, GM_EXCLUSIVE_ITEMS, GM_DEFAULT_INVENTORY, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, CATEGORY_META, INVENTORY_LIMIT, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, sanitizeInventory, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, SHOP_CATEGORY_COUNTS, shopCatalogSummary, shopCategorySummary, shopCatalogComplete } from "./reward-data.js?v=4.11.0";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.11.0";
+import { DEFAULT_CHARACTER } from "./character-system.js?v=4.11.0";
+import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.11.0";
+import { EQUIP_LAYER_DATA, equipLayerSrc } from "./equip-layer-assets.js?v=4.11.0";
+import { ZONE_ART_DATA } from "./zone-assets.js?v=4.11.0";
 import {
   QUEST_CONFIG, DEFAULT_TEACHER_QUESTS, localDayKey, activeQuestLimit,
   canAccessQuest, clampQuestReward, questDifficultyName, questObjectiveLabel
-} from "./quest-system.js?v=4.10.0";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.10.0";
+} from "./quest-system.js?v=4.11.0";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.11.0";
 
 const firebaseApp=initializeApp(firebaseConfig);
 const auth=getAuth(firebaseApp);
@@ -50,7 +50,7 @@ const INTERACT_DISTANCE=210;
 
 const canvas=$("zoneCanvas"),ctx=canvas.getContext("2d",{alpha:false});
 
-// ===== V4.10.0 REAL ART ASSETS =====
+// ===== V4.11.0 REAL ART ASSETS =====
 const ZONE_ART_PATH={
   world:"./assets/zone/zone-world-day.png",
   maleIdle:"./assets/zone/male-idle-right.png",
@@ -111,7 +111,7 @@ async function loadZoneArt(){
     Object.entries(ZONE_ART_PATH).map(([k,v])=>loadZoneImage(k,v))
   );
   const missing=REQUIRED_ZONE_ART.filter(k=>!zoneArt[k]?.naturalWidth);
-  console.info("ZONE ART V4.10.0",{
+  console.info("ZONE ART V4.11.0",{
     loaded:zoneArtStatus.loaded,
     embedded:zoneArtStatus.embedded,
     external:zoneArtStatus.external,
@@ -196,7 +196,7 @@ async function checkModeration(){
     if(s.banned){showGate("ถูกระงับการเข้า 2D Zone",`แบนถึง ${s.bannedUntil.toLocaleString("th-TH")}`);return false}
     if(s.kicked){showGate("ถูก GM เตะออกจาก 2D Zone",`กลับเข้าได้หลัง ${s.kickedUntil.toLocaleTimeString("th-TH")}`);return false}
     return true;
-  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.10.0");return false}
+  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.11.0");return false}
 }
 function listenModeration(){
   if(isGM())return;
@@ -212,7 +212,7 @@ async function loadProfile(){
   if(isGM()){
     const gmRef=doc(db,"gm_profiles",uid),snap=await getDoc(gmRef);
     const saved=snap.exists()?snap.data():{};
-    const inv=[...new Set([...(Array.isArray(saved.inventory)?saved.inventory:[]),...GM_DEFAULT_INVENTORY])];
+    const inv=[...new Set([...sanitizeInventory(saved.inventory||[],{includeGm:true}),...GM_DEFAULT_INVENTORY])];
     profile={uid,studentId:"GM",fullName:"GM",rank:null,tokenBalance:Infinity,inventory:inv,
       character:{...DEFAULT_CHARACTER,...(saved.character||{}),gender:["male","female"].includes(saved.character?.gender)?saved.character.gender:"male",equipped:equipped(saved.character||{})},
       zone:saved.zone||{}};
@@ -224,6 +224,14 @@ async function loadProfile(){
   try{
     const snap=await getDoc(doc(db,"users",uid));if(!snap.exists()){showGate("ไม่พบ User","กรุณาลงทะเบียนใหม่");return false}
     profile={uid,...snap.data()};
+    const cleanInventory=sanitizeInventory(profile.inventory||[]);
+    const cleanEquipped=equipped(profile.character||{});
+    const inventoryChanged=cleanInventory.length!==(profile.inventory||[]).length;
+    profile.inventory=cleanInventory;
+    profile.character={...DEFAULT_CHARACTER,...profile.character,equipped:cleanEquipped};
+    if(inventoryChanged){
+      try{await updateDoc(doc(db,"users",uid),{inventory:cleanInventory,character:profile.character,updatedAt:serverTimestamp()})}catch(error){console.warn("inventory cleanup",error)}
+    }
     if(!["male","female"].includes(profile.character?.gender)){showGate("กรุณาเลือกตัวละครก่อน","กลับหน้า User แล้วเลือกชายหรือหญิง");return false}
     me.x=Math.max(WALK_LEFT,Math.min(WALK_RIGHT,Number(profile.zone?.x)||450));
     me.direction=profile.zone?.direction==="left"?"left":"right";
@@ -401,7 +409,7 @@ function startQuest(id){
   const q=teacherQuests.find(x=>x.id===id)||DEFAULT_TEACHER_QUESTS.find(x=>x.id===id);if(!q)return;
   if(isTouchOnly()){alert("รับภารกิจแล้ว กรุณาเปิดบัญชีนี้บนคอมพิวเตอร์เพื่อทำภารกิจ");return}
   if(postToStudentShell("NR_ZONE_QUEST",{questId:id}))return;
-  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.10.0`;
+  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.11.0`;
 }
 $("openWizardQuests").onclick=async()=>{await loadQuestProgress();renderQuestModal();$("zoneQuestModal").classList.remove("hidden")};
 $("closeWizardQuests").onclick=()=>$("zoneQuestModal").classList.add("hidden");
@@ -416,7 +424,7 @@ function zoneShopItemCard(item,owned,wearing,balance){
   const full=!isGM()&&!own&&owned.size>=INVENTORY_LIMIT;
   const art=shopArtForItem(item);
   return `<article class="zone47-shop-item rarity-${esc(item.rarity)} ${on?'wearing':''}" data-shop-catalog-id="${esc(item.id)}">
-    <div class="zone47-shop-rarity">${esc(RARITY_META[item.rarity]?.name||item.rarity)} · ${esc(RARITY_META[item.rarity]?.short||"")}</div>
+    <div class="zone47-shop-rarity">${esc(RARITY_META[item.rarity]?.name||item.rarity)} · ${esc(CATEGORY_META[item.category]?.name||item.category)}</div>
     <div class="zone47-shop-icon zone47-shop-real-art">
       <img src="${art}" alt="${esc(item.name)}" loading="lazy">
       <span>${item.icon}</span>
@@ -447,7 +455,7 @@ function zoneShopGradeSection(grade,items,owned,wearing,balance){
 }
 function renderShop(){
   if(!profile)return;
-  const owned=new Set(profile.inventory||[]);
+  const owned=new Set(isGM()?sanitizeInventory(profile.inventory||[],{includeGm:true}):sanitizeInventory(profile.inventory||[]));
   const eq=equipped(profile.character);
   const wearing=new Set(Object.values(eq).filter(Boolean));
   const balance=isGM()?Infinity:Number(profile.tokenBalance||0);
@@ -457,7 +465,10 @@ function renderShop(){
   if($('zoneShopInventory'))$('zoneShopInventory').textContent=isGM()?`กระเป๋า ${owned.size}/∞`:`กระเป๋า ${owned.size}/${INVENTORY_LIMIT}`;
   if($('zoneBackpackMini'))$('zoneBackpackMini').textContent=isGM()?`${owned.size}/∞`:`${owned.size}/${INVENTORY_LIMIT}`;
 
-  const summary=shopCatalogSummary();
+  const summary=shopCatalogSummary(),cats=shopCategorySummary();
+  if($("zoneShopCatalogStatus")){
+    $("zoneShopCatalogStatus").dataset.categories=`OUTFIT ${cats.outfit} · WEAPON ${cats.weapon} · WINGS ${cats.wing} · PET ${cats.pet}`;
+  }
   const filterLabels={
     all:`🛍️ ทั้งหมด ${summary.total}/${SHOP_EXPECTED_COUNTS.total}`,
     easy:`🟢 หาง่าย ${summary.easy}/${SHOP_EXPECTED_COUNTS.easy}`,
@@ -545,7 +556,7 @@ async function sellZoneItem(id){
 
 function renderBackpack(){
   if(!profile||!$("zoneBackpackGrid"))return;
-  const inv=Array.isArray(profile.inventory)?profile.inventory:[];
+  const inv=isGM()?sanitizeInventory(profile.inventory||[],{includeGm:true}):sanitizeInventory(profile.inventory||[]);
   const eq=equipped(profile.character),wearing=new Set(Object.values(eq).filter(Boolean));
   const ownedItems=inv.map(id=>itemById(id)).filter(Boolean);
   const over=!isGM()&&inv.length>INVENTORY_LIMIT;
@@ -722,7 +733,7 @@ function drawWorld(now){
   if(zoneArt.world?.complete&&zoneArt.world.naturalWidth){
     ctx.drawImage(zoneArt.world,0,0,WORLD.width,WORLD.height);
   }else{
-    // V4.10.0 intentionally does not draw the old primitive scene.
+    // V4.11.0 intentionally does not draw the old primitive scene.
     ctx.fillStyle="#102c3d";
     ctx.fillRect(0,0,WORLD.width,WORLD.height);
   }
@@ -753,27 +764,14 @@ function drawBubble(c,p,barY=-188){
 }
 function drawEquipmentBehind(c,p,now){
   const eq=equipped(p.character||{});
-  // Behind-body slots first.
-  drawEquipmentLayer(c,eq.aura,p.direction,.92);
-  drawEquipmentLayer(c,eq.back,p.direction,.98);
+  // Only Wings use the behind-body slot in the User catalog.
+  drawEquipmentLayer(c,eq.back,p.direction,1);
 }
 function drawEquipmentFront(c,p,now){
   const eq=equipped(p.character||{});
-
-  // Full Outfit replaces Top/Bottom/Shoes, so no visual or stat stacking.
-  if(eq.outfit){
-    drawEquipmentLayer(c,eq.outfit,p.direction,1);
-  }else{
-    drawEquipmentLayer(c,eq.top,p.direction,1);
-    drawEquipmentLayer(c,eq.bottom,p.direction,1);
-    drawEquipmentLayer(c,eq.shoes,p.direction,1);
-  }
-
-  drawEquipmentLayer(c,eq.head,p.direction,1);
-  drawEquipmentLayer(c,eq.face,p.direction,1);
+  drawEquipmentLayer(c,eq.outfit,p.direction,1);
   drawEquipmentLayer(c,eq.hand,p.direction,1);
-
-  // Pet artwork has its feet authored at y=160 (the same ground line as player).
+  // Pets are authored with their feet on y=160, the same ground line as the player.
   drawEquipmentLayer(c,eq.pet,p.direction,1);
 }
 function playerArtImage(p,now){
@@ -860,7 +858,7 @@ onAuthStateChanged(auth,async user=>{
     showGate(
       "โหลดภาพ 2D Zone ไม่ครบ",
       `ไม่พบ Asset สำคัญ: ${artResult.missing.join(", ")}`,
-      "V4.10.0 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
+      "V4.11.0 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
     );
     return;
   }
