@@ -4,19 +4,19 @@ import {
   getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot,
   serverTimestamp, query, orderBy, limit, Timestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.13.0";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, GM_EXCLUSIVE_ITEMS, GM_DEFAULT_INVENTORY, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, CATEGORY_META, INVENTORY_LIMIT, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, sanitizeInventory, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, SHOP_CATEGORY_ORDER, SHOP_CATEGORY_COUNTS, shopCatalogSummary, shopCategorySummary, shopCatalogComplete } from "./reward-data.js?v=4.13.0";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.13.0";
-import { DEFAULT_CHARACTER } from "./character-system.js?v=4.13.0";
-import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.13.0";
-import { EQUIP_LAYER_DATA, equipLayerSrc } from "./equip-layer-assets.js?v=4.13.0";
-import { ZONE_ART_DATA } from "./zone-assets.js?v=4.13.0";
-import { ANIMATED_SKIN_DATA, animatedSkinSrc } from "./animated-skin-assets.js?v=4.13.0";
+import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.13.1";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, GM_EXCLUSIVE_ITEMS, GM_DEFAULT_INVENTORY, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, CATEGORY_META, INVENTORY_LIMIT, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, sanitizeInventory, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, SHOP_CATEGORY_ORDER, SHOP_CATEGORY_COUNTS, shopCatalogSummary, shopCategorySummary, shopCatalogComplete } from "./reward-data.js?v=4.13.1";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.13.1";
+import { DEFAULT_CHARACTER } from "./character-system.js?v=4.13.1";
+import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.13.1";
+import { EQUIP_LAYER_DATA, equipLayerSrc } from "./equip-layer-assets.js?v=4.13.1";
+import { ZONE_ART_DATA } from "./zone-assets.js?v=4.13.1";
+import { ANIMATED_SKIN_DATA, animatedSkinSrc } from "./animated-skin-assets.js?v=4.13.1";
 import {
   QUEST_CONFIG, DEFAULT_TEACHER_QUESTS, localDayKey, activeQuestLimit,
   canAccessQuest, clampQuestReward, questDifficultyName, questObjectiveLabel
-} from "./quest-system.js?v=4.13.0";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.13.0";
+} from "./quest-system.js?v=4.13.1";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.13.1";
 
 const firebaseApp=initializeApp(firebaseConfig);
 const auth=getAuth(firebaseApp);
@@ -51,7 +51,7 @@ const INTERACT_DISTANCE=210;
 
 const canvas=$("zoneCanvas"),ctx=canvas.getContext("2d",{alpha:false});
 
-// ===== V4.13.0 REAL ART ASSETS =====
+// ===== V4.13.1 REAL ART ASSETS =====
 const ZONE_ART_PATH={
   world:"./assets/zone/zone-world-day.png",
   maleIdle:"./assets/zone/male-idle-right.png",
@@ -112,7 +112,7 @@ async function loadZoneArt(){
     Object.entries(ZONE_ART_PATH).map(([k,v])=>loadZoneImage(k,v))
   );
   const missing=REQUIRED_ZONE_ART.filter(k=>!zoneArt[k]?.naturalWidth);
-  console.info("ZONE ART V4.13.0",{
+  console.info("ZONE ART V4.13.1",{
     loaded:zoneArtStatus.loaded,
     embedded:zoneArtStatus.embedded,
     external:zoneArtStatus.external,
@@ -219,7 +219,7 @@ async function checkModeration(){
     if(s.banned){showGate("ถูกระงับการเข้า 2D Zone",`แบนถึง ${s.bannedUntil.toLocaleString("th-TH")}`);return false}
     if(s.kicked){showGate("ถูก GM เตะออกจาก 2D Zone",`กลับเข้าได้หลัง ${s.kickedUntil.toLocaleTimeString("th-TH")}`);return false}
     return true;
-  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.13.0");return false}
+  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.13.1");return false}
 }
 function listenModeration(){
   if(isGM())return;
@@ -432,7 +432,7 @@ function startQuest(id){
   const q=teacherQuests.find(x=>x.id===id)||DEFAULT_TEACHER_QUESTS.find(x=>x.id===id);if(!q)return;
   if(isTouchOnly()){alert("รับภารกิจแล้ว กรุณาเปิดบัญชีนี้บนคอมพิวเตอร์เพื่อทำภารกิจ");return}
   if(postToStudentShell("NR_ZONE_QUEST",{questId:id}))return;
-  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.13.0`;
+  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.13.1`;
 }
 $("openWizardQuests").onclick=async()=>{await loadQuestProgress();renderQuestModal();$("zoneQuestModal").classList.remove("hidden")};
 $("closeWizardQuests").onclick=()=>$("zoneQuestModal").classList.add("hidden");
@@ -753,7 +753,7 @@ function drawWorld(now){
   if(zoneArt.world?.complete&&zoneArt.world.naturalWidth){
     ctx.drawImage(zoneArt.world,0,0,WORLD.width,WORLD.height);
   }else{
-    // V4.13.0 intentionally does not draw the old primitive scene.
+    // V4.13.1 intentionally does not draw the old primitive scene.
     ctx.fillStyle="#102c3d";
     ctx.fillRect(0,0,WORLD.width,WORLD.height);
   }
@@ -802,7 +802,7 @@ function drawCharacter(c,p,x,y,now){
   drawEquipmentBehind(c,p,now,pose);
   const flip=p.direction==="left";
 
-  // V4.13.0: Outfit is a true animated character skin.
+  // V4.13.1: Outfit is a true animated character skin.
   // The skin frame is generated from the SAME original idle/walk pose, so the
   // arms/legs are not a pasted static body and move exactly with the player.
   let img=null;
@@ -884,7 +884,7 @@ onAuthStateChanged(auth,async user=>{
     showGate(
       "โหลดภาพ 2D Zone ไม่ครบ",
       `ไม่พบ Asset สำคัญ: ${artResult.missing.join(", ")}`,
-      "V4.13.0 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
+      "V4.13.1 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
     );
     return;
   }

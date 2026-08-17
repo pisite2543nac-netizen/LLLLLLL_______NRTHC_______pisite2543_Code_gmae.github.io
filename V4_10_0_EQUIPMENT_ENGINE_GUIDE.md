@@ -1,4 +1,4 @@
-# V4.13.0 — Equipment Engine Rebuild / Shop 40
+# V4.13.1 — Equipment Engine Rebuild / Shop 40
 
 Firebase Project: `nr-game-code`
 
@@ -6,7 +6,7 @@ Firebase Project: `nr-game-code`
 เวอร์ชันก่อนใช้รูป Item Thumbnail โปร่งใส แล้วพยายาม Crop/ขยับ x/y ตอนสวม
 แต่รูปแต่ละชิ้นมีพื้นที่ว่างและสัดส่วนไม่เท่ากัน จึงเกิดอาการหมวก/กระเป๋า/อาวุธลอย
 
-V4.13.0 เลิกใช้ Thumbnail สำหรับตัวละครโดยเด็ดขาด
+V4.13.1 เลิกใช้ Thumbnail สำหรับตัวละครโดยเด็ดขาด
 
 แยกเป็น:
 1. `item-assets.js` = ภาพในร้าน/กระเป๋า

@@ -1,4 +1,4 @@
-# V4.13.0 — 20 Full Outfit / 30 Item Clean Catalog
+# V4.13.1 — 20 Full Outfit / 30 Item Clean Catalog
 
 Firebase: `nr-game-code`
 
@@ -28,7 +28,7 @@ Firebase: `nr-game-code`
 
 ## ระบบ Migration
 เมื่อ User Login/เข้า Zone:
-- Inventory เก่าจะถูกกรองให้เหลือเฉพาะ Catalog V4.13.0
+- Inventory เก่าจะถูกกรองให้เหลือเฉพาะ Catalog V4.13.1
 - Item เก่าที่ถูกถอดออกจะไม่กินช่อง Backpack อีก
 - Equipment เก่าที่ไม่มีใน Catalog จะถูก Unequip อัตโนมัติ
 - ลดโอกาส Item ลอยจากข้อมูลเก่าที่ค้างใน Firestore
