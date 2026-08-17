@@ -7,21 +7,21 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, limit, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=4.13.0";
-import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.13.0";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, CATEGORY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, sanitizeInventory, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, SHOP_CATEGORY_ORDER, SHOP_CATEGORY_COUNTS, shopCatalogSummary, shopCategorySummary, shopCatalogComplete } from "./reward-data.js?v=4.13.0";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.13.0";
-import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.13.0";
-import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.13.0";
-import { equipLayerSrc } from "./equip-layer-assets.js?v=4.13.0";
-import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.13.0";
-import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.13.0";
-import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.13.0";
-import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.13.0";
-import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.13.0";
-import { animatedSkinSrc } from "./animated-skin-assets.js?v=4.13.0";
-import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.13.0";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.13.0";
+import { firebaseConfig } from "./firebase-config.js?v=4.13.1";
+import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.13.1";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, CATEGORY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, sanitizeInventory, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, SHOP_CATEGORY_ORDER, SHOP_CATEGORY_COUNTS, shopCatalogSummary, shopCategorySummary, shopCatalogComplete } from "./reward-data.js?v=4.13.1";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.13.1";
+import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.13.1";
+import { normalizeEquipment, toggleEquipment } from "./equipment-system.js?v=4.13.1";
+import { equipLayerSrc } from "./equip-layer-assets.js?v=4.13.1";
+import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.13.1";
+import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.13.1";
+import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.13.1";
+import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.13.1";
+import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.13.1";
+import { animatedSkinSrc } from "./animated-skin-assets.js?v=4.13.1";
+import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.13.1";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.13.1";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -41,7 +41,8 @@ const state = {
   pvpProgressTimer:null, pvpProgressLastSent:0, pvpResultSaved:false,
   pvpRoomListUnsub:null,pvpStakeLocking:false,pvpCurrentShot:-1,pvpShotRecorded:-1,
   pvpAggregate:{typedChars:0,keys:0,mistakes:0,seconds:0},pvpPayoutClaimed:false,pvpWasActive:false,pvpTargetCode:"",pvpTurnSignature:null,pvpRecordedSignature:null,
-  pvpCountdownTimer:null,pvpCountdownEndMs:0,pvpRankUnsub:null,
+  pvpCountdownTimer:null,pvpCountdownEndMs:0,pvpCountdownEndMono:0,pvpCountdownToken:null,pvpRankUnsub:null,
+  pvpClientReadyWriting:false,pvpStartRequestBusy:false,pvpAttemptCreating:false,
   pvpBattle:{combo:0,maxCombo:0,damage:0,correctSinceAttack:0,lastEventSeq:0,lastLineCount:0,attackQueue:null},
   rankSettingsUnsub:null,rankResetTimer:null,rankSettings:{},rankResetAppliedVersion:null,
   activeQuest:null,questLaunchHandled:false,
@@ -512,7 +513,7 @@ async function routeAuthenticatedStudent(){
   if(!state.player) throw new Error("ไม่พบข้อมูลผู้ใช้");
 
   const requestedQuest=new URLSearchParams(location.search).get("quest");
-  // V4.13.0: ทุก User อยู่ใต้ Fullscreen document เดียว
+  // V4.13.1: ทุก User อยู่ใต้ Fullscreen document เดียว
   // Mobile/Tablet ยังเป็น Zone-only แต่ Zone เปิดเป็น iframe เต็มพื้นที่
   // เพื่อไม่ให้ Browser ยกเลิก Fullscreen จากการเปลี่ยนหน้า HTML.
   await enterPortal();
@@ -1787,6 +1788,13 @@ function pvpBattleHp(room,team){const max=Number(room?.battle?.maxHpByTeam?.[tea
 function pvpBattleMaxHp(room,team){return Number(room?.battle?.maxHpByTeam?.[team]||room?.battle?.maxHp||100);}
 function renderPvpFighterSlot(elId,nameId,rankId,player,side){
   const el=$(elId);if(!el)return;
+
+  // Arena orientation is authoritative:
+  // TEAM A is on the left and faces right; TEAM B is on the right and faces left.
+  el.classList.toggle("facing-right",side==="A");
+  el.classList.toggle("facing-left",side==="B");
+  el.dataset.pvpSide=side;
+
   const key=`${player?.uid||"none"}:${JSON.stringify(player?.character?.equipped||{})}`;
   if(el.dataset.fighterKey!==key){
     el.dataset.fighterKey=key;
@@ -1921,10 +1929,15 @@ async function savePvpRankedResult(room,result){
 }
 
 
-/* ===== V4.13.0 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
+/* ===== V4.13.1 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
 const PVP_ROOM_STALE_MS=20*60*1000;
 const PVP_CREATE_FEE=6;
-const PVP_COUNTDOWN_MS=3000;
+
+// V4.13.1 PVP sync:
+// Every player must acknowledge this client protocol before Host can start.
+// This prevents one old/stalled client from being left behind during countdown.
+const PVP_SYNC_VERSION="4.13.1";
+const PVP_COUNTDOWN_MS=3200;
 function pvpSettings(){
   const teamMode=$("pvpTeamMode")?.value||"1v1";
   const shotCount=Number($("pvpShotCount")?.value||3);
@@ -1990,7 +2003,8 @@ async function leaveCurrentLobby(){
   if(state.roomUnsub){state.roomUnsub();state.roomUnsub=null;}
   const code=state.roomCode;if(code){const roomRef=doc(db,"pvp_rooms",code),userRef=doc(db,"users",state.uid);
     try{await runTransaction(db,async tx=>{const rs=await tx.get(roomRef);if(!rs.exists())return;const room=rs.data();if(room.status!=="waiting"||!room.players?.[state.uid])return;const players={...(room.players||{})},mine=players[state.uid],wager=Number(room.wager||0);if(mine.stakeLocked&&wager>0){const us=await tx.get(userRef);if(us.exists())tx.update(userRef,{tokenBalance:Number(us.data().tokenBalance||0)+wager,updatedAt:serverTimestamp()});}delete players[state.uid];const left=Object.keys(players);if(!left.length){tx.delete(roomRef);return;}let hostUid=room.hostUid;if(hostUid===state.uid)hostUid=left[0];tx.update(roomRef,{players,hostUid,lastActivityAt:serverTimestamp()});});}catch(e){console.warn("leave lobby:",e)} }
-  state.roomCode=null;state.roomData=null;state.pvpActiveRoom=null;state.pvpCurrentShot=-1;state.pvpAttemptId=null;state.pvpResultSaved=false;state.pvpTurnSignature=null;state.pvpRecordedSignature=null;state.pvpTargetCode="";state.pvpAggregate={typedChars:0,keys:0,mistakes:0,seconds:0};
+  clearPvpCountdown();
+  state.roomCode=null;state.roomData=null;state.pvpActiveRoom=null;state.pvpCurrentShot=-1;state.pvpAttemptId=null;state.pvpAttemptCreating=false;state.pvpResultSaved=false;state.pvpTurnSignature=null;state.pvpRecordedSignature=null;state.pvpTargetCode="";state.pvpAggregate={typedChars:0,keys:0,mistakes:0,seconds:0};state.pvpClientReadyWriting=false;state.pvpStartRequestBusy=false;
   $("pvpLobby")?.classList.add("hidden");$("startPvpButton")?.classList.add("hidden");$("leaveLobbyButton")?.classList.add("hidden");setMatchButtonsBusy(false);setMatchmakingStatus("idle","พร้อมใช้งาน","สร้างห้อง เลือกห้อง หรือกรอก Room Code");await ensureProfileDefaults();if($("userTokens"))$("userTokens").textContent=Number(state.player?.tokenBalance||0).toLocaleString();
 }
 
@@ -2004,7 +2018,7 @@ async function createRoom(){
       const us=await tx.get(userRef),rs=await tx.get(roomRef);if(!us.exists())throw new Error("ไม่พบ User");if(rs.exists())throw new Error("Room Code ถูกใช้แล้ว กรุณาลองใหม่");
       const bal=Number(us.data().tokenBalance||0);if(bal<PVP_CREATE_FEE+cfg.wager)throw new Error(`Token ไม่พอ ต้องมี ${PVP_CREATE_FEE+cfg.wager}`);
       tx.update(userRef,{tokenBalance:bal-PVP_CREATE_FEE,updatedAt:serverTimestamp()});
-      tx.set(roomRef,{code,hostUid:state.uid,languageId:state.language.id,difficultyId:state.difficulty?.id||state.lesson.difficulty,teamMode:cfg.teamMode,shotCount:cfg.shotCount,maxPlayers:cfg.maxPlayers,wager:cfg.wager,creationFee:PVP_CREATE_FEE,creationFeePaid:true,lessonIds,shotIndex:0,relayLegs:{A:0,B:0},scores:{A:0,B:0},shotResults:{},battle:{maxHp:100,hp:{A:100,B:100},eventSeq:0,lastEvent:null},rankedBattle:true,status:"waiting",createdAt:serverTimestamp(),lastActivityAt:serverTimestamp(),players:{[state.uid]:{uid:state.uid,name:state.player.fullName,studentId:state.player.studentId,educationLevel:state.player.educationLevel,classroom:state.player.classroom,department:state.player.department||"",major:state.player.major||"",majorCode:state.player.majorCode||majorCodeFor(state.player.educationLevel,state.player.major),character:pvpCharacterSnapshot(state.player.character),battleDamage:0,maxCombo:0,combo:0,...assign,joinedOrder:0,stakeLocked:cfg.wager===0,progress:0,shotFinished:false,joinedAt:new Date().toISOString()}}});
+      tx.set(roomRef,{code,hostUid:state.uid,languageId:state.language.id,difficultyId:state.difficulty?.id||state.lesson.difficulty,teamMode:cfg.teamMode,shotCount:cfg.shotCount,maxPlayers:cfg.maxPlayers,wager:cfg.wager,creationFee:PVP_CREATE_FEE,creationFeePaid:true,lessonIds,shotIndex:0,relayLegs:{A:0,B:0},scores:{A:0,B:0},shotResults:{},battle:{maxHp:100,hp:{A:100,B:100},eventSeq:0,lastEvent:null},rankedBattle:true,status:"waiting",createdAt:serverTimestamp(),lastActivityAt:serverTimestamp(),players:{[state.uid]:{uid:state.uid,name:state.player.fullName,studentId:state.player.studentId,educationLevel:state.player.educationLevel,classroom:state.player.classroom,department:state.player.department||"",major:state.player.major||"",majorCode:state.player.majorCode||majorCodeFor(state.player.educationLevel,state.player.major),character:pvpCharacterSnapshot(state.player.character),battleDamage:0,maxCombo:0,combo:0,...assign,joinedOrder:0,stakeLocked:cfg.wager===0,clientReadyVersion:"",clientReadyAt:null,progress:0,shotFinished:false,joinedAt:new Date().toISOString()}}});
     });
     await ensureProfileDefaults();if($("userTokens"))$("userTokens").textContent=Number(state.player?.tokenBalance||0).toLocaleString();
     setMatchmakingStatus("waiting",`สร้างห้อง ${code} แล้ว · จ่าย ${PVP_CREATE_FEE} Token`,`ค่าสร้างไม่คืน · ส่ง Code ให้เพื่อน หรือรอผู้เล่นเลือกห้อง`);listenRoom(code);
@@ -2015,7 +2029,7 @@ $("createRoomButton").onclick=createRoom;
 async function joinRoomByCode(rawCode){
   if(!renderPvpConfig())return;const code=String(rawCode||"").trim().toUpperCase();if(code.length!==6){setMatchmakingStatus("error","Room Code ไม่ถูกต้อง","Code ต้องมี 6 ตัวอักษร");return;}
   setMatchButtonsBusy(true);setMatchmakingStatus("searching",`กำลังเข้าห้อง ${code}...`,`ตรวจสอบที่ว่างและกติกาห้อง`);
-  try{await leaveCurrentLobby();const ref=doc(db,"pvp_rooms",code);await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw new Error("ไม่พบห้องนี้");const room=snap.data();if(!isJoinableRoom(room))throw new Error("ห้องเต็ม เริ่มแล้ว หมดอายุ หรือภาษาไม่ตรง");if(Number(state.player?.tokenBalance||0)<Number(room.wager||0))throw new Error(`Token ไม่พอ ต้องมี ${Number(room.wager||0)} Token`);const players={...(room.players||{})},assign=teamAssignment(players,room.teamMode);players[state.uid]={uid:state.uid,name:state.player.fullName,studentId:state.player.studentId,educationLevel:state.player.educationLevel,classroom:state.player.classroom,department:state.player.department||"",major:state.player.major||"",majorCode:state.player.majorCode||majorCodeFor(state.player.educationLevel,state.player.major),character:pvpCharacterSnapshot(state.player.character),battleDamage:0,maxCombo:0,combo:0,...assign,joinedOrder:Object.keys(players).length,stakeLocked:Number(room.wager||0)===0,progress:0,shotFinished:false,joinedAt:new Date().toISOString()};tx.update(ref,{players,lastActivityAt:serverTimestamp()});});state.roomCode=code;setMatchmakingStatus("matched",`เข้าห้อง ${code} แล้ว`,`รอสมาชิกครบและระบบล็อก Token`);listenRoom(code);
+  try{await leaveCurrentLobby();const ref=doc(db,"pvp_rooms",code);await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw new Error("ไม่พบห้องนี้");const room=snap.data();if(!isJoinableRoom(room))throw new Error("ห้องเต็ม เริ่มแล้ว หมดอายุ หรือภาษาไม่ตรง");if(Number(state.player?.tokenBalance||0)<Number(room.wager||0))throw new Error(`Token ไม่พอ ต้องมี ${Number(room.wager||0)} Token`);const players={...(room.players||{})},assign=teamAssignment(players,room.teamMode);players[state.uid]={uid:state.uid,name:state.player.fullName,studentId:state.player.studentId,educationLevel:state.player.educationLevel,classroom:state.player.classroom,department:state.player.department||"",major:state.player.major||"",majorCode:state.player.majorCode||majorCodeFor(state.player.educationLevel,state.player.major),character:pvpCharacterSnapshot(state.player.character),battleDamage:0,maxCombo:0,combo:0,...assign,joinedOrder:Object.keys(players).length,stakeLocked:Number(room.wager||0)===0,clientReadyVersion:"",clientReadyAt:null,progress:0,shotFinished:false,joinedAt:new Date().toISOString()};tx.update(ref,{players,lastActivityAt:serverTimestamp()});});state.roomCode=code;setMatchmakingStatus("matched",`เข้าห้อง ${code} แล้ว`,`รอสมาชิกครบและระบบล็อก Token`);listenRoom(code);
   }catch(e){console.error(e);setMatchButtonsBusy(false);setMatchmakingStatus("error","เข้าห้องไม่สำเร็จ",e.message||"");}
 }
 $("joinRoomCodeButton").onclick=()=>joinRoomByCode($("joinRoomCodeInput").value);
@@ -2028,39 +2042,211 @@ async function ensureMyStakeLocked(room){
   }catch(e){if(e.message==="TOKEN_LOW"){alert(`Token ไม่พอสำหรับห้องนี้ (${wager} Token)`);await leaveCurrentLobby();}else console.warn("stake lock:",e)}finally{state.pvpStakeLocking=false;}
 }
 function allStakesLocked(room){return roomFull(room)&&roomPlayers(room).every(p=>p.stakeLocked===true);}
+function allPvpClientsReady(room){
+  return allStakesLocked(room)
+    && roomPlayers(room).every(p=>p.clientReadyVersion===PVP_SYNC_VERSION);
+}
+async function ensureMyPvpClientReady(room){
+  const mine=room?.players?.[state.uid];
+  if(
+    state.pvpClientReadyWriting
+    || !state.roomCode
+    || room?.status!=="waiting"
+    || !roomFull(room)
+    || !mine?.stakeLocked
+    || mine?.clientReadyVersion===PVP_SYNC_VERSION
+  ) return;
+
+  state.pvpClientReadyWriting=true;
+  try{
+    await updateDoc(doc(db,"pvp_rooms",state.roomCode),{
+      [`players.${state.uid}.clientReadyVersion`]:PVP_SYNC_VERSION,
+      [`players.${state.uid}.clientReadyAt`]:serverTimestamp(),
+      lastActivityAt:serverTimestamp()
+    });
+  }catch(error){
+    console.warn("PVP client ready:",error);
+  }finally{
+    state.pvpClientReadyWriting=false;
+  }
+}
 function renderLobbyPlayers(room){
   const activeA=activeUidForTeam(room,"A"),activeB=activeUidForTeam(room,"B");
-  $("pvpPlayersGrid").innerHTML=roomPlayers(room).map(p=>`<div class="pvp-player-slot team-${p.team.toLowerCase()}"><span>TEAM ${p.team} · SLOT ${Number(p.teamSlot||0)+1}</span><strong>${esc(p.name||p.studentId)}</strong><small>${esc(p.studentId||'-')} · ${p.stakeLocked?'🔒 TOKEN READY':'⏳ LOCK TOKEN'}</small></div>`).join("");
+  $("pvpPlayersGrid").innerHTML=roomPlayers(room).map(p=>{
+    const sync=p.clientReadyVersion===PVP_SYNC_VERSION?"✅ SYNC READY":"⏳ SYNC";
+    return `<div class="pvp-player-slot team-${p.team.toLowerCase()}"><span>TEAM ${p.team} · SLOT ${Number(p.teamSlot||0)+1}</span><strong>${esc(p.name||p.studentId)}</strong><small>${esc(p.studentId||'-')} · ${p.stakeLocked?'🔒 TOKEN READY':'⏳ LOCK TOKEN'} · ${sync}</small></div>`;
+  }).join("");
   $("pvpLobbyRule").textContent=pvpRoomRuleText(room);
 }
 function listenRoom(code){
   if(state.roomUnsub)state.roomUnsub();state.roomCode=code;$("pvpLobby").classList.remove("hidden");$("leaveLobbyButton").classList.remove("hidden");
   state.roomUnsub=onSnapshot(doc(db,"pvp_rooms",code),async snap=>{if(!snap.exists()){await leaveCurrentLobby();setMatchmakingStatus("closed","ห้องถูกปิดแล้ว","เลือกห้องใหม่ได้ทันที");return;}state.roomData=snap.data();const room=state.roomData;$("roomCodeLabel").textContent=code;$("pvpStatus").textContent=String(room.status||"waiting").toUpperCase();renderLobbyPlayers(room);const full=roomFull(room),host=room.hostUid===state.uid;
     if(room.status==="waiting"&&full&&!room.players?.[state.uid]?.stakeLocked)ensureMyStakeLocked(room);
-    if(room.status==="waiting"){const ready=allStakesLocked(room);$("pvpLobbyHint").textContent=!full?`รอผู้เล่น ${playerCount(room)}/${room.maxPlayers}`:ready?(host?"พร้อมแล้ว กดเริ่มการแข่งขัน":"พร้อมแล้ว รอ Host เริ่ม"):"สมาชิกครบแล้ว กำลังล็อก Token";$("startPvpButton").classList.toggle("hidden",!(host&&ready));setMatchmakingStatus(full?"matched":"waiting",full?"สมาชิกครบแล้ว":`ห้อง ${code} กำลังรอ`,pvpRoomRuleText(room));}
+    if(room.status==="waiting"&&full&&room.players?.[state.uid]?.stakeLocked&&room.players?.[state.uid]?.clientReadyVersion!==PVP_SYNC_VERSION){
+      ensureMyPvpClientReady(room);
+    }
+    if(room.status==="waiting"){
+      const stakeReady=allStakesLocked(room),clientsReady=allPvpClientsReady(room);
+      $("pvpLobbyHint").textContent=!full
+        ?`รอผู้เล่น ${playerCount(room)}/${room.maxPlayers}`
+        :!stakeReady
+          ?"สมาชิกครบแล้ว · กำลังล็อก Token"
+          :!clientsReady
+            ?"กำลัง Sync เครื่องผู้เล่นทุกฝั่งก่อนเริ่มการแข่งขัน"
+            :(host?"ทุกฝั่งพร้อมแล้ว · กดเริ่มการแข่งขัน":"ทุกฝั่งพร้อมแล้ว · รอ Host เริ่ม");
+      $("startPvpButton").classList.toggle("hidden",!(host&&clientsReady));
+      $("startPvpButton").disabled=state.pvpStartRequestBusy||!(host&&clientsReady);
+      setMatchmakingStatus(
+        clientsReady?"matched":full?"searching":"waiting",
+        clientsReady?"ทุกเครื่อง Sync พร้อมแล้ว":full?"กำลัง Sync ผู้เล่น":`ห้อง ${code} กำลังรอ`,
+        pvpRoomRuleText(room)
+      );
+    }
     if(room.status==="playing"){setMatchmakingStatus("playing","การแข่งขันกำลังดำเนินอยู่",pvpRoomRuleText(room));syncPvpGameFromRoom(room,code);}
     if(room.status==="finished"){syncPvpGameFromRoom(room,code);await handlePvpFinishedRoom(room);}setMatchButtonsBusy(true);
   },e=>{console.error(e);setMatchButtonsBusy(false);setMatchmakingStatus("error","Lobby ขัดข้อง",e.message||"")});
 }
-$("startPvpButton").onclick=async()=>{if(!state.roomCode)return;const ref=doc(db,"pvp_rooms",state.roomCode);try{await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())return;const r=snap.data();if(r.hostUid!==state.uid||r.status!=="waiting"||!allStakesLocked(r))throw new Error("ห้องยังไม่พร้อม");const players={};for(const [id,p] of Object.entries(r.players||{}))players[id]={...p,progress:0,shotFinished:false,wpm:0,accuracy:100,mistakes:0,battleDamage:0,maxCombo:0,combo:0};const maxA=pvpTeamMaxHp(players,"A"),maxB=pvpTeamMaxHp(players,"B");tx.update(ref,{status:"playing",shotIndex:0,relayLegs:{A:0,B:0},scores:{A:0,B:0},shotResults:{},players,battle:{maxHpByTeam:{A:maxA,B:maxB},hp:{A:maxA,B:maxB},eventSeq:0,lastEvent:null},rankedBattle:true,startedAt:serverTimestamp(),countdownDurationMs:PVP_COUNTDOWN_MS,shotStartedAt:serverTimestamp(),lastActivityAt:serverTimestamp()});});}catch(e){alert(e.message)}};
+$("startPvpButton").onclick=async()=>{
+  if(!state.roomCode||state.pvpStartRequestBusy)return;
+
+  const ref=doc(db,"pvp_rooms",state.roomCode);
+  const startToken=`${Date.now().toString(36)}-${systemRoomCode(5)}`;
+  state.pvpStartRequestBusy=true;
+  $("startPvpButton").disabled=true;
+  $("pvpLobbyHint").textContent="กำลังส่ง Start Signal เดียวกันไปทุกเครื่อง...";
+
+  try{
+    await runTransaction(db,async tx=>{
+      const snap=await tx.get(ref);
+      if(!snap.exists())throw new Error("ไม่พบห้อง PVP");
+      const r=snap.data();
+
+      if(r.hostUid!==state.uid)throw new Error("เฉพาะ Host เท่านั้นที่เริ่มการแข่งขันได้");
+      if(r.status!=="waiting")throw new Error("การแข่งขันเริ่มไปแล้ว");
+      if(!allStakesLocked(r))throw new Error("Token ของผู้เล่นยังล็อกไม่ครบ");
+      if(!allPvpClientsReady(r))throw new Error("เครื่องผู้เล่นยัง Sync ไม่ครบ กรุณารอ READY ทุกฝั่ง");
+
+      const players={};
+      for(const [id,p] of Object.entries(r.players||{})){
+        players[id]={
+          ...p,
+          progress:0,shotFinished:false,wpm:0,accuracy:100,mistakes:0,
+          battleDamage:0,maxCombo:0,combo:0
+        };
+      }
+
+      const maxA=pvpTeamMaxHp(players,"A"),maxB=pvpTeamMaxHp(players,"B");
+      tx.update(ref,{
+        status:"playing",
+        syncVersion:PVP_SYNC_VERSION,
+        startToken,
+        shotIndex:0,
+        relayLegs:{A:0,B:0},
+        scores:{A:0,B:0},
+        shotResults:{},
+        players,
+        battle:{
+          maxHpByTeam:{A:maxA,B:maxB},
+          hp:{A:maxA,B:maxB},
+          eventSeq:0,lastEvent:null
+        },
+        rankedBattle:true,
+        startedAt:serverTimestamp(),
+        countdownDurationMs:PVP_COUNTDOWN_MS,
+        shotStartedAt:serverTimestamp(),
+        lastActivityAt:serverTimestamp()
+      });
+    });
+  }catch(error){
+    console.error("PVP start:",error);
+    alert(error.message||"เริ่ม PVP ไม่สำเร็จ");
+  }finally{
+    state.pvpStartRequestBusy=false;
+    if($("startPvpButton"))$("startPvpButton").disabled=false;
+  }
+};
 $("leaveLobbyButton").onclick=leaveCurrentLobby;
 
-function pvpInitialCountdownEnd(room=state.roomData){const started=room?.startedAt?.toMillis?.()||room?.startedAt?.toDate?.()?.getTime?.()||0;return started&&Number(room?.shotIndex||0)===0?started+Number(room?.countdownDurationMs||0):0}
-function pvpCountdownActive(){return state.pvpCountdownEndMs===-1 || (!!state.pvpCountdownEndMs&&Date.now()<state.pvpCountdownEndMs)}
-function clearPvpCountdown(){clearInterval(state.pvpCountdownTimer);state.pvpCountdownTimer=null;state.pvpCountdownEndMs=0;$("pvpCountdownOverlay")?.classList.add("hidden")}
+function pvpCountdownRoomToken(room=state.roomData){
+  if(!room)return "";
+  if(room.startToken)return String(room.startToken);
+  // Legacy fallback: never enter an indefinite SYNC state.
+  return `legacy:${state.roomCode||"room"}:${Number(room.shotIndex||0)}`;
+}
+function pvpCountdownActive(){
+  return !!state.pvpCountdownToken
+    && Number(state.pvpCountdownEndMono||0)>0
+    && performance.now()<state.pvpCountdownEndMono;
+}
+function clearPvpCountdown(){
+  clearInterval(state.pvpCountdownTimer);
+  state.pvpCountdownTimer=null;
+  state.pvpCountdownEndMs=0;
+  state.pvpCountdownEndMono=0;
+  state.pvpCountdownToken=null;
+  $("pvpCountdownOverlay")?.classList.add("hidden");
+}
 function startPvpCountdown(room,turn){
-  const duration=Number(room?.countdownDurationMs||0),end=pvpInitialCountdownEnd(room);
-  if(duration>0&&!end){
-    if(state.pvpCountdownEndMs===-1)return;
-    clearInterval(state.pvpCountdownTimer);state.pvpCountdownEndMs=-1;$("pvpTypingInput").disabled=true;$("pvpCountdownOverlay").classList.remove("hidden");$("pvpCountdownNumber").textContent="SYNC";$("pvpGameStatus").textContent="COUNTDOWN";return;
+  const duration=Number(room?.countdownDurationMs||0);
+  if(duration<=0||Number(room?.shotIndex||0)!==0){
+    clearPvpCountdown();
+    $("pvpTypingInput").disabled=!turn;
+    state.pvpStartTime=Date.now();
+    return;
   }
-  if(end&&state.pvpCountdownEndMs===end)return;
-  clearInterval(state.pvpCountdownTimer);state.pvpCountdownEndMs=end;
-  if(!end){$("pvpCountdownOverlay")?.classList.add("hidden");$("pvpTypingInput").disabled=!turn;state.pvpStartTime=Date.now();return;}
-  state.pvpStartTime=end;
-  if(Date.now()>=end){$("pvpCountdownOverlay")?.classList.add("hidden");$("pvpTypingInput").disabled=!turn;$("pvpGameStatus").textContent=turn?"PLAYING":"WATCHING";return;}
-  $("pvpTypingInput").disabled=true;$("pvpCountdownOverlay").classList.remove("hidden");$("pvpGameStatus").textContent="COUNTDOWN";
-  const tick=()=>{const left=end-Date.now();if(left<=0){clearInterval(state.pvpCountdownTimer);state.pvpCountdownTimer=null;$("pvpCountdownNumber").textContent="GO!";$("pvpGameStatus").textContent=turn?"PLAYING":"WATCHING";setTimeout(()=>{$("pvpCountdownOverlay").classList.add("hidden")},420);$("pvpTypingInput").disabled=!turn;if(turn)setTimeout(()=>$('pvpTypingInput').focus({preventScroll:true}),80);return;}$("pvpCountdownNumber").textContent=String(Math.min(3,Math.max(1,Math.ceil(left/1000))));};tick();state.pvpCountdownTimer=setInterval(tick,60);
+
+  const token=pvpCountdownRoomToken(room);
+  if(!token){
+    // Defensive fallback. A playing room must never freeze on "SYNC".
+    $("pvpCountdownOverlay")?.classList.add("hidden");
+    $("pvpTypingInput").disabled=!turn;
+    state.pvpStartTime=Date.now();
+    return;
+  }
+
+  // Same Start Signal: do not reset the timer when Firestore sends another snapshot.
+  if(state.pvpCountdownToken===token){
+    if(pvpCountdownActive()){
+      $("pvpTypingInput").disabled=true;
+    }else{
+      $("pvpTypingInput").disabled=!turn;
+      $("pvpCountdownOverlay")?.classList.add("hidden");
+      $("pvpGameStatus").textContent=turn?"PLAYING":"WATCHING";
+    }
+    return;
+  }
+
+  clearInterval(state.pvpCountdownTimer);
+  state.pvpCountdownToken=token;
+  state.pvpCountdownEndMono=performance.now()+duration;
+  state.pvpCountdownEndMs=Date.now()+duration;
+  state.pvpStartTime=Date.now()+duration;
+
+  $("pvpTypingInput").disabled=true;
+  $("pvpCountdownOverlay").classList.remove("hidden");
+  $("pvpGameStatus").textContent="COUNTDOWN";
+
+  const tick=()=>{
+    const left=state.pvpCountdownEndMono-performance.now();
+    if(left<=0){
+      clearInterval(state.pvpCountdownTimer);
+      state.pvpCountdownTimer=null;
+      state.pvpCountdownEndMono=0;
+      state.pvpCountdownEndMs=0;
+      $("pvpCountdownNumber").textContent="GO!";
+      $("pvpGameStatus").textContent=turn?"PLAYING":"WATCHING";
+      $("pvpTypingInput").disabled=!turn;
+      setTimeout(()=>$("pvpCountdownOverlay")?.classList.add("hidden"),360);
+      if(turn)setTimeout(()=>$("pvpTypingInput")?.focus({preventScroll:true}),60);
+      return;
+    }
+    $("pvpCountdownNumber").textContent=String(
+      Math.min(3,Math.max(1,Math.ceil(left/1000)))
+    );
+  };
+
+  tick();
+  state.pvpCountdownTimer=setInterval(tick,50);
 }
 
 function pvpElapsed(){return state.pvpStartTime?Math.max(0,(Date.now()-state.pvpStartTime)/1000):0;}
@@ -2072,15 +2258,17 @@ function recordCurrentPvpShot(){if(!state.pvpTurnSignature||state.pvpRecordedSig
 function renderPvpStrictCode(){const code=state.pvpTargetCode||state.pvpLesson?.code||"";let html="";for(let i=0;i<code.length;i++){const cls=i<state.pvpCorrectText.length?"correct":i===state.pvpCorrectText.length?"current":"pending",ch=code[i];html+=`<span class="${cls}">${ch==="\n"?"\n":ch===" "?" ":esc(ch)}</span>`;}$("pvpTypingDisplay").innerHTML=html;$("pvpTypingDisplay").querySelector(".current")?.scrollIntoView({block:"nearest"});$("pvpProgress").textContent=`${Math.floor(pvpProgressPct())}%`;}
 function updatePvpStats(){$("pvpTime").textContent=fmtTime(pvpElapsed());$("pvpWpm").textContent=Math.round(pvpWpm());$("pvpAccuracy").textContent=`${pvpAccuracy().toFixed(0)}%`;$("pvpMistakes").textContent=state.pvpMistakes;$("pvpProgress").textContent=`${Math.floor(pvpProgressPct())}%`;}
 function pvpWrong(expected){const stage=$("pvpTypingStage");stage.classList.remove("wrong-shake","wrong-flash");void stage.offsetWidth;stage.classList.add("wrong-shake","wrong-flash");$("pvpGameStatus").textContent=`ผิด · ${expected==="\n"?"Enter":expected===" "?"Space":expected}`;setTimeout(()=>{stage.classList.remove("wrong-shake","wrong-flash");if(!state.pvpFinished)$("pvpGameStatus").textContent="PLAYING"},260);}
-async function createPvpAttempt(){if(state.pvpAttemptId)return;const room=state.roomData;if(!room)return;try{const r=await addDoc(collection(db,"attempts"),{uid:state.uid,studentId:state.player.studentId,fullName:state.player.fullName,educationLevel:state.player.educationLevel,classroom:state.player.classroom,language:state.language?.name||room.languageId,languageId:room.languageId,modeName:"PVP Battle Ranked",pvpRanked:true,difficulty:difficultyName(room.difficultyId),difficultyId:room.difficultyId,stage:0,lessonId:"multi_shot",levelTitle:`PVP ${room.shotCount} Shot ${room.teamMode}`,roomCode:state.roomCode,teamMode:room.teamMode,shotCount:room.shotCount,tokenWager:Number(room.wager||0),team:myPvpTeam(room),status:"playing",score:0,rewardPoints:0,wpm:0,accuracy:0,mistakes:0,elapsedSeconds:0,createdAt:serverTimestamp()});state.pvpAttemptId=r.id;}catch(e){console.warn("attempt:",e)}}
+async function createPvpAttempt(){if(state.pvpAttemptId||state.pvpAttemptCreating)return;const room=state.roomData;if(!room)return;state.pvpAttemptCreating=true;try{const r=await addDoc(collection(db,"attempts"),{uid:state.uid,studentId:state.player.studentId,fullName:state.player.fullName,educationLevel:state.player.educationLevel,classroom:state.player.classroom,language:state.language?.name||room.languageId,languageId:room.languageId,modeName:"PVP Battle Ranked",pvpRanked:true,difficulty:difficultyName(room.difficultyId),difficultyId:room.difficultyId,stage:0,lessonId:"multi_shot",levelTitle:`PVP ${room.shotCount} Shot ${room.teamMode}`,roomCode:state.roomCode,teamMode:room.teamMode,shotCount:room.shotCount,tokenWager:Number(room.wager||0),team:myPvpTeam(room),status:"playing",score:0,rewardPoints:0,wpm:0,accuracy:0,mistakes:0,elapsedSeconds:0,createdAt:serverTimestamp()});state.pvpAttemptId=r.id;}catch(e){console.warn("attempt:",e)}finally{state.pvpAttemptCreating=false}}
 async function pushPvpProgress(force=false){if(!state.roomCode||!state.roomData||state.roomData.status!=="playing"||!isMyTurn())return;const now=Date.now();if(!force&&now-state.pvpProgressLastSent<180)return;state.pvpProgressLastSent=now;try{await updateDoc(doc(db,"pvp_rooms",state.roomCode),{[`players.${state.uid}.progress`]:Math.round(pvpProgressPct()*10)/10,[`players.${state.uid}.wpm`]:Math.round(pvpWpm()*100)/100,[`players.${state.uid}.accuracy`]:Math.round(pvpAccuracy()*100)/100,[`players.${state.uid}.mistakes`]:state.pvpMistakes,[`players.${state.uid}.combo`]:state.pvpBattle.combo,[`players.${state.uid}.maxCombo`]:state.pvpBattle.maxCombo,[`players.${state.uid}.lastUpdateAt`]:serverTimestamp()});}catch(e){console.warn("pvp progress:",e)}}
 function schedulePvpProgress(){clearTimeout(state.pvpProgressTimer);state.pvpProgressTimer=setTimeout(()=>pushPvpProgress(false),90);}
 function renderPvpTeams(room){const a=teamMembers(room,"A"),b=teamMembers(room,"B"),aa=activeUidForTeam(room,"A"),bb=activeUidForTeam(room,"B");const fmt=(arr,active)=>arr.map(p=>`${p.uid===active?'▶ ':''}${esc(p.studentId||p.name)}`).join(' · ')||'-';$("teamAPlayers").innerHTML=fmt(a,aa);$("teamBPlayers").innerHTML=fmt(b,bb);$("pvpShotScore").textContent=`TEAM A ${Number(room.scores?.A||0)} : ${Number(room.scores?.B||0)} TEAM B`;const ap=room.players?.[aa]||{},bp=room.players?.[bb]||{},av=teamProgress(room,"A"),bv=teamProgress(room,"B");$("teamABar").style.width=`${av}%`;$("teamBBar").style.width=`${bv}%`;$("teamAPct").textContent=`${Math.floor(av)}%`;$("teamBPct").textContent=`${Math.floor(bv)}%`;$("pvpTurnInfo").textContent=room.teamMode==="2v2"?`Relay Battle · A: ${ap.studentId||'-'} · B: ${bp.studentId||'-'}`:"โจมตีด้วยการพิมพ์ Code · HP 0 หรือจบ Code ก่อนชนะ";renderPvpBattleArena(room);}
-async function enterPvpShot(room,code){
-  const idx=Number(room.shotIndex||0),team=myPvpTeam(room),activeUid=activeUidForTeam(room,team),signature=`${idx}:${activeUid||"none"}`;
+function enterPvpShot(room,code){
+  const idx=Number(room.shotIndex||0),team=myPvpTeam(room),activeUid=activeUidForTeam(room,team);
+  const startToken=pvpCountdownRoomToken(room);
+  const signature=`${idx}:${activeUid||"none"}:${startToken}`;
   if(state.pvpActiveRoom===code&&state.pvpTurnSignature===signature)return;
   const newMatch=state.pvpActiveRoom!==code;
-  if(newMatch){state.pvpAttemptId=null;state.pvpResultSaved=false;state.pvpPayoutClaimed=false;state.pvpAggregate={typedChars:0,keys:0,mistakes:0,seconds:0};state.pvpTurnSignature=null;state.pvpRecordedSignature=null;state.pvpCurrentShot=-1;}else{recordCurrentPvpShot();}
+  if(newMatch){state.pvpAttemptId=null;state.pvpAttemptCreating=false;state.pvpResultSaved=false;state.pvpPayoutClaimed=false;state.pvpAggregate={typedChars:0,keys:0,mistakes:0,seconds:0};state.pvpTurnSignature=null;state.pvpRecordedSignature=null;state.pvpCurrentShot=-1;clearPvpCountdown();}else{recordCurrentPvpShot();}
   const lesson=LESSONS.find(x=>x.id===room.lessonIds?.[idx]);
   if(!lesson){setMatchmakingStatus("error","ไม่พบโจทย์ PVP","lessonIds ไม่ตรงกับเวอร์ชัน");return;}
   state.pvpActiveRoom=code;state.pvpCurrentShot=idx;state.pvpTurnSignature=signature;state.pvpRecordedSignature=null;state.pvpLesson=lesson;state.pvpCorrectText="";state.pvpMistakes=0;state.pvpKeys=0;state.pvpProgressLastSent=0;state.pvpFinished=false;resetLocalPvpBattle();clearInterval(state.pvpTimer);clearTimeout(state.pvpProgressTimer);$("pvpTypingInput").value="";
@@ -2089,9 +2277,32 @@ async function enterPvpShot(room,code){
   $("pvpChallengeTitle").textContent=`Shot ${idx+1}/${room.shotCount} · Stage ${lesson.stage} · ${lesson.title}${relayLeg?` · ส่วน ${relayLeg}/2`:""}`;
   $("pvpChallengeDescription").textContent=room.teamMode==="2v2"?"Relay 2v2: สมาชิกแต่ละทีมสลับกันพิมพ์คนละครึ่งของ Code · PVP ไม่มีคำอธิบายหลังจบ":"PVP Ranked Battle · พิมพ์ถูก 5 ตัว = Basic Attack · จบบรรทัด = Skill · Code จบหรือ HP คู่ต่อสู้เหลือ 0 จะชนะ Shot";
   $("pvpRoomGame").textContent=`Room ${code}`;$("pvpMatchMeta").textContent=`PVP RANKED · ${room.teamMode.toUpperCase()} · ${room.shotCount} Shot · ${Number(room.wager||0)} Token`;$("pvpShotLabel").textContent=`SHOT ${idx+1}/${room.shotCount}`;$("pvpActiveRole").textContent=turn?"YOUR TURN":"WATCHING";$("pvpGameStatus").textContent=turn?"PLAYING":"รอเพื่อนร่วมทีม";$("pvpSaveState").textContent=turn?(room.teamMode==="2v2"?`Relay Part ${relayLeg}/2 · Strict Typing`:"Strict Typing · Realtime"):"Relay Mode · รอรอบของคุณ";
-  renderPvpStrictCode();renderPvpTeams(room);updatePvpStats();showScreen("pvpGameScreen");await createPvpAttempt();state.pvpTimer=setInterval(updatePvpStats,100);if(idx===0&&Number(room.countdownDurationMs||0)>0)startPvpCountdown(room,turn);else{clearPvpCountdown();$("pvpTypingInput").disabled=!turn;state.pvpStartTime=Date.now();if(turn)setTimeout(()=>$('pvpTypingInput').focus({preventScroll:true}),100);}
+  renderPvpStrictCode();
+  renderPvpTeams(room);
+  updatePvpStats();
+  showScreen("pvpGameScreen");
+
+  // Start the local synchronized countdown immediately.
+  // Attempt logging is deliberately non-blocking and can never hold one player at countdown.
+  state.pvpTimer=setInterval(updatePvpStats,100);
+  if(idx===0&&Number(room.countdownDurationMs||0)>0){
+    startPvpCountdown(room,turn);
+  }else{
+    clearPvpCountdown();
+    $("pvpTypingInput").disabled=!turn;
+    state.pvpStartTime=Date.now();
+    if(turn)setTimeout(()=>$("pvpTypingInput")?.focus({preventScroll:true}),80);
+  }
+  void createPvpAttempt();
 }
-function syncPvpGameFromRoom(room,code){if(room.status==="playing"){enterPvpShot(room,code).catch(console.error);renderPvpTeams(room);if(Number(room.shotIndex||0)===0&&Number(room.countdownDurationMs||0)>0)startPvpCountdown(room,isMyTurn(room));}else if(room.status==="finished")renderPvpTeams(room);}
+function syncPvpGameFromRoom(room,code){
+  if(room.status==="playing"){
+    enterPvpShot(room,code);
+    renderPvpTeams(room);
+  }else if(room.status==="finished"){
+    renderPvpTeams(room);
+  }
+}
 async function declarePvpShotFinish(){
   if(!state.roomCode||state.roomData?.status!=="playing"||!isMyTurn())return;
   state.pvpFinished=true;clearInterval(state.pvpTimer);clearTimeout(state.pvpProgressTimer);recordCurrentPvpShot();
@@ -2257,7 +2468,7 @@ onAuthStateChanged(auth,async user=>{
     studentFullscreenGateVisible(false);
     state.uid=null;state.player=null;showScreen("authScreen");return;
   }
-  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.13.0");return;}
+  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.13.1");return;}
   state.uid=user.uid;
   try{
     await routeAuthenticatedStudent();
