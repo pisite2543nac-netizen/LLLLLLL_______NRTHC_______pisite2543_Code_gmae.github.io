@@ -1,4 +1,4 @@
-# FULL CODE V4.13.1 — STUDENT FULLSCREEN SESSION
+# FULL CODE V4.14.1 — STUDENT FULLSCREEN SESSION
 
 
 ## index.html
@@ -10,7 +10,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
   <title>ระบบเกมพิมพ์ Code | วิทยาลัยเทคนิคนางรอง</title>
-  <link rel="stylesheet" href="./style.css?v=4.13.1">
+  <link rel="stylesheet" href="./style.css?v=4.14.1">
 </head>
 <body>
 <header class="site-header">
@@ -667,7 +667,7 @@
 </main>
 
 <footer><div class="wrap">ระบบเกมพิมพ์ Code · วิทยาลัยเทคนิคนางรอง</div></footer>
-<script type="module" src="./app.js?v=4.13.1"></script>
+<script type="module" src="./app.js?v=4.14.1"></script>
 
   <div id="characterSetupModal" class="character-modal hidden">
     <div class="character-modal-card character-setup-card">
@@ -756,7 +756,7 @@
   </div>
 
 
-  <!-- V4.13.1 Student Fullscreen Session:
+  <!-- V4.14.1 Student Fullscreen Session:
        2D Zone stays inside this document so browser fullscreen does not end on navigation. -->
   <div id="studentZoneShell" class="student-zone-shell hidden" aria-hidden="true">
     <iframe id="studentZoneFrame"
@@ -3791,7 +3791,7 @@ html,body.social-zone-page{
 
 
 /* =====================================================================
-   V4.13.1 — DUAL RANKING / PVP MULTI ROOM / TOKEN ECONOMY / ITEM SET 2
+   V4.14.1 — DUAL RANKING / PVP MULTI ROOM / TOKEN ECONOMY / ITEM SET 2
    ===================================================================== */
 .ranking-mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0 10px}
 .ranking-mode-btn{min-height:38px;border:1px solid #d4dde6;border-radius:9px;background:#f6f8fa;color:#496174;font-weight:800;cursor:pointer}
@@ -3817,7 +3817,7 @@ html,body.social-zone-page{
 
 
 /* ==================================================================
-   V4.13.1 ADMIN CLASSROOM / RANK RESET / GM WORLD CHAT / PVP COUNTDOWN
+   V4.14.1 ADMIN CLASSROOM / RANK RESET / GM WORLD CHAT / PVP COUNTDOWN
    ================================================================== */
 .admin-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}
 .admin-class-filter-wrap label,.admin-ranking-filter{display:flex;align-items:center;gap:8px;font-size:10px}.admin-class-filter-wrap select,.admin-ranking-filter select{min-width:150px;min-height:38px}
@@ -3832,7 +3832,7 @@ html,body.social-zone-page{
 .zone-rank-reset-notice{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:30;max-width:min(720px,calc(100% - 220px));padding:8px 13px;border:1px solid rgba(255,215,91,.65);border-radius:999px;background:rgba(55,39,10,.9);color:#fff8dc;display:flex;align-items:center;gap:8px;backdrop-filter:blur(7px);box-shadow:0 8px 26px rgba(0,0,0,.18)}.zone-rank-reset-notice span{font-size:7px;font-weight:1000;color:#ffd75b;letter-spacing:.08em}.zone-rank-reset-notice strong{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}@media(max-width:760px){.zone-rank-reset-notice{max-width:calc(100% - 20px);top:7px}.zone-rank-reset-notice span{display:none}.zone-rank-reset-notice strong{font-size:8px}}
 
 
-/* ===== V4.13.1 SIMPLE CHAT-ONLY 2D ZONE ===== */
+/* ===== V4.14.1 SIMPLE CHAT-ONLY 2D ZONE ===== */
 .simple-zone-page{margin:0;width:100vw;height:100vh;height:100dvh;overflow:hidden;background:#102c3d;color:#19364a}
 .simple-zone-gate{position:fixed;inset:0;z-index:50000;display:grid;place-items:center;padding:18px;background:radial-gradient(circle at 50% 20%,#285a70,#0b2535 72%)}
 .simple-zone-gate-card{width:min(560px,100%);padding:34px;background:#fffaf0;border:2px solid #d8c4a3;border-radius:22px;text-align:center;box-shadow:0 28px 80px rgba(0,0,0,.32)}
@@ -3862,7 +3862,7 @@ html,body.social-zone-page{
 .simple-zone-chat-history{display:grid;gap:7px;margin-top:14px}.simple-zone-chat-message{display:grid;grid-template-columns:38px 1fr;gap:8px;padding:9px;border:1px solid #e0d7c8;border-radius:11px;background:#fff}.simple-zone-chat-message.gm{background:#fff7d9;border-color:#dec06b}.simple-zone-chat-avatar{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:#e9f0f3;color:#284d61;font-weight:900;font-size:9px}.simple-zone-chat-message.gm .simple-zone-chat-avatar{background:#71334e;color:#ffe79a}.simple-zone-chat-meta{display:flex;gap:8px;align-items:center}.simple-zone-chat-meta strong{font-size:9px}.simple-zone-chat-meta time{margin-left:auto;font-size:7px;color:#8c8172}.simple-zone-chat-message p{margin:4px 0 0;font-size:10px;line-height:1.45}
 @media(max-width:900px){.simple-zone-app{grid-template-rows:54px minmax(0,1fr) 70px}.simple-zone-topbar{grid-template-columns:minmax(0,1fr) auto auto;padding:5px 7px;gap:5px}.simple-zone-worldtime{display:none}.simple-zone-user{display:none}.simple-zone-brand-icon{width:34px;height:34px}.simple-zone-brand strong{font-size:9px}.simple-zone-brand small{display:none}.simple-zone-help{display:none}.simple-zone-mobile-pad{display:grid}.simple-zone-top-actions .btn{padding:0 7px}.simple-zone-chatbar{grid-template-columns:74px minmax(0,1fr);gap:5px;padding:6px}.simple-zone-chat-identity{padding:6px}.simple-zone-chat-form{height:54px;grid-template-columns:minmax(0,1fr) 58px;padding:5px;border-width:1px}.simple-zone-chat-form input{font-size:16px;padding:0 8px}.simple-zone-chat-form button{font-size:10px}.simple-zone-system-notice{top:7px;font-size:7px}.simple-zone-player-card{left:7px;right:7px;top:auto;bottom:7px;width:auto}}
 
-/* ===== V4.13.1 ADMIN ROOM SEARCH ===== */
+/* ===== V4.14.1 ADMIN ROOM SEARCH ===== */
 .admin-room-search-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;margin-bottom:14px;padding:13px;border:1px solid #dde5eb;border-radius:14px;background:#f8fbfd}.admin-room-search-box{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:7px}.admin-room-search-box>span{text-align:center;font-size:18px}.admin-room-search-box input{min-height:44px;border:1px solid #ccd8e1;border-radius:10px;padding:0 12px;background:#fff;font-size:15px}.admin-room-search-meta{text-align:right}.admin-room-search-meta strong,.admin-room-search-meta span{display:block}.admin-room-search-meta strong{font-size:10px;color:#244c67}.admin-room-search-meta span{font-size:8px;color:#7c8992;margin-top:3px}
 .admin-room-directory{display:grid;gap:12px}.admin-room-group{padding:12px;border:1px solid #e0e7ec;border-radius:14px;background:#fff}.admin-room-group-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.admin-room-group-title strong{font-size:13px;color:#254b63}.admin-room-group-title span{font-size:8px;color:#7e8b94}.admin-room-buttons{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}.admin-room-button{min-height:66px;padding:9px;border:1px solid #dbe3e8;border-radius:11px;background:#f9fbfc;color:#26475b;text-align:left;cursor:pointer;transition:.15s ease}.admin-room-button:hover{transform:translateY(-1px);border-color:#8ab3ca;background:#f2f8fb}.admin-room-button.active{border-color:#376f91;background:#eaf4f9;box-shadow:inset 0 0 0 1px #376f91}.admin-room-button span,.admin-room-button small{display:block}.admin-room-button span{font-size:12px;font-weight:900}.admin-room-button small{font-size:7px;color:#72808a;margin-top:4px}.admin-room-no-result{padding:28px;border:1px dashed #d5dde2;border-radius:13px;text-align:center;color:#7f8b93;background:#fafcfd}
 .admin-selected-room{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 8px;padding:12px 14px;border-left:4px solid #487d9b;border-radius:10px;background:#f2f7fa}.admin-selected-room>div span,.admin-selected-room>div strong{display:block}.admin-selected-room>div span{font-size:8px;color:#7c8a93}.admin-selected-room>div strong{font-size:18px;color:#193f57;margin-top:2px}.admin-selected-room>span{font-size:9px;color:#657680}.admin-room-table-wrap table tbody tr:nth-child(even){background:#f9fbfc}.admin-room-table-wrap table tbody tr:hover{background:#eef6fa}
@@ -3870,7 +3870,7 @@ html,body.social-zone-page{
 
 
 /* ==================================================================
-   V4.13.1 HORIZONTAL SMOOTH ZONE + WIZARD + TOKEN SHOP
+   V4.14.1 HORIZONTAL SMOOTH ZONE + WIZARD + TOKEN SHOP
    ================================================================== */
 .zone47-page{margin:0;width:100vw;height:100vh;height:100dvh;overflow:hidden;background:#0c2637;color:#19364a}
 .zone47-gate{position:fixed;inset:0;z-index:50000;display:grid;place-items:center;padding:18px;background:radial-gradient(circle at 50% 18%,#295b71,#081e2c 72%)}
@@ -3889,12 +3889,12 @@ html,body.social-zone-page{
 @media(max-width:1100px){.zone47-topbar{grid-template-columns:minmax(0,1fr) auto auto}.zone47-time,.zone47-user{display:none}.zone47-shop-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.admin-quest-form{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-quest-description{grid-column:span 2}}
 @media(max-width:760px){.zone47-app{grid-template-rows:54px minmax(0,1fr) 72px}.zone47-topbar{grid-template-columns:minmax(0,1fr) auto;padding:5px 6px}.zone47-brand small,.zone47-token{display:none}.zone47-actions .btn:not(#openWizardQuests):not(#openZoneShop){display:none}.zone47-actions .btn{padding:0 5px}.zone47-help{display:none}.zone47-footer{grid-template-columns:54px minmax(0,1fr) 54px;gap:5px;padding:6px}.zone47-chat-id{display:none}.zone47-move-button{height:56px}.zone47-chat-form{height:56px;grid-template-columns:minmax(0,1fr) 55px;padding:5px;border-width:1px}.zone47-chat-form input{font-size:16px;padding:0 8px}.zone47-shop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.zone47-quest-item{grid-template-columns:45px minmax(0,1fr);}.zone47-quest-reward{grid-column:1/-1;display:grid;grid-template-columns:50px 50px minmax(0,1fr);align-items:center;gap:5px}.zone47-quest-reward .btn{margin:0}.zone47-modal{padding:7px}.zone47-modal-card{width:100%;max-height:calc(100dvh - 14px);padding:14px;border-width:2px}.zone47-wizard-portrait{width:58px;height:58px;font-size:34px}.admin-quest-form{grid-template-columns:1fr}.admin-quest-description{grid-column:span 1}}
 
-/* ===== V4.13.1 ACADEMIC HIERARCHY ===== */
+/* ===== V4.14.1 ACADEMIC HIERARCHY ===== */
 .academic-code-preview{display:block;margin-top:5px;color:#52728a;font-size:8px;font-weight:800}
 .academic-filter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}.academic-filter-grid label{display:grid;gap:5px}.academic-filter-grid label>span{font-size:8px;font-weight:900;color:#4b6474}.academic-filter-grid select,.academic-filter-grid input{min-height:42px;border:1px solid #d0dde5;border-radius:10px;background:#fff;padding:0 10px}.academic-filter-search{grid-column:span 2}.academic-summary{margin:8px 0 10px;padding:9px 12px;border-radius:10px;background:#f0f6fa;color:#46667a;font-size:9px;font-weight:800}
 @media(max-width:900px){.academic-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.academic-filter-search{grid-column:span 2}}@media(max-width:600px){.academic-filter-grid{grid-template-columns:1fr}.academic-filter-search{grid-column:auto}}
 
-/* ===== V4.13.1 PLAY STYLE + RANKED CHALLENGE ===== */
+/* ===== V4.14.1 PLAY STYLE + RANKED CHALLENGE ===== */
 .play-style-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .play-style-choice{display:flex;gap:15px;align-items:flex-start;text-align:left;padding:20px;border:1px solid #d7e2e9;border-radius:16px;background:#fff;cursor:pointer;transition:.16s ease}
 .play-style-choice:hover,.play-style-choice.selected{border-color:#6097bc;box-shadow:0 10px 30px rgba(47,111,167,.11);transform:translateY(-1px)}
@@ -3906,7 +3906,7 @@ html,body.social-zone-page{
 .ranked-progress-box{padding:13px;border-radius:12px;background:#f7fafb;border:1px solid #e0e7eb;margin-bottom:14px}.ranked-progress-box>div:first-child{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}.ranked-progress-box small{font-size:7px;letter-spacing:.08em;color:#738693;font-weight:900}.ranked-progress-box strong{font-size:10px}.ranked-progress-track{height:8px;border-radius:999px;background:#e3eaf0;overflow:hidden}.ranked-progress-track i{display:block;height:100%;width:2%;background:linear-gradient(90deg,#3e7dad,#d4a62f);border-radius:inherit}
 @media(max-width:760px){.play-style-grid{grid-template-columns:1fr}.ranked-rule-grid{grid-template-columns:repeat(2,1fr)}}
 
-/* ===== V4.13.1 MAJOR + ROOM RANKING ===== */
+/* ===== V4.14.1 MAJOR + ROOM RANKING ===== */
 .academic-room-ranking-scope{
   display:grid;
   gap:3px;
@@ -3941,18 +3941,18 @@ html,body.social-zone-page{
   outline-offset:-2px;
 }
 
-/* ===== V4.13.1 DAILY FULLSCREEN QUEST ===== */
+/* ===== V4.14.1 DAILY FULLSCREEN QUEST ===== */
 .daily-fullscreen-card{border-left:4px solid #3e8b63!important;background:linear-gradient(135deg,#f5fbf7,#fff)!important}
 .daily-fullscreen-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.daily-fullscreen-head h2{margin:4px 0}.daily-fullscreen-head p{margin:0;color:#6b7f8c}.daily-quest-status{white-space:nowrap;padding:7px 11px;border-radius:999px;background:#eaf6ee;color:#34724f;font-size:9px;font-weight:900}
 .daily-fullscreen-progress{height:12px;margin:14px 0 8px;border-radius:999px;background:#e4ece8;overflow:hidden}.daily-fullscreen-progress i{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#438d65,#78b68d);transition:width .35s ease}
 .daily-fullscreen-meta,.daily-fullscreen-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.daily-fullscreen-meta{font-size:8px;color:#607681}.daily-fullscreen-meta #dailyFullscreenTimer{font-weight:900;color:#345a46}.daily-fullscreen-actions{margin-top:10px}.daily-fullscreen-actions span{font-size:9px;font-weight:900;color:#4c6958}
 @media(max-width:650px){.daily-fullscreen-head{flex-direction:column}.daily-quest-status{align-self:flex-start}}
 
-/* V4.13.1 Student ID 1-15 digits */
+/* V4.14.1 Student ID 1-15 digits */
 #studentId15Hint{color:#607888}
 
 
-/* ===== V4.13.1 REAL ART 2D ZONE ===== */
+/* ===== V4.14.1 REAL ART 2D ZONE ===== */
 .zone47-world{background:#bfe5f5;isolation:isolate}
 .zone47-world canvas{image-rendering:auto;filter:saturate(1.03) contrast(1.01)}
 .zone47-shop-real-art{position:relative;display:grid!important;place-items:center;min-height:82px!important;background:linear-gradient(180deg,#f7fbff,#eef5fa);border:1px solid rgba(63,104,132,.12);border-radius:13px;overflow:hidden}
@@ -3962,7 +3962,7 @@ html,body.social-zone-page{
 .zone47-connection{backdrop-filter:blur(8px)}
 .zone47-help{backdrop-filter:blur(8px)}
 
-/* ===== V4.13.1 EMBEDDED REAL ART STATUS ===== */
+/* ===== V4.14.1 EMBEDDED REAL ART STATUS ===== */
 .zone47-art-engine{
   position:absolute;
   top:14px;
@@ -3981,7 +3981,7 @@ html,body.social-zone-page{
   backdrop-filter:blur(5px);
 }
 
-/* ===== V4.13.1 COMPLETE ITEM ART ===== */
+/* ===== V4.14.1 COMPLETE ITEM ART ===== */
 .reward-real-art,.wardrobe-real-art,.zone47-shop-real-art{position:relative;overflow:hidden;background:radial-gradient(circle at 50% 35%,#f9fdff,#eaf2f7 72%)}
 .reward-real-art img,.wardrobe-real-art img,.zone47-shop-real-art img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 7px 8px rgba(25,50,70,.14))}
 .reward-real-art>span,.wardrobe-real-art>span,.zone47-shop-real-art>span{display:none}
@@ -3996,7 +3996,7 @@ html,body.social-zone-page{
 .wardrobe-action{min-width:145px}
 .wardrobe-action .btn{width:100%;margin-top:5px}
 
-/* ===== V4.13.1 THREE ITEM GRADES + 18 SLOT BACKPACK ===== */
+/* ===== V4.14.1 THREE ITEM GRADES + 18 SLOT BACKPACK ===== */
 .rarity-easy{--item-grade:#4f9b70}.rarity-medium{--item-grade:#477fb4}.rarity-rare{--item-grade:#9a62c9}
 .zone47-shop-item.rarity-easy,.reward-card.rarity-easy,.wardrobe-item.rarity-easy{border-top:3px solid #4f9b70}
 .zone47-shop-item.rarity-medium,.reward-card.rarity-medium,.wardrobe-item.rarity-medium{border-top:3px solid #477fb4}
@@ -4023,7 +4023,7 @@ html,body.social-zone-page{
 @media(max-width:900px){.zone47-backpack-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.zone47-backpack-grid{grid-template-columns:1fr}}
 
-/* ===== V4.13.1 GM SKELETON OVERLORD EXCLUSIVE ===== */
+/* ===== V4.14.1 GM SKELETON OVERLORD EXCLUSIVE ===== */
 .zone47-gm-exclusive-card{
   grid-column:1/-1;
   display:grid!important;
@@ -4055,7 +4055,7 @@ html,body.social-zone-page{
 }
 .zone47-gm-exclusive-item b{font-size:18px}
 
-/* ===== V4.13.1 PVP RANKED BATTLE ===== */
+/* ===== V4.14.1 PVP RANKED BATTLE ===== */
 .pvp-rank-panel{display:grid;grid-template-columns:340px 1fr;gap:12px;margin:14px 0}
 .pvp-rank-self,.pvp-rank-board{border:1px solid #d7e1e7;border-radius:16px;background:#fff;padding:14px}
 .pvp-rank-self>span{font-size:8px;font-weight:900;letter-spacing:.1em;color:#627987}
@@ -4110,7 +4110,7 @@ html,body.social-zone-page{
   .pvp-fighter-meta strong{font-size:8px}.pvp-rank-row{grid-template-columns:22px 75px 1fr 48px}.pvp-rank-self-stats{grid-template-columns:1fr 1fr 1fr}
 }
 
-/* V4.13.1 complete item stats + bare GM */
+/* V4.14.1 complete item stats + bare GM */
 .item-stat-chips,.zone47-item-stats{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0}
 .item-stat-chips span,.zone47-item-stats span{padding:4px 6px;border-radius:7px;background:#eef4f7;color:#58707f;font-size:7px;font-weight:800}
 .item-stat-chips span b,.zone47-item-stats span b{color:#28794f}
@@ -4120,7 +4120,7 @@ html,body.social-zone-page{
 .reward-real-art img,.wardrobe-real-art img,.zone47-shop-real-art img,.zone47-backpack-art img{filter:drop-shadow(0 7px 7px rgba(19,42,57,.18))}
 .zone47-gm-no-gear{font-size:7px;font-weight:900;letter-spacing:.12em;color:#c6aed8}.zone47-gm-skin-preview{height:170px!important;width:130px!important}
 
-/* ===== V4.13.1 COMPLETE 30/30 SHOP ===== */
+/* ===== V4.14.1 COMPLETE 30/30 SHOP ===== */
 .zone47-shop-catalog-status{
   display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
   padding:10px 12px;margin:10px 0;border:1px solid #d7e4e8;border-radius:12px;background:#f7fafb
@@ -4155,7 +4155,7 @@ html,body.social-zone-page{
 @media(max-width:780px){.zone47-shop-grade-grid,.reward-grade-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.zone47-shop-grade-grid,.reward-grade-grid{grid-template-columns:1fr}}
 
-/* ===== V4.13.1 ADMIN USAGE DASHBOARD ===== */
+/* ===== V4.14.1 ADMIN USAGE DASHBOARD ===== */
 .usage-title{align-items:flex-start}.usage-kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .usage-kpi-grid article{padding:14px;border:1px solid #d8e2e8;border-radius:14px;background:linear-gradient(145deg,#fff,#f7fafb);box-shadow:0 8px 20px rgba(26,55,73,.05)}
 .usage-kpi-grid span,.usage-kpi-grid strong,.usage-kpi-grid small{display:block}.usage-kpi-grid span{font-size:8px;font-weight:900;color:#718793;letter-spacing:.05em}.usage-kpi-grid strong{font-size:22px;color:#173f58;margin:6px 0}.usage-kpi-grid small{font-size:8px;color:#83939c}
@@ -4166,11 +4166,11 @@ html,body.social-zone-page{
 .usage-user-toolbar{align-items:flex-end}.usage-search{display:flex;gap:7px}.usage-search input{min-width:280px}.usage-user-table tr.usage-selected{background:#eef7fb}.usage-detail-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0 14px}.usage-detail-summary div{padding:9px;border-radius:10px;background:#f3f7f9}.usage-detail-summary span,.usage-detail-summary strong{display:block}.usage-detail-summary span{font-size:7px;color:#81919a;font-weight:900}.usage-detail-summary strong{font-size:10px;margin-top:4px;color:#25495d}
 @media(max-width:1200px){.usage-kpi-grid{grid-template-columns:repeat(3,1fr)}.usage-dashboard-grid{grid-template-columns:1fr}}@media(max-width:720px){.usage-kpi-grid{grid-template-columns:repeat(2,1fr)}.usage-detail-summary{grid-template-columns:repeat(2,1fr)}.usage-search{flex-direction:column}.usage-search input{min-width:0}.usage-daily-bars{overflow-x:auto;grid-template-columns:repeat(14,35px)}}
 
-/* ===== V4.13.1 NORMAL GM ===== */
+/* ===== V4.14.1 NORMAL GM ===== */
 .zone47-gm-normal-badge{display:inline-grid;place-items:center;min-width:30px;height:24px;padding:0 7px;border-radius:8px;background:#173e58;color:#f4cf67;font-size:8px;font-weight:1000;border:1px solid #e7c15a}
 .rarity-gm{--item-grade:#7250b5}.zone47-backpack-slot.rarity-gm{border-top-color:#7250b5;background:linear-gradient(145deg,#fff,#f8f4ff)}
 
-/* ===== V4.13.1 COMPACT 2D ZONE CHAT BAR ===== */
+/* ===== V4.14.1 COMPACT 2D ZONE CHAT BAR ===== */
 .zone47-app{grid-template-rows:66px minmax(0,1fr) 52px!important}
 .zone47-footer{
   grid-template-columns:46px 86px minmax(0,760px) 46px!important;
@@ -4194,7 +4194,7 @@ html,body.social-zone-page{
 body.user-immersive-fallback{min-height:100dvh}
 body.student-fullscreen-session{overscroll-behavior:none}
 
-/* ===== V4.13.1 STUDENT FULLSCREEN SESSION ===== */
+/* ===== V4.14.1 STUDENT FULLSCREEN SESSION ===== */
 .student-zone-shell{
   position:fixed;inset:0;z-index:50000;background:#071d2a;
   width:100vw;height:100dvh;overflow:hidden
@@ -4246,18 +4246,18 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, where, orderBy, limit, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=4.13.1";
-import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.13.1";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.13.1";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.13.1";
-import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.13.1";
-import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.13.1";
-import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.13.1";
-import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.13.1";
-import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.13.1";
-import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.13.1";
-import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.13.1";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.13.1";
+import { firebaseConfig } from "./firebase-config.js?v=4.14.1";
+import { LANGUAGES, LESSONS, DIFFICULTIES } from "./lessons.js?v=4.14.1";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, SELLBACK_RATE, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, equipmentStats, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.14.1";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.14.1";
+import { DEFAULT_CHARACTER, DEFAULT_ZONE_STATE } from "./character-system.js?v=4.14.1";
+import { OFFICIAL_STAGES, OFFICIAL_TOTAL_SCORE } from "./official-data.js?v=4.14.1";
+import { RANKING_CONFIG, seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey, rankProfiles } from "./ranking-system.js?v=4.14.1";
+import { TOKEN_REWARD_CONFIG, calculateStageTokenReward, maxTokenForLesson, classKey } from "./economy-system.js?v=4.14.1";
+import { DEFAULT_TEACHER_QUESTS, localDayKey, questObjectiveMet, questObjectiveLabel, clampQuestReward } from "./quest-system.js?v=4.14.1";
+import { PVP_CHARACTER_ART } from "./pvp-assets.js?v=4.14.1";
+import { PVP_RANK_CONFIG, calculatePvpProfile, buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.14.1";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.14.1";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -4745,7 +4745,7 @@ async function routeAuthenticatedStudent(){
   if(!state.player) throw new Error("ไม่พบข้อมูลผู้ใช้");
 
   const requestedQuest=new URLSearchParams(location.search).get("quest");
-  // V4.13.1: ทุก User อยู่ใต้ Fullscreen document เดียว
+  // V4.14.1: ทุก User อยู่ใต้ Fullscreen document เดียว
   // Mobile/Tablet ยังเป็น Zone-only แต่ Zone เปิดเป็น iframe เต็มพื้นที่
   // เพื่อไม่ให้ Browser ยกเลิก Fullscreen จากการเปลี่ยนหน้า HTML.
   await enterPortal();
@@ -6181,7 +6181,7 @@ async function savePvpRankedResult(room,result){
 }
 
 
-/* ===== V4.13.1 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
+/* ===== V4.14.1 PVP RANKED BATTLE · CODE ATTACK · CHARACTER COMBAT ===== */
 const PVP_ROOM_STALE_MS=20*60*1000;
 const PVP_CREATE_FEE=6;
 const PVP_COUNTDOWN_MS=3000;
@@ -6517,7 +6517,7 @@ onAuthStateChanged(auth,async user=>{
     studentFullscreenGateVisible(false);
     state.uid=null;state.player=null;showScreen("authScreen");return;
   }
-  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.13.1");return;}
+  if(user.email==="pisit_2000@nr-game-code.local"){location.replace("./admin.html?v=4.14.1");return;}
   state.uid=user.uid;
   try{
     await routeAuthenticatedStudent();
@@ -6544,13 +6544,13 @@ updateRegister();
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#102c3d">
   <title>2D Zone | Code Typing Academy</title>
-  <link rel="stylesheet" href="./style.css?v=4.13.1">
+  <link rel="stylesheet" href="./style.css?v=4.14.1">
 </head>
 <body class="zone47-page">
   <div id="zoneGate" class="zone47-gate">
     <div class="zone47-gate-card">
       <div class="zone47-gate-icon">🌙</div>
-      <span class="section-kicker">2D SOCIAL ZONE · V4.13.1 · EMBEDDED REAL ART</span>
+      <span class="section-kicker">2D SOCIAL ZONE · V4.14.1 · EMBEDDED REAL ART</span>
       <h1 id="zoneGateTitle">กำลังเข้าสู่ 2D Zone</h1>
       <p id="zoneGateText">กำลังโหลดฉาก ตัวละคร ผู้เล่น แชต ร้านค้า และภารกิจ...</p>
       <div id="zoneGateHelp" class="zone47-gate-help hidden"></div>
@@ -6691,7 +6691,7 @@ updateRegister();
     </div>
   </div>
 
-  <script type="module" src="./zone.js?v=4.13.1"></script>
+  <script type="module" src="./zone.js?v=4.14.1"></script>
 </body>
 </html>
 
@@ -6707,16 +6707,16 @@ import {
   getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot,
   serverTimestamp, query, orderBy, limit, Timestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.13.1";
-import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, GM_EXCLUSIVE_ITEMS, GM_DEFAULT_INVENTORY, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.13.1";
-import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.13.1";
-import { DEFAULT_CHARACTER } from "./character-system.js?v=4.13.1";
-import { ZONE_ART_DATA } from "./zone-assets.js?v=4.13.1";
+import { firebaseConfig, ADMIN_UID } from "./firebase-config.js?v=4.14.1";
+import { REWARD_ITEMS, LEGACY_REWARD_ITEMS, GM_EXCLUSIVE_ITEMS, GM_DEFAULT_INVENTORY, ALL_REWARD_ITEMS, rewardItemById, RARITY_META, INVENTORY_LIMIT, sellBackValue, ITEM_STAT_KEYS, ITEM_STAT_LABELS, itemStats, itemPower, SHOP_GRADE_ORDER, SHOP_EXPECTED_COUNTS, shopCatalogSummary, shopCatalogComplete } from "./reward-data.js?v=4.14.1";
+import { ITEM_ART_DATA, itemArtSrc } from "./item-assets.js?v=4.14.1";
+import { DEFAULT_CHARACTER } from "./character-system.js?v=4.14.1";
+import { ZONE_ART_DATA } from "./zone-assets.js?v=4.14.1";
 import {
   QUEST_CONFIG, DEFAULT_TEACHER_QUESTS, localDayKey, activeQuestLimit,
   canAccessQuest, clampQuestReward, questDifficultyName, questObjectiveLabel
-} from "./quest-system.js?v=4.13.1";
-import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.13.1";
+} from "./quest-system.js?v=4.14.1";
+import { startUsageTracker, stopUsageTracker } from "./usage-tracker.js?v=4.14.1";
 
 const firebaseApp=initializeApp(firebaseConfig);
 const auth=getAuth(firebaseApp);
@@ -6751,7 +6751,7 @@ const INTERACT_DISTANCE=210;
 
 const canvas=$("zoneCanvas"),ctx=canvas.getContext("2d",{alpha:false});
 
-// ===== V4.13.1 REAL ART ASSETS =====
+// ===== V4.14.1 REAL ART ASSETS =====
 const ZONE_ART_PATH={
   world:"./assets/zone/zone-world-day.png",
   maleIdle:"./assets/zone/male-idle-right.png",
@@ -6812,7 +6812,7 @@ async function loadZoneArt(){
     Object.entries(ZONE_ART_PATH).map(([k,v])=>loadZoneImage(k,v))
   );
   const missing=REQUIRED_ZONE_ART.filter(k=>!zoneArt[k]?.naturalWidth);
-  console.info("ZONE ART V4.13.1",{
+  console.info("ZONE ART V4.14.1",{
     loaded:zoneArtStatus.loaded,
     embedded:zoneArtStatus.embedded,
     external:zoneArtStatus.external,
@@ -7003,7 +7003,7 @@ async function checkModeration(){
     if(s.banned){showGate("ถูกระงับการเข้า 2D Zone",`แบนถึง ${s.bannedUntil.toLocaleString("th-TH")}`);return false}
     if(s.kicked){showGate("ถูก GM เตะออกจาก 2D Zone",`กลับเข้าได้หลัง ${s.kickedUntil.toLocaleTimeString("th-TH")}`);return false}
     return true;
-  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.13.1");return false}
+  }catch(error){showGate("ตรวจสอบสิทธิ์ Zone ไม่สำเร็จ",error.message||String(error),"กรุณา Publish firestore.rules V4.14.1");return false}
 }
 function listenModeration(){
   if(isGM())return;
@@ -7208,7 +7208,7 @@ function startQuest(id){
   const q=teacherQuests.find(x=>x.id===id)||DEFAULT_TEACHER_QUESTS.find(x=>x.id===id);if(!q)return;
   if(isTouchOnly()){alert("รับภารกิจแล้ว กรุณาเปิดบัญชีนี้บนคอมพิวเตอร์เพื่อทำภารกิจ");return}
   if(postToStudentShell("NR_ZONE_QUEST",{questId:id}))return;
-  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.13.1`;
+  location.href=`./index.html?quest=${encodeURIComponent(id)}&v=4.14.1`;
 }
 $("openWizardQuests").onclick=async()=>{await loadQuestProgress();renderQuestModal();$("zoneQuestModal").classList.remove("hidden")};
 $("closeWizardQuests").onclick=()=>$("zoneQuestModal").classList.add("hidden");
@@ -7520,7 +7520,7 @@ function drawWorld(now){
   if(zoneArt.world?.complete&&zoneArt.world.naturalWidth){
     ctx.drawImage(zoneArt.world,0,0,WORLD.width,WORLD.height);
   }else{
-    // V4.13.1 intentionally does not draw the old primitive scene.
+    // V4.14.1 intentionally does not draw the old primitive scene.
     ctx.fillStyle="#102c3d";
     ctx.fillRect(0,0,WORLD.width,WORLD.height);
   }
@@ -7669,7 +7669,7 @@ onAuthStateChanged(auth,async user=>{
     showGate(
       "โหลดภาพ 2D Zone ไม่ครบ",
       `ไม่พบ Asset สำคัญ: ${artResult.missing.join(", ")}`,
-      "V4.13.1 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
+      "V4.14.1 จะไม่เปิดฉาก fallback แบบบ้านสี่เหลี่ยมอีก กรุณาอัป zone-assets.js และ zone.js ไป GitHub Root ให้ครบ"
     );
     return;
   }
