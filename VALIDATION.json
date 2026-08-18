@@ -1,0 +1,16 @@
+{
+  "zone_js_syntax": true,
+  "app_js_syntax": true,
+  "resize_observer": true,
+  "canvas_min_size_guard": true,
+  "render_starts_before_firestore": true,
+  "renderer_isolated_from_network": true,
+  "frame_player_isolation": true,
+  "render_watchdog": true,
+  "emergency_world": true,
+  "heartbeat_allsettled": true,
+  "zone_html_cache_bust": true,
+  "app_zone_cache_bust": true,
+  "index_app_cache_bust": true,
+  "all_passed": true
+}

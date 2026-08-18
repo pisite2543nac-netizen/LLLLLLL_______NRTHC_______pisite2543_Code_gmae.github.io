@@ -397,7 +397,7 @@ async function openStudentZoneShell({questId=null}={}){
   shell.setAttribute("aria-hidden","false");
   document.body.classList.add("student-zone-shell-open");
 
-  const qs=new URLSearchParams({embedded:"1",v:APP_VERSION});
+  const qs=new URLSearchParams({embedded:"1",v:"4.14.2-zone-render"});
   if(questId)qs.set("quest",questId);
   const target=`./zone.html?${qs.toString()}`;
   if(!frame.src||!frame.src.includes("zone.html"))frame.src=target;

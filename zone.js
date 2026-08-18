@@ -26,6 +26,7 @@ const $=id=>document.getElementById(id);
 installNetworkBadge({label:"2D ZONE"});
 
 const ZONE_ID="thai_social_zone_v4_1";
+const ZONE_RENDER_PATCH="4.14.2";
 
 const IS_EMBEDDED_ZONE=new URLSearchParams(location.search).get("embedded")==="1";
 function postToStudentShell(type,payload={}){
@@ -703,9 +704,37 @@ function updateNearbyAction(){
 function triggerNearbyAction(){nearbyAction==="wizard"?$("openWizardQuests").click():nearbyAction==="shop"?$("openZoneShop").click():null}
 $("zoneNearbyAction").onclick=triggerNearbyAction;
 
-function resizeCanvas(){
-  const r=canvas.getBoundingClientRect();cssW=Math.max(1,r.width);cssH=Math.max(1,r.height);dpr=Math.min(2.5,window.devicePixelRatio||1);
-  canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);zoom=Math.max(.7,Math.min(1.18,cssH/850));ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
+let canvasResizeRetry=0;
+function resizeCanvas(force=false){
+  const r=canvas.getBoundingClientRect();
+  const nextW=Math.round(r.width),nextH=Math.round(r.height);
+
+  // When zoneApp/iframe has just become visible the browser can briefly report
+  // a 0–1px layout. Never replace a good backing buffer with that value.
+  if(nextW<80||nextH<80){
+    if(canvasResizeRetry<20){
+      canvasResizeRetry++;
+      requestAnimationFrame(()=>resizeCanvas(true));
+    }
+    return false;
+  }
+
+  canvasResizeRetry=0;
+  const nextDpr=Math.min(2.5,window.devicePixelRatio||1);
+  const pixelW=Math.max(1,Math.round(nextW*nextDpr));
+  const pixelH=Math.max(1,Math.round(nextH*nextDpr));
+  const changed=force||pixelW!==canvas.width||pixelH!==canvas.height;
+
+  cssW=nextW;cssH=nextH;dpr=nextDpr;
+  zoom=Math.max(.7,Math.min(1.18,cssH/850));
+
+  if(changed){
+    canvas.width=pixelW;
+    canvas.height=pixelH;
+    ctx.imageSmoothingEnabled=true;
+    ctx.imageSmoothingQuality="high";
+  }
+  return true;
 }
 function updateCamera(dt){
   const viewW=cssW/zoom,target=Math.max(0,Math.min(WORLD.width-viewW,me.x-viewW/2));
@@ -839,14 +868,92 @@ function drawCharacter(c,p,x,y,now){
   }
   drawEquipmentFront(c,p,now,pose);drawName(c,p,gm);c.restore();
 }
-function drawFrame(now){
-  ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle="#102c3d";ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.setTransform(dpr*zoom,0,0,dpr*zoom,-cameraX*dpr*zoom,0);drawWorld(now);
-  const list=[...players.values()].map(p=>({...p,x:p.currentX,y:WALK_Y}));
-  list.push({uid,studentId:isGM()?"GM":profile.studentId,isAdmin:isGM(),rank:isGM()?null:profile.rank,character:{gender:profile.character?.gender||"male",equipped:equipped(profile.character)},x:me.x,y:WALK_Y,direction:me.direction,moving:me.moving});
-  for(const p of list)drawCharacter(ctx,p,p.x,p.y,now);
+let renderLoopRunning=false;
+let lastSuccessfulFrameAt=0;
+let lastRenderErrorAt=0;
+
+function drawEmergencyWorld(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.fillStyle="#16384a";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    const world=zoneArt.world;
+    if(world?.complete&&world.naturalWidth&&canvas.width>2&&canvas.height>2){
+      // Emergency mode intentionally ignores camera/zoom.
+      // Its only job is to guarantee that the illustrated scene is never a black screen.
+      ctx.drawImage(world,0,0,canvas.width,canvas.height);
+    }
+  }catch(error){
+    console.error("ZONE emergency render:",error);
+  }
 }
-function loop(now){const dt=Math.min(.04,(now-lastFrame)/1000);lastFrame=now;updateMovement(dt);smoothRemote(dt);updateCamera(dt);drawFrame(now);requestAnimationFrame(loop)}
+
+function drawFrame(now){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle="#102c3d";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  ctx.setTransform(dpr*zoom,0,0,dpr*zoom,-cameraX*dpr*zoom,0);
+  drawWorld(now);
+
+  const list=[...players.values()].map(p=>({...p,x:Number.isFinite(p.currentX)?p.currentX:Number(p.x)||450,y:WALK_Y}));
+  list.push({
+    uid,studentId:isGM()?"GM":profile.studentId,isAdmin:isGM(),
+    rank:isGM()?null:profile.rank,
+    character:{gender:profile.character?.gender||"male",equipped:equipped(profile.character)},
+    x:Number.isFinite(me.x)?me.x:450,y:WALK_Y,
+    direction:me.direction,moving:me.moving
+  });
+
+  // A malformed remote profile/equipment can no longer stop everybody's canvas.
+  for(const p of list){
+    try{drawCharacter(ctx,p,p.x,p.y,now)}
+    catch(error){console.warn("ZONE player render skipped:",p?.uid||p?.studentId,error)}
+  }
+  lastSuccessfulFrameAt=performance.now();
+}
+
+function loop(now){
+  if(!renderLoopRunning)return;
+
+  let dt=(now-lastFrame)/1000;
+  if(!Number.isFinite(dt)||dt<0)dt=0;
+  dt=Math.min(.04,dt);
+  lastFrame=now;
+
+  try{updateMovement(dt)}catch(error){console.warn("ZONE movement:",error)}
+  try{smoothRemote(dt)}catch(error){console.warn("ZONE remote interpolation:",error)}
+  try{updateCamera(dt)}catch(error){
+    cameraX=0;
+    console.warn("ZONE camera reset:",error);
+  }
+
+  try{
+    if(
+      canvas.width<80||canvas.height<80||
+      Math.abs(canvas.width-Math.round(canvas.getBoundingClientRect().width*dpr))>6||
+      Math.abs(canvas.height-Math.round(canvas.getBoundingClientRect().height*dpr))>6
+    ){
+      resizeCanvas(true);
+    }
+    drawFrame(now);
+  }catch(error){
+    lastRenderErrorAt=performance.now();
+    console.error("ZONE render recovered:",error);
+    drawEmergencyWorld();
+  }
+
+  requestAnimationFrame(loop);
+}
+
+function startRenderLoop(){
+  if(renderLoopRunning)return;
+  renderLoopRunning=true;
+  lastFrame=performance.now();
+  resizeCanvas(true);
+  try{drawFrame(lastFrame)}catch(error){drawEmergencyWorld()}
+  requestAnimationFrame(loop);
+}
 
 canvas.onclick=e=>{
   const pt=screenToWorld(e.clientX,e.clientY);
@@ -885,8 +992,34 @@ async function _leaveZone(){
     if(isGM()){profile.zone=zoneState;await saveGmProfile()}else await updateDoc(doc(db,"users",uid),{zone:zoneState});
   }catch{}
 }
-function stopRealtime(){blocked=true;keys.clear();touch.left=false;touch.right=false;velocityX=0;clearInterval(heartbeat);positionsUnsub?.();messagesUnsub?.()}
-window.onresize=resizeCanvas;
+function stopRealtime(){blocked=true;renderLoopRunning=false;keys.clear();touch.left=false;touch.right=false;velocityX=0;clearInterval(heartbeat);positionsUnsub?.();messagesUnsub?.()}
+window.addEventListener("resize",()=>resizeCanvas(true),{passive:true});
+window.visualViewport?.addEventListener("resize",()=>resizeCanvas(true),{passive:true});
+
+const zoneResizeObserver=new ResizeObserver(()=>{
+  if(!blocked){
+    resizeCanvas(true);
+    try{drawFrame(performance.now())}catch(error){drawEmergencyWorld()}
+  }
+});
+zoneResizeObserver.observe($("zoneWorld"));
+
+const zoneRenderWatchdog=setInterval(()=>{
+  if(blocked||document.hidden)return;
+  const r=canvas.getBoundingClientRect();
+  if(r.width>=80&&r.height>=80){
+    const expectedW=Math.round(r.width*(window.devicePixelRatio||1));
+    const expectedH=Math.round(r.height*(window.devicePixelRatio||1));
+    if(canvas.width<80||canvas.height<80||Math.abs(canvas.width-expectedW)>12||Math.abs(canvas.height-expectedH)>12){
+      resizeCanvas(true);
+    }
+  }
+  if(!renderLoopRunning)startRenderLoop();
+  if(performance.now()-lastSuccessfulFrameAt>2200){
+    try{drawFrame(performance.now())}
+    catch(error){drawEmergencyWorld()}
+  }
+},1000);
 function leaveZone(){
   if(leaveZonePromise)return leaveZonePromise;
   leaveZonePromise=_leaveZone().finally(()=>{leaveZonePromise=null});
@@ -928,8 +1061,37 @@ onAuthStateChanged(auth,async user=>{
     if(IS_EMBEDDED_ZONE)$("leaveZoneButton").removeAttribute("href");
     startUsageTracker(db,profile,"2d-zone");
   }
-  resizeCanvas();updateClock();clockTimer=setInterval(updateClock,1000);await loadQuestProgress();
-  listenModeration();listenPositions();listenMessages();listenTeacherQuests();listenRankingNotice();expiryTimer=setInterval(refreshMessages,60000);
-  await syncPublicProfile();await publishPresence();await publishPosition(true);heartbeat=setInterval(async()=>{if(heartbeatBusy)return;heartbeatBusy=true;try{await publishPresence();await publishPosition(true)}finally{heartbeatBusy=false}},PRESENCE_HEARTBEAT_MS);
-  requestAnimationFrame(loop);
+  // IMPORTANT V4.14.2:
+  // Visual rendering must never wait for Firestore/Quest/Presence.
+  resizeCanvas(true);
+  startRenderLoop();
+
+  try{updateClock()}catch(error){console.warn("ZONE clock:",error)}
+  clockTimer=setInterval(()=>{try{updateClock()}catch(error){console.warn("ZONE clock:",error)}},1000);
+
+  // Optional game subsystems are isolated from the renderer.
+  try{await loadQuestProgress()}catch(error){console.warn("ZONE quest bootstrap:",error)}
+  try{listenModeration()}catch(error){console.warn("ZONE moderation listener:",error)}
+  try{listenPositions()}catch(error){console.warn("ZONE position listener:",error)}
+  try{listenMessages()}catch(error){console.warn("ZONE chat listener:",error)}
+  try{listenTeacherQuests()}catch(error){console.warn("ZONE quest listener:",error)}
+  try{listenRankingNotice()}catch(error){console.warn("ZONE ranking listener:",error)}
+  expiryTimer=setInterval(()=>{try{refreshMessages()}catch(error){console.warn("ZONE chat refresh:",error)}},60000);
+
+  // Network sync cannot prevent or stop the world from drawing.
+  await Promise.allSettled([
+    syncPublicProfile(),
+    publishPresence(),
+    publishPosition(true)
+  ]);
+
+  heartbeat=setInterval(async()=>{
+    if(heartbeatBusy)return;
+    heartbeatBusy=true;
+    try{
+      await Promise.allSettled([publishPresence(),publishPosition(true)]);
+    }finally{
+      heartbeatBusy=false;
+    }
+  },PRESENCE_HEARTBEAT_MS);
 });
