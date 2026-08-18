@@ -169,6 +169,25 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // V4.14.1: one immutable reward claim per completed Attempt.
+    // This makes Token award retries idempotent and prevents duplicate rewards.
+    match /reward_claims/{attemptId} {
+      // Transaction must be able to read a non-existing claim before creating it.
+      allow get: if signedIn();
+      allow list: if isAdmin();
+
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.attemptId == attemptId
+        && request.resource.data.tokenReward is number
+        && request.resource.data.tokenReward >= 0
+        && request.resource.data.tokenReward <= 85
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
     match /users/{uid}/daily_checkins/{dayId} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
 

@@ -4,13 +4,15 @@ import {
   getFirestore, collection, doc, getDocs, setDoc, deleteDoc, updateDoc,
   writeBatch, serverTimestamp, onSnapshot, Timestamp, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_UID } from "./firebase-config.js?v=4.13.1";
-import { DEFAULT_MODES, DEFAULT_LEVELS } from "./default-data.js?v=4.13.1";
-import { seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey } from "./ranking-system.js?v=4.13.1";
-import { DEFAULT_TEACHER_QUESTS, clampQuestReward, questDifficultyName, questObjectiveLabel, defaultMinRankForDifficulty, rewardRange } from "./quest-system.js?v=4.13.1";
-import { buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.13.1";
+import { firebaseConfig, ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_UID } from "./firebase-config.js?v=4.14.1";
+import { DEFAULT_MODES, DEFAULT_LEVELS } from "./default-data.js?v=4.14.1";
+import { seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey } from "./ranking-system.js?v=4.14.1";
+import { DEFAULT_TEACHER_QUESTS, clampQuestReward, questDifficultyName, questObjectiveLabel, defaultMinRankForDifficulty, rewardRange } from "./quest-system.js?v=4.14.1";
+import { buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.14.1";
+import { retryAsync, withOperationLock, installNetworkBadge, stableErrorMessage } from "./stability-system.js?v=4.14.1";
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),$=id=>document.getElementById(id);
+installNetworkBadge({label:"ADMIN"});
 let cache={users:[],attempts:[],levels:[],modes:[],official:[],zonePositions:[],zoneModeration:[],zoneMessages:[],zoneArchive:[],rankingSettings:{},teacherQuests:[],pvpResults:[],usageDaily:[],usageSessions:[]},unsubs=[];
 let knownUserIds=null;
 let selectedAdminClass="";
@@ -33,11 +35,21 @@ function showAdminToast(title,message="",isError=false){
 
 $("adminLoginForm").addEventListener("submit",async e=>{
   e.preventDefault();$("adminLoginError").textContent="";
+  const btn=$("adminLoginForm").querySelector('button[type="submit"]');
+  if(btn?.disabled)return;
+  if(btn)btn.disabled=true;
   try{
     if($("adminUsername").value.trim()!==ADMIN_USERNAME)throw new Error("Username ไม่ถูกต้อง");
-    const r=await signInWithEmailAndPassword(auth,ADMIN_EMAIL,$("adminPassword").value);
+    const r=await retryAsync(
+      ()=>signInWithEmailAndPassword(auth,ADMIN_EMAIL,$("adminPassword").value),
+      {attempts:3,baseDelay:300,label:"admin-login"}
+    );
     if(!isAdmin(r.user)){await signOut(auth);throw new Error("บัญชีนี้ไม่ใช่ Admin")}
-  }catch(err){$("adminLoginError").textContent="เข้าสู่ระบบไม่สำเร็จ: "+err.message}
+  }catch(err){
+    $("adminLoginError").textContent="เข้าสู่ระบบไม่สำเร็จ: "+stableErrorMessage(err);
+  }finally{
+    if(btn)btn.disabled=false;
+  }
 });
 $("logoutAdmin").onclick=()=>signOut(auth);
 
@@ -49,6 +61,7 @@ onAuthStateChanged(auth,user=>{
 });
 
 function startRealtime(){
+  unsubs.forEach(fn=>{try{fn()}catch{}});unsubs=[];
   unsubs.push(onSnapshot(collection(db,"users"),snap=>{
     const next=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>dateValue(b.createdAt)-dateValue(a.createdAt));
     const nextIds=new Set(next.map(x=>x.id));
@@ -251,14 +264,14 @@ function effectiveSeasonRange(){
 function seasonAttemptsForUser(uid){
   const range=effectiveSeasonRange();
   return cache.attempts.filter(a=>{
-    if(a.uid!==uid || a.status!=="completed")return false;
+    if(a.uid!==uid || !["completed","timeout"].includes(a.status))return false;
     const dt=a.createdAt?.toDate?.();
     return !!dt && dt>=range.start && dt<=range.end;
   });
 }
 function adminRankShieldHTML(rank={}){
   const id=String(rank.tierId||"bronze").toLowerCase(),letter={bronze:"B",silver:"S",gold:"G",platinum:"P",diamond:"D",master:"M"}[id]||"B";
-  return `<span class="rank-shield rank-${id}" title="${esc(rank.tierName||"Bronze")} · ${Number(rank.rating||0)}"><span class="rank-shield-letter">${letter}</span></span>`;
+  return `<span class="rank-shield rank-${id}" title="${esc(rank.tierName||"Bronze")} · ${Number(rank.rating||0).toFixed(1)}"><span class="rank-shield-letter">${letter}</span></span>`;
 }
 function isClassicAttempt(a){return a.status==="completed" && String(a.modeName||a.mode||"").toLowerCase()==="classic"}
 function userNormalScore(uid){return cache.attempts.filter(a=>a.uid===uid&&isClassicAttempt(a)).reduce((sum,a)=>sum+Number(a.score||0),0)}
@@ -441,15 +454,15 @@ function renderRanking(){
     <td>${esc(r.user.fullName)}<br><small>${esc(r.user.studentId)}</small></td>
     <td>${esc(r.classKey)}</td>
     <td>${adminRankShieldHTML(r)} <strong>${esc(r.tierName)}</strong></td>
-    <td><strong>${r.rating}</strong></td><td>${r.diligence}</td><td>${r.accuracy}</td><td>${r.speed}</td><td>${r.consistency}</td><td>${r.avgWpm}</td>
-  </tr>`).join("")||`<tr><td colspan="11" class="empty">ยังไม่มีข้อมูล Ranking</td></tr>`;
+    <td><strong>${Number(r.rating).toFixed(1)}</strong></td><td>${Number(r.mistakeControl).toFixed(1)}</td><td>${Number(r.accuracy).toFixed(1)}</td><td>${Number(r.speed).toFixed(1)}</td><td>Stage ${r.bestStage}/50 · ${Number(r.stageProgress).toFixed(1)}%</td><td>${r.completedAttempts}/${r.timeoutAttempts}</td><td>${r.avgWpm}</td>
+  </tr>`).join("")||`<tr><td colspan="12" class="empty">ยังไม่มีข้อมูล Ranking</td></tr>`;
 }
 
 async function persistRanking(){
   const seasonId=seasonIdFromDate(new Date()),rows=buildAdminRankingRows();
   let batch=writeBatch(db),writes=0;
   for(const r of rows){
-    const rank={seasonId,rating:r.rating,tierId:r.tierId,tierName:r.tierName,tierIcon:r.tierIcon,diligence:r.diligence,mistakeControl:r.mistakeControl,accuracy:r.accuracy,speed:r.speed,consistency:r.consistency,avgWpm:r.avgWpm,avgAccuracy:r.avgAccuracy,avgMistakes:r.avgMistakes,rankedAttempts:r.rankedAttempts,completedAttempts:r.completedAttempts,activeDayCount:r.activeDayCount,updatedAt:new Date().toISOString(),resetBoundaryAt:rankResetBoundaryMs()?new Date(rankResetBoundaryMs()).toISOString():null};
+    const rank={seasonId,formulaVersion:r.formulaVersion,rating:r.rating,tierId:r.tierId,tierName:r.tierName,tierIcon:r.tierIcon,diligence:r.diligence,mistakeControl:r.mistakeControl,accuracy:r.accuracy,speed:r.speed,stageProgress:r.stageProgress,bestStage:r.bestStage,consistency:r.consistency,completionRate:r.completionRate,avgWpm:r.avgWpm,avgAccuracy:r.avgAccuracy,avgMistakes:r.avgMistakes,rankedAttempts:r.rankedAttempts,completedAttempts:r.completedAttempts,timeoutAttempts:r.timeoutAttempts,activeDayCount:r.activeDayCount,nextTierName:r.nextTierName,pointsToNextTier:r.pointsToNextTier,updatedAt:new Date().toISOString(),resetBoundaryAt:rankResetBoundaryMs()?new Date(rankResetBoundaryMs()).toISOString():null};
     batch.set(doc(db,"rankings",`${seasonId}_${r.user.id}`),{seasonId,uid:r.user.id,studentId:r.user.studentId,fullName:r.user.fullName,classKey:r.classKey,globalPosition:r.globalPosition,classPosition:r.classPosition,...rank,updatedAt:serverTimestamp()},{merge:true});writes++;
     batch.set(doc(db,"users",r.user.id),{rank,updatedAt:serverTimestamp()},{merge:true});writes++;
     batch.set(doc(db,"public_profiles",r.user.id),{rank,educationLevel:r.user.educationLevel||"",classroom:r.user.classroom||"",classKey:r.classKey,department:r.user.department||"",major:r.user.major||"",majorCode:r.user.majorCode||"",updatedAt:serverTimestamp()},{merge:true});writes++;
@@ -457,7 +470,7 @@ async function persistRanking(){
   }
   if(writes)await batch.commit();
 }
-function bronzeResetRank(resetAt){return {seasonId:seasonIdFromDate(resetAt),rating:0,tierId:"bronze",tierName:"Bronze",tierIcon:"🥉",diligence:0,accuracy:0,speed:0,consistency:0,avgWpm:0,avgAccuracy:0,completedAttempts:0,activeDayCount:0,updatedAt:resetAt.toISOString(),resetBoundaryAt:resetAt.toISOString()}}
+function bronzeResetRank(resetAt){return {seasonId:seasonIdFromDate(resetAt),formulaVersion:"4.14.0",rating:0,tierId:"bronze",tierName:"Bronze",tierIcon:"🥉",diligence:0,mistakeControl:0,accuracy:0,speed:0,stageProgress:0,bestStage:0,consistency:0,completionRate:0,avgWpm:0,avgAccuracy:0,avgMistakes:0,rankedAttempts:0,completedAttempts:0,timeoutAttempts:0,activeDayCount:0,nextTierName:"Silver",pointsToNextTier:35,updatedAt:resetAt.toISOString(),resetBoundaryAt:resetAt.toISOString()}}
 async function executeRankingResetNow(){
   if(!confirm("ยืนยันรีแรงค์ตอนนี้? Rank ของ User ทุกคนจะกลับ Bronze 0 และผลงานก่อนเวลานี้จะไม่ถูกนำมาคำนวณในรอบใหม่"))return;
   const now=new Date(),rank=bronzeResetRank(now),version=`manual_${now.getTime()}`;

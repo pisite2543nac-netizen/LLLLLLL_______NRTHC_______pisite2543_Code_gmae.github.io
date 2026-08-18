@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Admin | ระบบเกมพิมพ์ Code</title>
-  <link rel="stylesheet" href="./style.css?v=4.13.1">
+  <link rel="stylesheet" href="./style.css?v=4.14.1">
 </head>
 <body class="admin-page">
   <main class="wrap admin-wrap">
@@ -38,7 +38,7 @@
           <p>ผู้จัดทำ: นายพิสิษฐ์ หุนตระนี ครูพิเศษสอน</p>
         </div>
         <div>
-          <a class="btn gm-zone-entry" href="./zone.html?v=4.13.1">🌙 เข้า 2D Zone · GM</a>
+          <a class="btn gm-zone-entry" href="./zone.html?v=4.14.1">🌙 เข้า 2D Zone · GM</a>
           <a class="btn ghost" href="index.html">หน้าผู้เล่น</a>
           <button id="logoutAdmin" class="btn secondary">ออกจากระบบ</button>
         </div>
@@ -74,7 +74,7 @@
             <h2>📊 Dashboard อัตราการใช้งานระบบ</h2>
             <p>นับ Active Usage เมื่อ User เปิดแท็บและมีการใช้งานล่าสุดไม่เกิน 5 นาที · แยกข้อมูลรายวันและราย Session</p>
           </div>
-          <span id="usageDataRange" class="season-chip">เริ่มเก็บข้อมูล V4.13.1</span>
+          <span id="usageDataRange" class="season-chip">เริ่มเก็บข้อมูล V4.14.1</span>
         </div>
 
         <div class="usage-kpi-grid">
@@ -149,6 +149,9 @@
             <button id="exportCsv" class="btn secondary">ดาวน์โหลด CSV</button>
             <button id="deleteResults" class="btn danger">ลบผลทั้งหมด</button>
           </div>
+        </div>
+        <div class="admin-rank-formula-note">
+          <strong>สูตร V4.14:</strong> Speed 35% + Accuracy 35% + ผิดน้อย 20% + Stage สูงสุด 10% · Timeout คิด component เพียง 65% · Rating แสดงทศนิยม 1 ตำแหน่ง · อันดับ # เปรียบเทียบ Rating กับผู้เล่นคนอื่น
         </div>
         <div class="table-wrap">
           <table>
@@ -352,7 +355,7 @@
             <thead>
               <tr>
                 <th>อันดับรวม</th><th>อันดับห้อง</th><th>ผู้เล่น</th><th>ห้อง</th><th>โล่ Rank</th>
-                <th>Rating</th><th>ผิดน้อย</th><th>แม่นยำ</th><th>ความเร็ว</th><th>ผ่านเวลา</th><th>WPM เฉลี่ย</th>
+                <th>Rating</th><th>ผิดน้อย 20%</th><th>Accuracy 35%</th><th>Speed 35%</th><th>Stage 10%</th><th>ผ่าน/Timeout</th><th>WPM เฉลี่ย</th>
               </tr>
             </thead>
             <tbody id="rankingBody"></tbody>
@@ -451,7 +454,7 @@
           <div class="admin-world-chat-input-row">
             <textarea id="gmWorldChatInput" maxlength="120" rows="2" placeholder="GM พิมพ์ข้อความถึงผู้เล่นทุกคน..."></textarea>
             <button id="sendGmWorldChat" class="btn primary" type="button">ส่งในแชตโลก</button>
-            <a class="btn gm-zone-entry" href="./zone.html?v=4.13.1#world-chat">เข้า World Chat</a>
+            <a class="btn gm-zone-entry" href="./zone.html?v=4.14.1#world-chat">เข้า World Chat</a>
           </div>
         </div>
 
@@ -482,6 +485,6 @@
   </main>
 
   <div id="adminToast" class="admin-toast hidden" aria-live="polite"></div>
-  <script type="module" src="./admin.js?v=4.13.1"></script>
+  <script type="module" src="./admin.js?v=4.14.1"></script>
 </body>
 </html>
