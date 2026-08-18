@@ -1,4 +1,4 @@
-# V4.13.1 — Student Fullscreen Session + Daily Quest Auto Start
+# V4.14.1 — Student Fullscreen Session + Daily Quest Auto Start
 
 Firebase Project: `nr-game-code`
 
@@ -8,7 +8,7 @@ Firebase Project: `nr-game-code`
 หลัง Student Login สำเร็จ หน้า User ทั้งระบบอยู่ใน Fullscreen ต่อเนื่อง
 
 Browser มีข้อกำหนดว่า `requestFullscreen()` ต้องเกิดจาก User Gesture
-ดังนั้น V4.13.1 ขอ Fullscreen จากการกด Login/Register ทันที ก่อน Firebase Auth ทำงาน
+ดังนั้น V4.14.1 ขอ Fullscreen จากการกด Login/Register ทันที ก่อน Firebase Auth ทำงาน
 เมื่อ Login สำเร็จ User จึงอยู่ใน Fullscreen อยู่แล้ว
 
 ถ้า User Reload หน้าในขณะที่ยัง Login ค้าง:
@@ -68,4 +68,4 @@ Progress:
 5. Ctrl+F5
 
 Firestore Rules:
-V4.13.1 ใช้ rules เดิมจาก V4.9.4/V4.9.3 สำหรับ daily_checkins / usage / GM
+V4.14.1 ใช้ rules เดิมจาก V4.9.4/V4.9.3 สำหรับ daily_checkins / usage / GM

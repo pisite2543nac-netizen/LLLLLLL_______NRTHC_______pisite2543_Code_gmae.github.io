@@ -1,8 +1,8 @@
-# V4.13.1 — Animated Skin Engine
+# V4.14.1 — Animated Skin Engine
 
 ปัญหาที่แก้: V4.12 ใช้ภาพชุดเซต 1 ท่าทับบนตัวละคร ทำให้ขา/แขนของชุดไม่เดินตามตัวละคร
 
-V4.13.1 เปลี่ยนระบบทั้งหมด:
+V4.14.1 เปลี่ยนระบบทั้งหมด:
 - 20 ชุดเซตมี 6 sprite ต่อชุด: Male Idle/Walk1/Walk2 + Female Idle/Walk1/Walk2
 - รวม 120 animated skin frames
 - ทุก frame สร้างจาก silhouette และ pose ของตัวละครจริง

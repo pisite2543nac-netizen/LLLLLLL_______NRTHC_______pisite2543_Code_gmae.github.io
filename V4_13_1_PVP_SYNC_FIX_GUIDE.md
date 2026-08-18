@@ -1,4 +1,4 @@
-# V4.13.1 — PVP Sync + Facing Stability Fix
+# V4.14.1 — PVP Sync + Facing Stability Fix
 
 Firebase Project: `nr-game-code`
 
@@ -12,7 +12,7 @@ Firestore สามารถส่ง Snapshot ที่ `status = playing` ม�
 จะ resolve ครบในแต่ละ Client ได้ ทำให้ Client หนึ่งเห็นเวลาเริ่มและอีก Client หนึ่งยังไม่มีเวลา
 ระบบเดิมจึงมีสถานะ `SYNC` ที่มีโอกาสค้างได้
 
-V4.13.1 เปลี่ยนเป็น:
+V4.14.1 เปลี่ยนเป็น:
 
 1. `PVP_SYNC_VERSION = 4.13.1`
 2. ผู้เล่นทุกคนต้อง `SYNC READY`
@@ -36,7 +36,7 @@ V4.13.1 เปลี่ยนเป็น:
 - `.pvp-base-avatar` และ `.pvp-equip-layer` ถูก Flip ซ้ำอีกรอบ
 - Flip 2 ครั้ง = กลับทิศเดิม
 
-V4.13.1:
+V4.14.1:
 - TEAM A บังคับ `facing-right`
 - TEAM B บังคับ `facing-left`
 - Flip เฉพาะ Parent `.pvp-avatar-stack` เพียงครั้งเดียว
@@ -48,7 +48,7 @@ V4.13.1:
 1. ปิดหน้าเกมเก่า
 2. เปิดใหม่
 3. `Ctrl + F5` บนคอม หรือ Clear/Reload หน้าเว็บบนมือถือ
-4. ทั้งสองเครื่องต้องเป็น V4.13.1
+4. ทั้งสองเครื่องต้องเป็น V4.14.1
 5. เข้าห้อง PVP
 6. รอจนทั้งสองช่องขึ้น `✅ SYNC READY`
 7. Host จึงกด Start
