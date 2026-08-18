@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
   <title>ระบบเกมพิมพ์ Code | วิทยาลัยเทคนิคนางรอง</title>
-  <link rel="stylesheet" href="./style.css?v=4.13.1">
+  <link rel="stylesheet" href="./style.css?v=4.14.1">
 </head>
 <body>
 <header class="site-header">
@@ -454,6 +454,47 @@
           <div><span class="rank-shield rank-diamond small"><span class="rank-shield-letter">D</span></span><b>Diamond</b></div>
           <div><span class="rank-shield rank-master small"><span class="rank-shield-letter">M</span></span><b>Master</b></div>
         </div>
+
+        <section class="rank-guide-card" aria-label="คำอธิบายระบบ Ranking">
+          <div class="rank-guide-head">
+            <div><span class="section-kicker">RANKING GUIDE · V4.14</span><h3>Rating เพิ่ม–ลดอย่างไร และทำไมผ่านด่านไกลขึ้นแล้วอันดับอาจยังไม่เปลี่ยน?</h3></div>
+            <div class="rank-guide-current"><span>RATING ตอนนี้</span><strong id="rankGuideRating">0.0</strong><em id="rankGuideDelta" class="rank-guide-delta same">0.0</em></div>
+          </div>
+          <div class="rank-formula-grid">
+            <div><span>⚡ SPEED</span><strong>35%</strong><small>เทียบ WPM เป้าหมาย: ง่าย 28 / กลาง 42 / ยาก 58</small></div>
+            <div><span>🎯 ACCURACY</span><strong>35%</strong><small>ยิ่งใกล้ 100% ยิ่งช่วย Rating มาก</small></div>
+            <div><span>⌨️ ผิดน้อย</span><strong>20%</strong><small>เริ่ม 100 คะแนน และลด 10 ต่อการพิมพ์ผิด 1 ครั้ง</small></div>
+            <div><span>🚩 STAGE สูงสุด</span><strong>10%</strong><small>Stage ที่ผ่านสูงสุด ÷ 50; 1 Stage เพิ่มส่วน Progress ได้สูงสุด 0.2 Rating</small></div>
+          </div>
+          <div class="rank-guide-live">
+            <div><span>Tier</span><strong id="rankGuideTier">Bronze</strong></div>
+            <div><span>Speed component</span><strong id="rankGuideSpeed">0.0 / 100</strong></div>
+            <div><span>Accuracy component</span><strong id="rankGuideAccuracy">0.0 / 100</strong></div>
+            <div><span>ผิดน้อย component</span><strong id="rankGuideMistakes">0.0 / 100</strong></div>
+            <div><span>Stage progress</span><strong id="rankGuideStage">Stage 0/50 · 0.0%</strong></div>
+            <div><span>ผลใน Season</span><strong id="rankGuideAttempts">0 ผ่าน · 0 Timeout</strong></div>
+          </div>
+          <div class="rank-guide-reason">
+            <strong id="rankGuideChangeReason">Rating จะเปลี่ยนเมื่อมีผล Ranking ใหม่</strong>
+            <small id="rankGuideUpdated">ยังไม่มีการเปลี่ยน Rating ในรอบนี้</small>
+          </div>
+          <div class="rank-guide-notes">
+            <p><b>ทำไม Rating ลด?</b> เพราะผล Ranking รอบใหม่ถูกนำมาเฉลี่ยกับผลงานใน Season 60 วัน หาก WPM/Accuracy ต่ำลง ผิดมากขึ้น หรือ Timeout ค่าเฉลี่ยสามารถลดลงได้ โดย Timeout คิดเพียง 65% ของ component ที่ทำได้ในรอบนั้น</p>
+            <p><b>ทำไมผ่าน Stage ไกลกว่าแต่ Rating ขยับน้อย?</b> V4.14 นำ Stage สูงสุดเข้าคิดแล้ว 10% แต่ Rating อีก 90% ยังมาจากคุณภาพการพิมพ์ ดังนั้นผ่านด่านใหม่จะช่วยแน่นอน แต่ถ้ารอบนั้นช้าหรือผิดมาก ผลบวกจาก Stage อาจถูกหักล้างบางส่วน</p>
+            <p><b>ทำไมเลขอันดับ # ไม่เพิ่มทั้งที่ Rating เพิ่ม?</b> เลข # คือ “ตำแหน่งเทียบผู้เล่นคนอื่น” ไม่ใช่คะแนนส่วนตัว คุณต้องมี Rating มากกว่าคนที่อยู่เหนือคุณจึงจะขยับอันดับ และอันดับอาจลดได้เมื่อผู้เล่นคนอื่นทำ Rating สูงกว่า</p>
+            <p><b>ทำไมบางครั้งเหมือนไม่ขยับ?</b> เวอร์ชันเดิมแสดง Rating เป็นจำนวนเต็มและ Stage ไม่ได้เป็น component โดยตรง; V4.14 แสดงทศนิยม 1 ตำแหน่งและเพิ่ม Stage Progress 10% แล้ว จึงเห็นการเปลี่ยนแปลงเล็ก ๆ ชัดขึ้น</p>
+          </div>
+          <div class="rank-tier-thresholds">
+            <span>Bronze 0+</span><span>Silver 35+</span><span>Gold 55+</span><span>Platinum 70+</span><span>Diamond 82+</span><span>Master 92+</span>
+          </div>
+          <div class="rank-next-tier"><span>ขั้นถัดไป</span><strong id="rankGuideNextTier">Silver ที่ 35</strong></div>
+
+          <div class="pvp-rank-explain">
+            <h4>⚔️ PVP Ranking เป็นคนละคะแนนกับ Learning Rating</h4>
+            <p>PVP เริ่มที่ 1,000 Rating: ชนะได้พื้นฐาน +24 และมีโบนัสเล็กน้อยจาก Accuracy, Damage, Combo, WPM และ Win Streak; แพ้พื้นฐาน -16 โดย Performance ช่วยลดการเสียคะแนนได้บางส่วน จึงมีการเพิ่ม/ลดแบบการแข่งขันโดยตรง ไม่เอา Stage 1–50 มาปนกับ PVP Rank</p>
+            <small>Rookie 0+ · Fighter 1050+ · Gladiator 1150+ · Champion 1275+ · Warlord 1425+ · Overlord 1600+</small>
+          </div>
+        </section>
       </article>
     </section>
 
@@ -661,7 +702,7 @@
 </main>
 
 <footer><div class="wrap">ระบบเกมพิมพ์ Code · วิทยาลัยเทคนิคนางรอง</div></footer>
-<script type="module" src="./app.js?v=4.13.1"></script>
+<script type="module" src="./app.js?v=4.14.1"></script>
 
   <div id="characterSetupModal" class="character-modal hidden">
     <div class="character-modal-card character-setup-card">
@@ -750,7 +791,7 @@
   </div>
 
 
-  <!-- V4.13.1 Student Fullscreen Session:
+  <!-- V4.14.1 Student Fullscreen Session:
        2D Zone stays inside this document so browser fullscreen does not end on navigation. -->
   <div id="studentZoneShell" class="student-zone-shell hidden" aria-hidden="true">
     <iframe id="studentZoneFrame"
