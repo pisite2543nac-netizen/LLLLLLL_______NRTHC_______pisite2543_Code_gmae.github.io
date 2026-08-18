@@ -26,7 +26,7 @@ const $=id=>document.getElementById(id);
 installNetworkBadge({label:"2D ZONE"});
 
 const ZONE_ID="thai_social_zone_v4_1";
-const ZONE_RENDER_PATCH="4.14.2";
+const ZONE_RENDER_PATCH="4.14.3";
 
 const IS_EMBEDDED_ZONE=new URLSearchParams(location.search).get("embedded")==="1";
 function postToStudentShell(type,payload={}){
@@ -1026,14 +1026,19 @@ function leaveZone(){
   return leaveZonePromise;
 }
 window.addEventListener("pagehide",leaveZone);
-$("leaveZoneButton").onclick=async event=>{
+$("leaveZoneButton").onclick=event=>{
+  event.preventDefault();
   if(IS_EMBEDDED_ZONE){
-    event.preventDefault();
-    await leaveZone();
-    postToStudentShell("NR_ZONE_EXIT");
+    const sent=postToStudentShell("NR_ZONE_EXIT");
+    void Promise.race([
+      leaveZone(),
+      new Promise(resolve=>setTimeout(resolve,900))
+    ]).catch(error=>console.warn("ZONE exit cleanup:",error));
+    if(!sent)setTimeout(()=>location.replace("./index.html?v=4.14.3"),80);
     return;
   }
-  await leaveZone();
+  void leaveZone().catch(error=>console.warn("ZONE exit cleanup:",error));
+  location.replace("./index.html?v=4.14.3");
 };
 
 onAuthStateChanged(auth,async user=>{

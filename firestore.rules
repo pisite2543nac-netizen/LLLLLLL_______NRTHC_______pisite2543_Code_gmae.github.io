@@ -36,6 +36,28 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+
+    // V4.14.3 — Student ID Login Alias
+    match /login_aliases/{studentId} {
+      // Login can resolve one exact ID before Authentication, but enumeration is blocked.
+      allow get: if true;
+      allow list: if false;
+
+      // Admin creates aliases during profile editing.
+      // User can only create/backfill an active alias for their own Auth account.
+      allow create: if isAdmin()
+        || (
+          signedIn()
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.studentId == studentId
+          && request.resource.data.authEmail == request.auth.token.email
+          && request.resource.data.active == true
+        );
+
+      // Only Admin can redirect, disable or remove aliases.
+      allow update, delete: if isAdmin();
+    }
+
     match /gm_profiles/{uid} {
       allow read, create, update, delete: if isAdmin() && request.auth.uid == uid;
     }

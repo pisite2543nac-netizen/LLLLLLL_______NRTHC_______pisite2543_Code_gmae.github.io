@@ -1,15 +1,15 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDocs, setDoc, deleteDoc, updateDoc,
-  writeBatch, serverTimestamp, onSnapshot, Timestamp, query, orderBy, limit
+  getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc,
+  writeBatch, runTransaction, serverTimestamp, onSnapshot, Timestamp, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import { firebaseConfig, ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_UID } from "./firebase-config.js?v=4.14.1";
+import { firebaseConfig, ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_UID } from "./firebase-config.js?v=4.14.3";
 import { DEFAULT_MODES, DEFAULT_LEVELS } from "./default-data.js?v=4.14.1";
-import { seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey } from "./ranking-system.js?v=4.14.1";
+import { seasonIdFromDate, seasonRange, calculateRankMetrics, rankingClassKey } from "./ranking-system.js?v=4.14.3";
 import { DEFAULT_TEACHER_QUESTS, clampQuestReward, questDifficultyName, questObjectiveLabel, defaultMinRankForDifficulty, rewardRange } from "./quest-system.js?v=4.14.1";
 import { buildPvpLeaderboard } from "./pvp-ranking-system.js?v=4.14.1";
-import { retryAsync, withOperationLock, installNetworkBadge, stableErrorMessage } from "./stability-system.js?v=4.14.1";
+import { retryAsync, withOperationLock, installNetworkBadge, stableErrorMessage } from "./stability-system.js?v=4.14.3";
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),$=id=>document.getElementById(id);
 installNetworkBadge({label:"ADMIN"});
@@ -24,6 +24,26 @@ const isAdmin=user=>!!user&&user.uid===ADMIN_UID;
 const dateValue=v=>{try{return v?.toDate?.()?.getTime?.()||0}catch{return 0}};
 const formatDate=v=>{try{return v?.toDate?.().toLocaleString("th-TH")||"-"}catch{return "-"}};
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+
+const ADMIN_EDUCATION_LEVELS=["ปวช.1","ปวช.2","ปวช.3","ปวส.1","ปวส.2"];
+const ADMIN_CLASSROOMS=["/1","/2","/3","/4","/5","/6"];
+const ADMIN_DEPARTMENTS=["คอมพิวเตอร์","อิเล็กทรอนิค"];
+const ADMIN_MAJORS=["เทคโนโลยีสารสนเทศ","เทคโนโลยีธุรกิจดิจิทัล","คอมพิวเตอร์ธุรกิจ"];
+const ADMIN_MAJOR_CODE_MAP={
+  "เทคโนโลยีสารสนเทศ":"ทส.",
+  "เทคโนโลยีธุรกิจดิจิทัล":"ทธ.",
+  "คอมพิวเตอร์ธุรกิจ":"คธ."
+};
+const studentAuthEmail=id=>`${String(id||"").trim()}@student.nr-game-code.local`;
+function adminMajorCodeFor(level,major){
+  const base=ADMIN_MAJOR_CODE_MAP[String(major||"").trim()]||"";
+  return base&&String(level||"").startsWith("ปวส")?`ส.${base}`:base;
+}
+function adminClassKey(level,classroom){return rankingClassKey(level,classroom)||`${level||""}${classroom||""}`;}
+function adminAcademicKey(level,classroom,department,major){
+  return [level||"",classroom||"",department||"",major||""].join("|");
+}
+
 
 function showAdminToast(title,message="",isError=false){
   const box=$("adminToast");if(!box)return;
@@ -73,8 +93,8 @@ function startRealtime(){
   unsubs.push(onSnapshot(collection(db,"game_modes"),snap=>{cache.modes=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>Number(a.sortOrder||0)-Number(b.sortOrder||0));renderAll()}));
   unsubs.push(onSnapshot(collection(db,"official_submissions"),snap=>{cache.official=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>dateValue(b.submittedAt)-dateValue(a.submittedAt));renderAll()}));
   unsubs.push(onSnapshot(collection(db,"pvp_results"),snap=>{cache.pvpResults=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()},error=>console.warn("pvp results:",error)));
-  unsubs.push(onSnapshot(query(collection(db,"usage_daily"),orderBy("dayId","desc"),limit(5000)),snap=>{cache.usageDaily=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()},error=>console.warn("usage daily:",error)));
-  unsubs.push(onSnapshot(query(collection(db,"usage_sessions"),orderBy("lastSeenAt","desc"),limit(5000)),snap=>{cache.usageSessions=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()},error=>console.warn("usage sessions:",error)));
+  unsubs.push(onSnapshot(query(collection(db,"usage_daily"),orderBy("dayId","desc"),limit(2000)),snap=>{cache.usageDaily=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()},error=>console.warn("usage daily:",error)));
+  unsubs.push(onSnapshot(query(collection(db,"usage_sessions"),orderBy("lastSeenAt","desc"),limit(3000)),snap=>{cache.usageSessions=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()},error=>console.warn("usage sessions:",error)));
   unsubs.push(onSnapshot(collection(db,"zone_positions"),snap=>{cache.zonePositions=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()}));
   unsubs.push(onSnapshot(collection(db,"zone_moderation"),snap=>{cache.zoneModeration=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()}));
   unsubs.push(onSnapshot(collection(db,"teacher_quests"),snap=>{cache.teacherQuests=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll()},error=>console.warn("teacher quests:",error)));
@@ -222,10 +242,197 @@ function compareStudentId(a,b){
   const av=String(a?.studentId??""),bv=String(b?.studentId??"");
   return av.localeCompare(bv,"th",{numeric:true,sensitivity:"base"});
 }
+
+function refreshAdminEditMajorCode(){
+  const level=$("adminEditEducationLevel")?.value||"";
+  const major=$("adminEditMajor")?.value||"";
+  const code=adminMajorCodeFor(level,major);
+  if($("adminEditMajorCode"))$("adminEditMajorCode").textContent=code?`รหัสสาขา: (${code})`:"รหัสสาขา: -";
+}
+function setAdminUserEditMessage(text="",isError=false){
+  const el=$("adminUserEditMessage");if(!el)return;
+  el.textContent=text;
+  el.classList.toggle("error",!!isError);
+}
+function openAdminUserEdit(uid){
+  const user=cache.users.find(x=>x.id===uid);
+  if(!user){showAdminToast("ไม่พบ User","Realtime อาจกำลังอัปเดต กรุณาลองอีกครั้ง",true);return}
+
+  $("adminEditUid").value=user.id;
+  $("adminEditStudentId").value=user.studentId||"";
+  $("adminEditFullName").value=user.fullName||"";
+  $("adminEditEducationLevel").value=user.educationLevel||"";
+  $("adminEditClassroom").value=user.classroom||"";
+  $("adminEditDepartment").value=user.department||"";
+  $("adminEditMajor").value=user.major||"";
+  setAdminUserEditMessage("");
+  refreshAdminEditMajorCode();
+
+  const modal=$("adminUserEditModal");
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden","false");
+  document.body.classList.add("admin-user-edit-open");
+  setTimeout(()=>$("adminEditStudentId")?.focus(),60);
+}
+function closeAdminUserEdit(){
+  const modal=$("adminUserEditModal");if(!modal)return;
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden","true");
+  document.body.classList.remove("admin-user-edit-open");
+  setAdminUserEditMessage("");
+}
+function validateAdminUserEdit(){
+  const data={
+    uid:$("adminEditUid").value.trim(),
+    studentId:$("adminEditStudentId").value.trim(),
+    fullName:$("adminEditFullName").value.trim(),
+    educationLevel:$("adminEditEducationLevel").value,
+    classroom:$("adminEditClassroom").value,
+    department:$("adminEditDepartment").value,
+    major:$("adminEditMajor").value
+  };
+  if(!data.uid)throw new Error("ไม่พบ UID ของ User");
+  if(!/^\d{1,15}$/.test(data.studentId))throw new Error("เลขนักศึกษาต้องเป็นตัวเลข 1–15 หลัก");
+  if(!data.fullName)throw new Error("กรุณากรอกชื่อ-นามสกุล");
+  if(!ADMIN_EDUCATION_LEVELS.includes(data.educationLevel))throw new Error("ระดับชั้นไม่ถูกต้อง");
+  if(!ADMIN_CLASSROOMS.includes(data.classroom))throw new Error("ห้อง/กลุ่มไม่ถูกต้อง");
+  if(!ADMIN_DEPARTMENTS.includes(data.department))throw new Error("แผนกไม่ถูกต้อง");
+  if(!ADMIN_MAJORS.includes(data.major))throw new Error("สาขาวิชาไม่ถูกต้อง");
+  return data;
+}
+async function saveAdminUserEdit(){
+  const form=validateAdminUserEdit();
+  const button=$("saveAdminUserEdit");
+  if(button.disabled)return;
+  button.disabled=true;
+  setAdminUserEditMessage("กำลังตรวจสอบและบันทึกข้อมูล...");
+
+  try{
+    await withOperationLock(`admin-edit-user:${form.uid}`,async()=>{
+      await retryAsync(()=>runTransaction(db,async tx=>{
+        const userRef=doc(db,"users",form.uid);
+        const currentSnap=await tx.get(userRef);
+        if(!currentSnap.exists())throw new Error("ไม่พบข้อมูล User ใน Firestore");
+
+        const current=currentSnap.data();
+        const oldSid=String(current.studentId||"").trim();
+        const sidChanged=oldSid!==form.studentId;
+        const authLoginEmail=String(current.authLoginEmail||studentAuthEmail(oldSid)).trim();
+
+        let newAliasRef=null,newAliasSnap=null;
+        if(sidChanged){
+          newAliasRef=doc(db,"login_aliases",form.studentId);
+          newAliasSnap=await tx.get(newAliasRef);
+          if(newAliasSnap.exists()&&String(newAliasSnap.data()?.uid||"")!==form.uid){
+            throw new Error(`เลขนักศึกษา ${form.studentId} ถูกใช้งานโดยบัญชีอื่นแล้ว`);
+          }
+        }
+
+        const majorCode=adminMajorCodeFor(form.educationLevel,form.major);
+        const classKey=adminClassKey(form.educationLevel,form.classroom);
+        const academicKey=adminAcademicKey(form.educationLevel,form.classroom,form.department,form.major);
+
+        tx.set(userRef,{
+          studentId:form.studentId,
+          fullName:form.fullName,
+          educationLevel:form.educationLevel,
+          classroom:form.classroom,
+          classKey,
+          department:form.department,
+          major:form.major,
+          majorCode,
+          academicKey,
+          authLoginEmail,
+          character:{...(current.character||{}),displayName:form.fullName},
+          updatedAt:serverTimestamp()
+        },{merge:true});
+
+        tx.set(doc(db,"public_profiles",form.uid),{
+          uid:form.uid,
+          studentId:form.studentId,
+          fullName:form.fullName,
+          educationLevel:form.educationLevel,
+          classroom:form.classroom,
+          classKey,
+          department:form.department,
+          major:form.major,
+          majorCode,
+          academicKey,
+          updatedAt:serverTimestamp()
+        },{merge:true});
+
+        if(sidChanged){
+          tx.set(newAliasRef,{
+            uid:form.uid,
+            studentId:form.studentId,
+            authEmail:authLoginEmail,
+            active:true,
+            previousStudentId:oldSid,
+            updatedAt:serverTimestamp()
+          },{merge:true});
+
+          if(oldSid){
+            tx.set(doc(db,"login_aliases",oldSid),{
+              uid:form.uid,
+              studentId:oldSid,
+              authEmail:authLoginEmail,
+              active:false,
+              redirectedTo:form.studentId,
+              updatedAt:serverTimestamp()
+            },{merge:true});
+          }
+        }
+      }),{attempts:5,baseDelay:260,label:"admin-user-edit"});
+    });
+
+    showAdminToast("บันทึกข้อมูลแล้ว",`${form.studentId} · ${form.fullName}`);
+    setAdminUserEditMessage("บันทึกสำเร็จ");
+    setTimeout(closeAdminUserEdit,350);
+  }catch(error){
+    console.error("admin user edit:",error);
+    setAdminUserEditMessage(stableErrorMessage(error,"บันทึกข้อมูลไม่สำเร็จ"),true);
+  }finally{
+    button.disabled=false;
+  }
+}
+$("closeAdminUserEdit")?.addEventListener("click",closeAdminUserEdit);
+$("cancelAdminUserEdit")?.addEventListener("click",closeAdminUserEdit);
+$("adminUserEditModal")?.addEventListener("click",event=>{
+  if(event.target===$("adminUserEditModal"))closeAdminUserEdit();
+});
+$("adminEditEducationLevel")?.addEventListener("change",refreshAdminEditMajorCode);
+$("adminEditMajor")?.addEventListener("change",refreshAdminEditMajorCode);
+$("adminUserEditForm")?.addEventListener("submit",async event=>{
+  event.preventDefault();
+  await saveAdminUserEdit();
+});
+document.addEventListener("keydown",event=>{
+  if(event.key==="Escape"&&!$("adminUserEditModal")?.classList.contains("hidden"))closeAdminUserEdit();
+});
+
 function renderUsers(){
   const users=[...cache.users].sort(compareStudentId);
-  $("usersBody").innerHTML=users.map(x=>`<tr><td>${formatDate(x.createdAt)}</td><td>${esc(x.studentId)}</td><td><strong>${esc(x.fullName)}</strong></td><td>${esc(x.educationLevel||"")}${esc(x.classroom||"")}</td><td>${esc(x.department||"-")}</td><td>${esc(x.major||"-")}</td><td>${x.majorCode?`<strong>(${esc(x.majorCode)})</strong>`:"-"}</td><td><strong>${Number(x.tokenBalance||0).toLocaleString()}</strong></td><td><span class="status status-active">${esc(x.status||"active")}</span></td><td><button class="mini-delete" data-delete-user="${x.id}">ลบข้อมูล</button></td></tr>`).join("")||`<tr><td colspan="10" class="empty">ยังไม่มีสมาชิก</td></tr>`;
-  document.querySelectorAll("[data-delete-user]").forEach(b=>b.onclick=async()=>{if(confirm("ลบข้อมูลสมาชิกจาก Firestore? หมายเหตุ: บัญชี Authentication ต้องลบใน Firebase Console แยกต่างหาก"))await deleteDoc(doc(db,"users",b.dataset.deleteUser))});
+  $("usersBody").innerHTML=users.map(x=>`<tr>
+    <td>${formatDate(x.createdAt)}</td>
+    <td><strong>${esc(x.studentId||"-")}</strong></td>
+    <td><strong>${esc(x.fullName||"-")}</strong></td>
+    <td>${esc(x.educationLevel||"")}${esc(x.classroom||"")}</td>
+    <td>${esc(x.department||"-")}</td>
+    <td>${esc(x.major||"-")}</td>
+    <td>${x.majorCode?`<strong>(${esc(x.majorCode)})</strong>`:"-"}</td>
+    <td><strong>${Number(x.tokenBalance||0).toLocaleString()}</strong></td>
+    <td><span class="status status-active">${esc(x.status||"active")}</span></td>
+    <td><div class="admin-user-actions">
+      <button class="btn ghost btn-small" type="button" data-edit-user="${x.id}">✏️ แก้ไข</button>
+      <button class="mini-delete" type="button" data-delete-user="${x.id}">ลบข้อมูล</button>
+    </div></td>
+  </tr>`).join("")||`<tr><td colspan="10" class="empty">ยังไม่มีสมาชิก</td></tr>`;
+  document.querySelectorAll("[data-edit-user]").forEach(b=>b.onclick=()=>openAdminUserEdit(b.dataset.editUser));
+  document.querySelectorAll("[data-delete-user]").forEach(b=>b.onclick=async()=>{
+    if(confirm("ลบข้อมูลสมาชิกจาก Firestore? หมายเหตุ: บัญชี Authentication ต้องลบใน Firebase Console แยกต่างหาก")){
+      await deleteDoc(doc(db,"users",b.dataset.deleteUser));
+    }
+  });
 }
 function renderLevels(){
   $("levelCards").innerHTML=cache.levels.map(x=>`<article class="level-admin-card"><div><span>LEVEL ${esc(x.levelNo)}</span><h3>${esc(x.title)}</h3><p>${esc(x.language)} · ${esc(x.difficulty)} · ${esc(x.basePoints)} pts</p></div><div class="button-row"><button class="btn ghost btn-small" data-edit-level="${x.id}">แก้ไข</button><button class="btn danger btn-small" data-delete-level="${x.id}">ลบ</button></div></article>`).join("");

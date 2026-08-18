@@ -55,6 +55,45 @@ const state = {
 };
 
 const studentEmail = id => `${String(id).trim()}@student.nr-game-code.local`;
+
+async function resolveStudentLogin(studentId){
+  const sid=String(studentId||"").trim();
+  const fallback=studentEmail(sid);
+  try{
+    const snap=await retryAsync(
+      ()=>getDoc(doc(db,"login_aliases",sid)),
+      {attempts:3,baseDelay:180,label:"login-alias"}
+    );
+    if(!snap.exists())return {email:fallback,aliasFound:false};
+
+    const alias=snap.data()||{};
+    if(alias.active===false){
+      const next=String(alias.redirectedTo||"").trim();
+      const error=new Error(next
+        ?`เลขนักศึกษานี้ถูกเปลี่ยนแล้ว กรุณาใช้เลข ${next}`
+        :"เลขนักศึกษานี้ไม่สามารถใช้ Login ได้แล้ว");
+      error.code="student-id-changed";
+      throw error;
+    }
+    return {email:String(alias.authEmail||fallback).trim(),aliasFound:true};
+  }catch(error){
+    if(String(error?.code||"").includes("permission-denied")){
+      console.warn("login_aliases rules not published; using legacy login");
+      return {email:fallback,aliasFound:false,aliasRulesMissing:true};
+    }
+    throw error;
+  }
+}
+async function backfillOwnLoginAlias(studentId,email){
+  if(!state.uid||!studentId||!email)return;
+  try{
+    await setDoc(doc(db,"login_aliases",String(studentId)),{
+      uid:state.uid,studentId:String(studentId),authEmail:String(email),
+      active:true,updatedAt:serverTimestamp()
+    },{merge:true});
+  }catch(error){console.warn("login alias backfill:",error)}
+}
+
 const esc = v => String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
 const fmtDate = v => { try { return v?.toDate?.().toLocaleString("th-TH") || "-"; } catch { return "-"; } };
 const fmtTime = s => { s=Math.max(0,s); return `${Math.floor(s/60).toString().padStart(2,"0")}:${Math.floor(s%60).toString().padStart(2,"0")}`; };
@@ -277,6 +316,7 @@ async function _ensureProfileDefaults(){
     };
   }
   if(!d.classKey && d.educationLevel && d.classroom) patch.classKey=classKey(d.educationLevel,d.classroom);
+  if(!d.authLoginEmail && auth.currentUser?.email) patch.authLoginEmail=auth.currentUser.email;
   if(!d.zone) patch.zone = {...DEFAULT_ZONE_STATE};
   if(Object.keys(patch).length) await updateDoc(ref,patch);
   const refreshed = await getDoc(ref);
@@ -397,7 +437,7 @@ async function openStudentZoneShell({questId=null}={}){
   shell.setAttribute("aria-hidden","false");
   document.body.classList.add("student-zone-shell-open");
 
-  const qs=new URLSearchParams({embedded:"1",v:"4.14.2-zone-render"});
+  const qs=new URLSearchParams({embedded:"1",v:"4.14.3-final-stable"});
   if(questId)qs.set("quest",questId);
   const target=`./zone.html?${qs.toString()}`;
   if(!frame.src||!frame.src.includes("zone.html"))frame.src=target;
@@ -430,17 +470,21 @@ async function routeZoneLinkFromGesture(event){
 }
 document.addEventListener("click",routeZoneLinkFromGesture);
 
-window.addEventListener("message",async event=>{
-  if(event.origin!==location.origin||!event.data)return;
+window.addEventListener("message",event=>{
+  if(!event.data)return;
+  const frame=$("studentZoneFrame");
+  if(frame?.contentWindow&&event.source!==frame.contentWindow)return;
   if(event.data.type==="NR_ZONE_EXIT"){
-    await closeStudentZoneShell();
+    void closeStudentZoneShell();
     return;
   }
   if(event.data.type==="NR_ZONE_QUEST"&&event.data.questId){
-    await closeStudentZoneShell();
-    state.questLaunchHandled=false;
-    history.replaceState(null,"",`${location.pathname}?quest=${encodeURIComponent(event.data.questId)}`);
-    await maybeLaunchQuestFromUrl();
+    void (async()=>{
+      await closeStudentZoneShell();
+      state.questLaunchHandled=false;
+      history.replaceState(null,"",`${location.pathname}?quest=${encodeURIComponent(event.data.questId)}`);
+      await maybeLaunchQuestFromUrl();
+    })();
   }
 });
 
@@ -473,6 +517,7 @@ $("registerForm").addEventListener("submit",async e=>{
 
     const p={
       uid:state.uid,studentId:sid,fullName:$("fullName").value.trim(),
+      authLoginEmail:cred.user.email||studentEmail(sid),
       educationLevel:$("educationLevel").value,classroom:$("classroom").value,
       classKey:classKey($("educationLevel").value,$("classroom").value),
       department:$("department").value,major:$("major").value,
@@ -497,6 +542,7 @@ $("registerForm").addEventListener("submit",async e=>{
     // Verify the profile really exists before routing away from registration.
     const verify=await retryAsync(()=>getDoc(userRef),{attempts:5,label:"register-verify"});
     if(!verify.exists())throw new Error("สร้างบัญชีแล้วแต่ Profile ยังไม่ถูกบันทึก");
+    await backfillOwnLoginAlias(sid,cred.user.email||studentEmail(sid));
 
     state.authProfileWritePending=false;
     await fullscreenAttempt;
@@ -546,20 +592,26 @@ $("loginForm").addEventListener("submit",async e=>{
   const fullscreenAttempt=requestStudentFullscreenFromAuthGesture();
 
   try{
+    const loginTarget=await resolveStudentLogin(sidValue);
     const cred=await retryAsync(
-      ()=>signInWithEmailAndPassword(auth,studentEmail(sidValue),$("loginPassword").value),
+      ()=>signInWithEmailAndPassword(auth,loginTarget.email,$("loginPassword").value),
       {attempts:3,baseDelay:300,label:"student-login"}
     );
     state.uid=cred.user.uid;
+    if(!loginTarget.aliasFound){
+      void backfillOwnLoginAlias(sidValue,cred.user.email||loginTarget.email);
+    }
     await fullscreenAttempt;
     await routeAuthenticatedStudentOnce(state.uid);
     $("loginMessage").textContent="";
   }catch(error){
     await fullscreenAttempt.catch(()=>false);
     await rollbackStudentFullscreenAfterAuthFailure();
-    $("loginMessage").textContent=/wrong-password|invalid-credential|user-not-found/i.test(String(error?.code||""))
-      ?"เลขนักศึกษาหรือรหัสผ่านไม่ถูกต้อง"
-      :stableErrorMessage(error,"เข้าสู่ระบบไม่สำเร็จ");
+    $("loginMessage").textContent=error?.code==="student-id-changed"
+      ?String(error.message||"เลขนักศึกษานี้ถูกเปลี่ยนแล้ว")
+      :/wrong-password|invalid-credential|user-not-found/i.test(String(error?.code||""))
+        ?"เลขนักศึกษาหรือรหัสผ่านไม่ถูกต้อง"
+        :stableErrorMessage(error,"เข้าสู่ระบบไม่สำเร็จ");
   }finally{
     state.loginBusy=false;
     if(submit)submit.disabled=false;

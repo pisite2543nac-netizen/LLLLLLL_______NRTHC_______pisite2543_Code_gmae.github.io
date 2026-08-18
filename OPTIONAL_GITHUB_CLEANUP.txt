@@ -1,0 +1,9 @@
+หลังระบบทำงานเรียบร้อยและ Backup repository แล้ว สามารถลบ/ย้ายไฟล์เอกสารเก่าออกจาก GitHub Pages Root เพื่อลดความสับสน:
+- FULL_CODE_V*.md
+- *_PREVIEW*.png รุ่นเก่า
+- ZIP backup รุ่นเก่า
+- Guide/Validation รุ่นเก่าที่ไม่ใช้
+
+ห้ามลบ runtime เช่น index.html, app.js, admin.html, admin.js, zone.html, zone.js,
+style.css, firebase-config.js, ranking-system.js, reward-data.js, zone-assets.js,
+animated-skin-assets.js, equipment-system.js, firestore.rules เป็นต้น
